@@ -26,3 +26,5 @@ cd web && bun run dev
 - **Frontend build output:** `bun run build` outputs to `public/` (served by the backend). During dev, Vite on `:5173` proxies API calls to the backend on `:3001` (set by `WEB_PORT` in `.env`; the Vite proxy in `web/vite.config.ts` is hardcoded to 3001).
 - **No linter/test framework configured.** Validation is done by running both dev servers and verifying module imports.
 - **SQLite is embedded** via `bun:sqlite` — no external database needed. Data stored in `data/messages.db`.
+- **PM2 production mode:** `bun run build && pm2 start ecosystem.config.cjs`. PM2 uses `bun` as interpreter. Backend serves the built frontend from `public/` on port `WEB_PORT`.
+- **Secure cookies:** `.env` sets `NODE_ENV=production`, which enables `Secure` flag on session cookies. On localhost HTTP this still works in Chrome (special localhost exception). If testing with curl, auth cookies may not be set.
