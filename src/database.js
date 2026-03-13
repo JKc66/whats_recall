@@ -68,9 +68,11 @@ export function initDatabase() {
 
   try {
     db.exec('ALTER TABLE messages ADD COLUMN is_view_once INTEGER DEFAULT 0');
-  } catch {
-    // column already exists
-  }
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('ALTER TABLE chats ADD COLUMN profile_pic TEXT');
+  } catch { /* already exists */ }
 
   return {
     upsertChat(chatId, name, isGroup) {
@@ -207,6 +209,10 @@ export function initDatabase() {
     isMonitored(chatId) {
       const row = db.query('SELECT 1 FROM monitored_chats WHERE chat_id = ?').get(chatId);
       return !!row;
+    },
+
+    updateChatProfilePic(chatId, profilePic) {
+      db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
     },
 
     clearAllData() {

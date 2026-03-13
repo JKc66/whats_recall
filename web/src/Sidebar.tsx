@@ -5,7 +5,7 @@ import {
   view, setView, setAuthenticated, setMessages,
 } from './store';
 import { fetchMessages } from './api';
-import { avatarColor, getInitials, formatRelativeDate, truncate, extractPhone } from './utils';
+import { avatarColor, getInitials, formatRelativeDate, truncate, extractPhone, profilePicUrl } from './utils';
 import type { Chat } from './types';
 
 export default function Sidebar() {
@@ -127,9 +127,18 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
   const initials = () => getInitials(displayName());
   const time = () => props.chat.last_message_at ? formatRelativeDate(new Date(props.chat.last_message_at)) : '';
 
+  const dpUrl = () => profilePicUrl(props.chat.profile_pic);
+
   return (
     <div class="chat-row" classList={{ active: props.active }} onClick={props.onClick}>
-      <div class="avatar" style={{ background: color() }}>{initials()}</div>
+      <Show when={dpUrl()} fallback={
+        <div class="avatar" style={{ background: color() }}>{initials()}</div>
+      }>
+        <div class="avatar avatar-dp" style={{ background: color() }}>
+          <span class="avatar-initials">{initials()}</span>
+          <img class="avatar-img" src={dpUrl()!} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        </div>
+      </Show>
       <div class="chat-row-body">
         <div class="chat-row-name">{displayName()}</div>
         <Show when={phone() && props.chat.name && props.chat.name !== phone()}>

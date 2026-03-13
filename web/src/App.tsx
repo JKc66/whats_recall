@@ -6,6 +6,7 @@ import {
   currentChatId, setMessages,
 } from './store';
 import { notify } from './notify';
+import { mountSileo } from './sileo-bridge';
 import type { Message, Chat } from './types';
 import Login from './Login';
 import Dashboard from './Dashboard';
@@ -16,6 +17,7 @@ export default function App() {
   const REFRESH_COOLDOWN = 15_000;
 
   onMount(async () => {
+    mountSileo();
     const ok = await verifyAuth();
     setAuthenticated(ok);
   });

@@ -3,7 +3,7 @@ import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setN
 import { stats, setStats, setView, setChats, setMessages, setCurrentChatId } from './store';
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
-import { avatarColor, getInitials } from './utils';
+import { avatarColor, getInitials, profilePicUrl } from './utils';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
