@@ -15,7 +15,9 @@ export function createMonitor(db, broadcast) {
   let myId = null;
   const notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
 
-  const client = new Client({
+  const phoneNumber = process.env.WHATSAPP_PHONE || null;
+
+  const clientOpts = {
     authStrategy: new LocalAuth({ clientId: 'msg-monitor' }),
     puppeteer: {
       executablePath: chromiumPath,
@@ -28,6 +30,25 @@ export function createMonitor(db, broadcast) {
         '--disable-extensions',
       ],
     },
+  };
+
+  if (phoneNumber) {
+    clientOpts.pairWithPhoneNumber = {
+      phoneNumber,
+      showNotification: true,
+    };
+    console.log(`Phone pairing mode enabled for: ${phoneNumber}`);
+  }
+
+  const client = new Client(clientOpts);
+
+  client.on('code', (code) => {
+    console.log(`\n========================================`);
+    console.log(`  PAIRING CODE: ${code}`);
+    console.log(`  Enter this code on your phone:`);
+    console.log(`  WhatsApp > Linked Devices > Link a Device`);
+    console.log(`  > Link with phone number`);
+    console.log(`========================================\n`);
   });
 
   client.on('qr', (qr) => {
