@@ -1,6 +1,7 @@
 import { createSignal, createResource, Show, For } from 'solid-js';
-import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled } from './api';
-import { stats, setStats, setView } from './store';
+import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled, clearData } from './api';
+import { stats, setStats, setView, setChats, setMessages, setCurrentChatId } from './store';
+import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials } from './utils';
 
@@ -10,6 +11,8 @@ export default function Settings() {
   const [monitored, { refetch: refetchMonitored }] = createResource(fetchMonitored);
   const [available, { refetch: refetchAvailable }] = createResource(fetchWhatsAppChats);
   const [busy, setBusy] = createSignal<string | null>(null);
+  const [confirmClear, setConfirmClear] = createSignal(false);
+  const [clearing, setClearing] = createSignal(false);
 
   const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
 
@@ -43,6 +46,27 @@ export default function Settings() {
       refetchMonitored();
       refetchAvailable();
     } finally { setBusy(null); }
+  }
+
+  function handleClearData() {
+    setConfirmClear(true);
+  }
+
+  async function confirmClearData() {
+    setClearing(true);
+    setConfirmClear(false);
+    try {
+      await clearData();
+      setChats([]);
+      setMessages([]);
+      setCurrentChatId(null);
+      setStats((s) => ({ ...s, totalMessages: 0, deletedMessages: 0, totalChats: 0 }));
+      notify.success('Data cleared', 'All messages and chat data have been deleted.');
+    } catch {
+      notify.warning('Failed to clear data', 'Something went wrong. Please try again.');
+    } finally {
+      setClearing(false);
+    }
   }
 
   async function toggleNotify() {
@@ -169,6 +193,28 @@ export default function Settings() {
           </div>
         </Show>
       </Show>
+
+      <div class="settings-danger-zone">
+        <h3>Danger Zone</h3>
+        <div class="danger-item">
+          <div>
+            <div class="toggle-label">Clear all data</div>
+            <div class="toggle-sublabel">Delete all stored messages, media, and chat history. This cannot be undone.</div>
+          </div>
+          <button class="btn-danger" disabled={clearing()} onClick={handleClearData}>
+            {clearing() ? 'Clearing...' : 'Clear Data'}
+          </button>
+        </div>
+        <Show when={confirmClear()}>
+          <div class="danger-confirm">
+            <p>Are you sure? This will permanently delete all messages and chat data.</p>
+            <div class="danger-confirm-actions">
+              <button class="btn-danger" onClick={confirmClearData}>Yes, delete everything</button>
+              <button class="btn-cancel" onClick={() => setConfirmClear(false)}>Cancel</button>
+            </div>
+          </div>
+        </Show>
+      </div>
     </div>
   );
 }

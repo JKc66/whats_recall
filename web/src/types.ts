@@ -24,6 +24,7 @@ export interface Message {
   is_from_me: number;
   is_deleted: number;
   deleted_at: string | null;
+  is_view_once: number;
 }
 
 export interface MonitoredChat {

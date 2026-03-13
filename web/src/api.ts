@@ -134,6 +134,10 @@ export async function setNotifyEnabled(enabled: boolean): Promise<void> {
   });
 }
 
+export async function clearData(): Promise<void> {
+  await request(`${BASE}/api/data`, { method: 'DELETE' });
+}
+
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {
   let stopped = false;
   let ws: WebSocket | null = null;
