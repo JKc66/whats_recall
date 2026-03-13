@@ -57,7 +57,7 @@ export default function Settings() {
     <div class="settings">
       <header class="settings-header">
         <div class="settings-title-row">
-          <button class="back-btn settings-back" onClick={() => setView('chats')}>←</button>
+          <button class="back-btn settings-back" onClick={() => setView('chats')} aria-label="Back to chats" title="Back to chats">←</button>
           <h2>Manage Monitored Chats</h2>
         </div>
         <p>Add the chats you want to track. Only monitored chats will have their messages cached and deletions detected.</p>
