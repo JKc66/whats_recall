@@ -1,0 +1,4 @@
+# Replace with your domain. Caddy auto-provisions HTTPS via Let's Encrypt.
+monitor.example.com {
+    reverse_proxy localhost:3000
+}

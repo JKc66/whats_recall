@@ -1,0 +1,17 @@
+{
+  "name": "whatsapp-deleted-messages-monitor",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "bun src/index.js",
+    "dev": "bun --watch src/index.js",
+    "build:web": "cd web && bun install && bun run build",
+    "build": "bun run build:web"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.34.6"
+  }
+}
