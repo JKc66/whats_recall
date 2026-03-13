@@ -5,7 +5,7 @@ import {
   view, setView, setAuthenticated, setMessages,
 } from './store';
 import { fetchMessages } from './api';
-import { avatarColor, getInitials, formatRelativeDate, truncate } from './utils';
+import { avatarColor, getInitials, formatRelativeDate, truncate, extractPhone } from './utils';
 import type { Chat } from './types';
 
 export default function Sidebar() {
@@ -70,7 +70,7 @@ export default function Sidebar() {
             onClick={() => setView(view() === 'settings' ? 'chats' : 'settings')}
             title="Settings"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
           <button class="icon-btn" onClick={handleLogout} title="Sign out">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -121,15 +121,20 @@ export default function Sidebar() {
 }
 
 function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
-  const color = () => avatarColor(props.chat.name || '?');
-  const initials = () => getInitials(props.chat.name || '?');
+  const displayName = () => props.chat.name || extractPhone(props.chat.chat_id) || props.chat.chat_id;
+  const phone = () => !props.chat.is_group ? extractPhone(props.chat.chat_id) : '';
+  const color = () => avatarColor(displayName());
+  const initials = () => getInitials(displayName());
   const time = () => props.chat.last_message_at ? formatRelativeDate(new Date(props.chat.last_message_at)) : '';
 
   return (
     <div class="chat-row" classList={{ active: props.active }} onClick={props.onClick}>
       <div class="avatar" style={{ background: color() }}>{initials()}</div>
       <div class="chat-row-body">
-        <div class="chat-row-name">{props.chat.name || props.chat.chat_id}</div>
+        <div class="chat-row-name">{displayName()}</div>
+        <Show when={phone() && props.chat.name && props.chat.name !== phone()}>
+          <div class="chat-row-phone">{phone()}</div>
+        </Show>
         <div class="chat-row-preview">
           <Show when={props.chat.is_group && props.chat.last_message_sender}>
             <span class="sender">{truncate(props.chat.last_message_sender || '', 15)}: </span>

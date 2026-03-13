@@ -381,6 +381,12 @@ export function createServer(db, monitor) {
     return c.json({ ok: true });
   });
 
+  app.delete('/api/data', (c) => {
+    db.clearAllData();
+    log('API', 'All messages and chat data cleared');
+    return c.json({ ok: true });
+  });
+
   app.get('/api/whatsapp/chats', async (c) => {
     const chats = await monitor.getWhatsAppChats();
     return c.json({ chats });
