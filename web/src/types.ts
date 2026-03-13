@@ -43,6 +43,7 @@ export interface WhatsAppChat {
 
 export interface Stats {
   connected: boolean;
+  authenticated: boolean;
   myId: string | null;
   totalMessages: number;
   deletedMessages: number;
