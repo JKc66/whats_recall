@@ -24,8 +24,16 @@ export async function login(password: string, fingerprint: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password, fingerprint }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Login failed');
+
+  let data: Record<string, unknown>;
+  try {
+    const text = await res.text();
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error('Server returned an invalid response');
+  }
+
+  if (!res.ok) throw new Error((data.error as string) || 'Login failed');
   localStorage.setItem('fingerprint', fingerprint);
   return data;
 }
