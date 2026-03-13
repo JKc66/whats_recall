@@ -138,7 +138,6 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
   let stopped = false;
   let ws: WebSocket | null = null;
   let reconnectDelay = 1000;
-  let missedPings = 0;
   let pingCheckTimer: ReturnType<typeof setInterval> | null = null;
   let lastPong = Date.now();
 
@@ -155,7 +154,6 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
     ws.onopen = () => {
       console.log('[WS] Connected');
       reconnectDelay = 1000;
-      missedPings = 0;
       lastPong = Date.now();
 
       pingCheckTimer = setInterval(() => {
@@ -171,7 +169,6 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
         const { event, data } = JSON.parse(e.data);
         if (event === 'ping') {
           lastPong = Date.now();
-          missedPings = 0;
           ws?.send(JSON.stringify({ event: 'pong', data }));
           return;
         }
