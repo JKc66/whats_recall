@@ -19,9 +19,9 @@ const ICONS: Record<NotifyType, string> = {
 };
 
 const COLORS: Record<NotifyType, string> = {
-  deleted: '#f87171',
-  info: '#60a5fa',
-  success: '#34d399',
+  deleted: '#fb7185',
+  info: '#38bdf8',
+  success: '#4ade80',
   warning: '#fbbf24',
 };
 
