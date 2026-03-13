@@ -8,7 +8,7 @@ import { MEDIA_DIR } from './database.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, '..', 'public');
 
-const COOKIE_PATH = '/whats/';
+const COOKIE_PATH = '/';
 
 const MIME_TYPES = {
   '.html': 'text/html',
