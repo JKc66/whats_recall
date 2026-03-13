@@ -7,6 +7,7 @@ export const [currentChatId, setCurrentChatId] = createSignal<string | null>(nul
 export const [messages, setMessages] = createSignal<Message[]>([]);
 export const [stats, setStats] = createSignal<Stats>({
   connected: false,
+  authenticated: false,
   myId: null,
   totalMessages: 0,
   deletedMessages: 0,

@@ -8,6 +8,8 @@ import { MEDIA_DIR } from './database.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, '..', 'public');
 
+const COOKIE_PATH = '/whats/';
+
 const MIME_TYPES = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -34,8 +36,13 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
 const MAX_TRACKED_IPS = 10000;
 
+function log(category, message, ...args) {
+  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  console.log(`[${ts}] [${category}] ${message}`, ...args);
+}
+
 export function createServer(db, monitor) {
-  const app = new Hono().basePath('/whats');
+  const app = new Hono();
   const wsClients = new Set();
   const password = process.env.AUTH_PASSWORD || 'changeme';
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
@@ -85,8 +92,14 @@ export function createServer(db, monitor) {
 
   function broadcast(event, data) {
     const payload = JSON.stringify({ event, data });
+    const clientCount = wsClients.size;
+    if (clientCount > 0) {
+      log('WS', `Broadcasting "${event}" to ${clientCount} client(s)`);
+    }
     for (const ws of wsClients) {
-      try { ws.send(payload); } catch {}
+      try { ws.send(payload); } catch (err) {
+        log('WS', `Failed to send to client: ${err.message}`);
+      }
     }
   }
 
@@ -126,12 +139,30 @@ export function createServer(db, monitor) {
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   });
 
+  // --- Request logging ---
+
+  app.use('*', async (c, next) => {
+    const start = Date.now();
+    const method = c.req.method;
+    const path = c.req.path;
+
+    await next();
+
+    const elapsed = Date.now() - start;
+    const status = c.res.status;
+
+    if (path.startsWith('/api/')) {
+      log('HTTP', `${method} ${path} → ${status} (${elapsed}ms)`);
+    }
+  });
+
   // --- Auth routes ---
 
   app.post('/api/auth/login', async (c) => {
     const ip = getClientIp(c);
 
     if (isRateLimited(ip)) {
+      log('AUTH', `Login rate-limited for IP ${ip}`);
       return c.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
     }
 
@@ -142,6 +173,7 @@ export function createServer(db, monitor) {
       recordLoginAttempt(ip);
       const entry = loginAttempts.get(ip);
       const remaining = MAX_LOGIN_ATTEMPTS - (entry?.count || 0);
+      log('AUTH', `Login failed from ${ip} (${remaining} attempts remaining)`);
       return c.json({ error: `Invalid password${remaining > 0 ? ` (${remaining} attempts remaining)` : ''}` }, 401);
     }
 
@@ -152,30 +184,41 @@ export function createServer(db, monitor) {
     db.createSession(token, fingerprint || null, expires.toISOString());
 
     setCookie(c, 'session', token, {
-      path: '/whats/',
+      path: COOKIE_PATH,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
       maxAge: SESSION_DURATION_HOURS * 3600,
     });
 
+    log('AUTH', `Login success from ${ip}, fingerprint: ${fingerprint ? 'yes' : 'none'}`);
     return c.json({ ok: true });
   });
 
   app.post('/api/auth/logout', (c) => {
     const token = getCookie(c, 'session');
-    if (token) db.deleteSession(token);
-    deleteCookie(c, 'session', { path: '/whats/' });
+    if (token) {
+      db.deleteSession(token);
+      log('AUTH', 'Session invalidated on logout');
+    }
+    deleteCookie(c, 'session', { path: COOKIE_PATH });
     return c.json({ ok: true });
   });
 
   app.get('/api/auth/verify', (c) => {
     const token = getCookie(c, 'session');
-    if (!token) return c.json({ authenticated: false });
+    if (!token) {
+      log('AUTH', 'Verify: no session cookie');
+      return c.json({ authenticated: false });
+    }
 
     const session = db.getSession(token);
-    if (!session) return c.json({ authenticated: false });
+    if (!session) {
+      log('AUTH', 'Verify: session expired or invalid');
+      return c.json({ authenticated: false });
+    }
 
+    log('AUTH', 'Verify: session valid');
     return c.json({
       authenticated: true,
       fingerprint: session.fingerprint,
@@ -188,19 +231,24 @@ export function createServer(db, monitor) {
     if (c.req.path.startsWith('/api/auth/')) return next();
 
     const token = getCookie(c, 'session');
-    if (!token) return c.json({ error: 'Unauthorized' }, 401);
+    if (!token) {
+      log('AUTH', `Unauthorized: no session cookie for ${c.req.path}`);
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
 
     const session = db.getSession(token);
     if (!session) {
-      deleteCookie(c, 'session', { path: '/whats/' });
+      log('AUTH', `Unauthorized: invalid/expired session for ${c.req.path}`);
+      deleteCookie(c, 'session', { path: COOKIE_PATH });
       return c.json({ error: 'Session expired' }, 401);
     }
 
     const fingerprint = c.req.header('X-Fingerprint');
     if (session.fingerprint) {
       if (!fingerprint || fingerprint !== session.fingerprint) {
+        log('AUTH', `Unauthorized: fingerprint mismatch for ${c.req.path} (expected: ${session.fingerprint?.slice(0, 8)}…, got: ${fingerprint?.slice(0, 8) || 'none'}…)`);
         db.deleteSession(token);
-        deleteCookie(c, 'session', { path: '/whats/' });
+        deleteCookie(c, 'session', { path: COOKIE_PATH });
         return c.json({ error: 'Fingerprint mismatch' }, 401);
       }
     }
@@ -211,12 +259,14 @@ export function createServer(db, monitor) {
   // --- API routes ---
 
   app.get('/api/status', (c) => {
-    const stats = db.getStats();
-    return c.json({
+    const s = db.getStats();
+    const status = {
       connected: monitor.isReady(),
+      authenticated: monitor.isAuthenticated(),
       myId: monitor.getMyId(),
-      ...stats,
-    });
+      ...s,
+    };
+    return c.json(status);
   });
 
   app.get('/api/chats', (c) => {
@@ -263,12 +313,14 @@ export function createServer(db, monitor) {
     const { chatId, name, isGroup } = await c.req.json();
     if (!chatId) return c.json({ error: 'chatId required' }, 400);
     db.addMonitoredChat(chatId, name || chatId, !!isGroup);
+    log('API', `Added monitored chat: ${name || chatId}`);
     return c.json({ ok: true });
   });
 
   app.delete('/api/monitored/:chatId', (c) => {
     const chatId = decodeURIComponent(c.req.param('chatId'));
     db.removeMonitoredChat(chatId);
+    log('API', `Removed monitored chat: ${chatId}`);
     return c.json({ ok: true });
   });
 
@@ -280,11 +332,10 @@ export function createServer(db, monitor) {
   // --- Static files (SPA) ---
 
   app.get('/*', (c) => {
-    const urlPath = new URL(c.req.url).pathname;
-    const stripped = urlPath.startsWith('/whats/') ? urlPath.slice(6) : urlPath;
+    const urlPath = c.req.path;
 
-    if (stripped !== '/' && stripped.includes('.')) {
-      const filePath = safePath(PUBLIC_DIR, stripped);
+    if (urlPath !== '/' && urlPath.includes('.')) {
+      const filePath = safePath(PUBLIC_DIR, urlPath);
       if (filePath) {
         const file = serveFile(filePath);
         if (file) return file;
@@ -309,28 +360,38 @@ export function createServer(db, monitor) {
       port,
       fetch(req, server) {
         const url = new URL(req.url);
-        if (url.pathname === '/whats/ws') {
+        if (url.pathname === '/ws') {
           const token = getSessionFromCookie(req);
           if (!token || !db.getSession(token)) {
+            log('WS', `WebSocket upgrade rejected: ${token ? 'invalid session' : 'no session cookie'}`);
             return new Response('Unauthorized', { status: 401 });
           }
           const upgraded = server.upgrade(req, { data: { token } });
-          return upgraded ? undefined : new Response('Upgrade failed', { status: 400 });
+          if (!upgraded) {
+            log('WS', 'WebSocket upgrade failed');
+            return new Response('Upgrade failed', { status: 400 });
+          }
+          return undefined;
         }
         return app.fetch(req);
       },
       websocket: {
         open(ws) {
           wsClients.add(ws);
+          log('WS', `Client connected (total: ${wsClients.size})`);
         },
         close(ws) {
           wsClients.delete(ws);
+          log('WS', `Client disconnected (total: ${wsClients.size})`);
         },
         message() {},
       },
     });
 
-    console.log(`Web server running on http://localhost:${port}`);
+    log('SERVER', `Web server running on http://localhost:${port}`);
+    log('SERVER', `Environment: ${process.env.NODE_ENV || 'development'}`);
+    log('SERVER', `Cookie path: ${COOKIE_PATH}`);
+    log('SERVER', `Public dir: ${PUBLIC_DIR}`);
     return server;
   }
 
