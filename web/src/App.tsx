@@ -43,8 +43,12 @@ export default function App() {
   function connectWs() {
     createWs((event, data) => {
       if (event === 'status') {
-        const d = data as { connected: boolean };
-        setStats((s) => ({ ...s, connected: d.connected }));
+        const d = data as { connected: boolean; authenticated?: boolean };
+        setStats((s) => ({
+          ...s,
+          connected: d.connected,
+          authenticated: d.authenticated ?? d.connected,
+        }));
       }
 
       if (event === 'new_message') {

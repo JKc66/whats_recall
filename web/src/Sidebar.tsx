@@ -94,7 +94,7 @@ export default function Sidebar() {
       </div>
 
       <div class="status-bar">
-        <span>{stats().connected ? 'Connected' : 'Disconnected'}</span>
+        <span>{stats().connected ? 'Connected' : stats().authenticated ? 'Authenticated (loading…)' : 'Disconnected'}</span>
         <Show when={stats().deletedMessages > 0}>
           <span class="stats-deleted">{stats().deletedMessages} deleted</span>
         </Show>
