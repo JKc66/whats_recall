@@ -3,4 +3,5 @@ data/
 public/
 *.log
 nohup.out
-
+.wwebjs_auth/
+.wwebjs_cache/
