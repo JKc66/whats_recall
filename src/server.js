@@ -24,11 +24,21 @@ const MIME_TYPES = {
   '.webp': 'image/webp',
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
+  '.3gp': 'video/3gpp',
+  '.avi': 'video/x-msvideo',
+  '.mkv': 'video/x-matroska',
   '.ogg': 'audio/ogg',
+  '.opus': 'audio/opus',
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
+  '.aac': 'audio/aac',
+  '.m4a': 'audio/mp4',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.bin': 'application/octet-stream',
 };
 
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
@@ -311,7 +321,18 @@ export function createServer(db, monitor) {
     const filename = basename(c.req.param('filename'));
     const filepath = safePath(MEDIA_DIR, filename);
     if (!filepath) return c.json({ error: 'Invalid path' }, 400);
-    return serveFile(filepath) || c.json({ error: 'Not found' }, 404);
+    if (!existsSync(filepath)) return c.json({ error: 'Not found' }, 404);
+
+    const ext = extname(filepath);
+    let mime = MIME_TYPES[ext] || 'application/octet-stream';
+
+    const content = readFileSync(filepath);
+    return new Response(content, {
+      headers: {
+        'Content-Type': mime,
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
   });
 
   // --- Monitored chats ---
