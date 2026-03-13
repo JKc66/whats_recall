@@ -37,7 +37,8 @@ export function createMonitor(db, broadcast) {
       phoneNumber,
       showNotification: true,
     };
-    console.log(`Phone pairing mode enabled for: ${phoneNumber}`);
+    const masked = phoneNumber.slice(0, 3) + '***' + phoneNumber.slice(-2);
+    console.log(`Phone pairing mode enabled for: ${masked}`);
   }
 
   const client = new Client(clientOpts);

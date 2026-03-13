@@ -32,6 +32,7 @@ const MIME_TYPES = {
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
+const MAX_TRACKED_IPS = 10000;
 
 export function createServer(db, monitor) {
   const app = new Hono();
@@ -40,6 +41,23 @@ export function createServer(db, monitor) {
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
+
+  function getClientIp(c) {
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0].trim();
+    const realIp = c.req.header('x-real-ip');
+    if (realIp) return realIp.trim();
+    try { return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1'; } catch { return '127.0.0.1'; }
+  }
+
+  function pruneLoginAttempts() {
+    const now = Date.now();
+    for (const [ip, entry] of loginAttempts) {
+      if (now - entry.firstAttempt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
+    }
+  }
+
+  setInterval(pruneLoginAttempts, 60_000);
 
   function isRateLimited(ip) {
     const entry = loginAttempts.get(ip);
@@ -52,6 +70,7 @@ export function createServer(db, monitor) {
   }
 
   function recordLoginAttempt(ip) {
+    if (loginAttempts.size >= MAX_TRACKED_IPS) pruneLoginAttempts();
     const entry = loginAttempts.get(ip);
     if (!entry || Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
       loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
@@ -110,7 +129,7 @@ export function createServer(db, monitor) {
   // --- Auth routes ---
 
   app.post('/api/auth/login', async (c) => {
-    const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+    const ip = getClientIp(c);
 
     if (isRateLimited(ip)) {
       return c.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
