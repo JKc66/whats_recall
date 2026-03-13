@@ -7,6 +7,7 @@ export interface Chat {
   total_messages: number;
   last_message_preview: string | null;
   last_message_sender: string | null;
+  profile_pic: string | null;
 }
 
 export interface Message {

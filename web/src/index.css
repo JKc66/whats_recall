@@ -395,6 +395,26 @@ html, body, #root {
 
 .avatar.sm { width: 36px; height: 36px; min-width: 36px; font-size: 12.5px; }
 
+.avatar-dp {
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-dp .avatar-initials {
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-dp .avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  z-index: 2;
+}
+
 .chat-row-body { flex: 1; min-width: 0; overflow: hidden; }
 .chat-row-name {
   font-size: 14px;
@@ -900,125 +920,7 @@ html, body, #root {
   gap: 8px;
 }
 
-/* ── Sileo Notifications ──────────────────────── */
-
-#sileo-toasts {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.sileo-toast {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px 14px 14px;
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.92));
-  border: 1px solid var(--border-strong);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg), 0 0 40px rgba(0,0,0,0.2);
-  max-width: 380px;
-  min-width: 280px;
-  cursor: pointer;
-  pointer-events: auto;
-  backdrop-filter: blur(24px);
-  opacity: 0;
-  transform: translateY(-12px) translateX(20px) scale(0.95);
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.sileo-toast[data-type="deleted"] { border-left-color: #fb7185; }
-.sileo-toast[data-type="success"] { border-left-color: #4ade80; }
-.sileo-toast[data-type="warning"] { border-left-color: #fbbf24; }
-.sileo-toast[data-type="error"] { border-left-color: #f87171; }
-.sileo-toast[data-type="info"] { border-left-color: #38bdf8; }
-
-.sileo-toast.sileo-enter {
-  opacity: 1;
-  transform: translateY(0) translateX(0) scale(1);
-}
-
-.sileo-toast.sileo-exit {
-  animation: sileo-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes sileo-out {
-  to { opacity: 0; transform: translateY(-8px) translateX(30px) scale(0.92); }
-}
-
-.sileo-badge {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.sileo-content { flex: 1; min-width: 0; }
-
-.sileo-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 2px;
-  line-height: 1.35;
-}
-
-.sileo-body {
-  font-size: 12px;
-  color: var(--text-2);
-  line-height: 1.45;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sileo-close {
-  background: none;
-  border: none;
-  color: var(--text-3);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity var(--t-fast), color var(--t-fast);
-}
-
-.sileo-close:hover { color: var(--text); }
-.sileo-toast:hover .sileo-close { opacity: 1; }
-
-.sileo-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  opacity: 0.5;
-  transform-origin: left;
-  transform: scaleX(1);
-}
-
-.sileo-progress.sileo-progress-run {
-  animation: sileo-progress-shrink linear forwards;
-}
-
-@keyframes sileo-progress-shrink {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
-}
+/* ── Sileo Notifications (library-provided styles) ── */
 
 /* ── Lightbox ──────────────────────────────────── */
 
@@ -1058,6 +960,8 @@ html, body, #root {
   .app {
     display: flex;
     flex-direction: column;
+    height: 100dvh;
+    height: 100vh;
   }
 
   .sidebar {
@@ -1070,10 +974,23 @@ html, body, #root {
 
   .sidebar.hidden { transform: translateX(-100%); pointer-events: none; }
 
+  .main-panel {
+    height: 100dvh;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .chat-header .back-btn { display: flex; }
   .settings-title-row .settings-back { display: flex; }
 
-  .messages-container { padding: 12px 16px; }
+  .messages-container {
+    padding: 12px 16px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
   .msg { max-width: 85%; }
 
   .icon-btn {
@@ -1090,13 +1007,17 @@ html, body, #root {
     min-height: 44px;
   }
 
+  .settings {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
   .settings-top { padding: 16px 20px 12px; }
   .settings-search { padding: 8px 20px; }
   .settings-tabs { padding: 8px 20px; }
   .toggle-row { padding: 14px 20px; }
-
-  #sileo-toasts { left: 16px; right: 16px; }
-  .sileo-toast { max-width: 100%; min-width: 0; }
 
   .msg-media audio { min-width: 180px; }
 
