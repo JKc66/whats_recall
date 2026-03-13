@@ -35,7 +35,7 @@ const MAX_LOGIN_ATTEMPTS = 3;
 const MAX_TRACKED_IPS = 10000;
 
 export function createServer(db, monitor) {
-  const app = new Hono();
+  const app = new Hono().basePath('/whats');
   const wsClients = new Set();
   const password = process.env.AUTH_PASSWORD || 'changeme';
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
@@ -152,7 +152,7 @@ export function createServer(db, monitor) {
     db.createSession(token, fingerprint || null, expires.toISOString());
 
     setCookie(c, 'session', token, {
-      path: '/',
+      path: '/whats/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
@@ -165,7 +165,7 @@ export function createServer(db, monitor) {
   app.post('/api/auth/logout', (c) => {
     const token = getCookie(c, 'session');
     if (token) db.deleteSession(token);
-    deleteCookie(c, 'session', { path: '/' });
+    deleteCookie(c, 'session', { path: '/whats/' });
     return c.json({ ok: true });
   });
 
@@ -192,7 +192,7 @@ export function createServer(db, monitor) {
 
     const session = db.getSession(token);
     if (!session) {
-      deleteCookie(c, 'session', { path: '/' });
+      deleteCookie(c, 'session', { path: '/whats/' });
       return c.json({ error: 'Session expired' }, 401);
     }
 
@@ -200,7 +200,7 @@ export function createServer(db, monitor) {
     if (session.fingerprint) {
       if (!fingerprint || fingerprint !== session.fingerprint) {
         db.deleteSession(token);
-        deleteCookie(c, 'session', { path: '/' });
+        deleteCookie(c, 'session', { path: '/whats/' });
         return c.json({ error: 'Fingerprint mismatch' }, 401);
       }
     }
@@ -309,7 +309,7 @@ export function createServer(db, monitor) {
       port,
       fetch(req, server) {
         const url = new URL(req.url);
-        if (url.pathname === '/ws') {
+        if (url.pathname === '/whats/ws') {
           const token = getSessionFromCookie(req);
           if (!token || !db.getSession(token)) {
             return new Response('Unauthorized', { status: 401 });
