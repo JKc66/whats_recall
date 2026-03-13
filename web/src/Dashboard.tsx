@@ -8,7 +8,7 @@ export default function Dashboard() {
   return (
     <div class="app">
       <Sidebar />
-      <main class="chat-panel">
+      <main class="main-panel">
         <Show when={view() === 'settings'}>
           <Settings />
         </Show>

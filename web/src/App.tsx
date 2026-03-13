@@ -1,9 +1,9 @@
-import { createEffect, onMount, Show } from 'solid-js';
-import { verifyAuth, fetchStats, fetchChats, createWs } from './api';
+import { createEffect, onMount, onCleanup, Show } from 'solid-js';
+import { verifyAuth, fetchStats, fetchChats, fetchMessages, createWs } from './api';
 import {
   authenticated, setAuthenticated,
   setChats, setStats, stats,
-  currentChatId, setMessages, messages,
+  currentChatId, setMessages,
   addToast,
 } from './store';
 import type { Message, Chat } from './types';
@@ -12,6 +12,7 @@ import Dashboard from './Dashboard';
 
 export default function App() {
   let bootstrapped = false;
+  let wsRef: { close: () => void } | null = null;
 
   onMount(async () => {
     const ok = await verifyAuth();
@@ -21,27 +22,47 @@ export default function App() {
   function bootstrap() {
     if (bootstrapped) return;
     bootstrapped = true;
-    loadChats();
-    loadStats();
+    refreshData();
     connectWs();
+    startFocusRefresh();
   }
 
-  async function loadChats() {
+  async function refreshData() {
     try {
-      const c = await fetchChats();
+      const [c, s] = await Promise.all([fetchChats(), fetchStats()]);
       setChats(c);
+      setStats(s);
     } catch { /* handled by api redirect */ }
+
+    const chatId = currentChatId();
+    if (chatId) {
+      try {
+        const msgs = await fetchMessages(chatId);
+        setMessages(msgs);
+      } catch { /* handled */ }
+    }
   }
 
-  async function loadStats() {
-    try {
-      const s = await fetchStats();
-      setStats(s);
-    } catch { /* handled */ }
+  function startFocusRefresh() {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && authenticated() === true) {
+        refreshData();
+      }
+    };
+    const onFocus = () => {
+      if (authenticated() === true) refreshData();
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    onCleanup(() => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    });
   }
 
   function connectWs() {
-    createWs((event, data) => {
+    wsRef = createWs((event, data) => {
       if (event === 'status') {
         const d = data as { connected: boolean; authenticated?: boolean };
         setStats((s) => ({
@@ -102,8 +123,7 @@ export default function App() {
           );
         }
 
-        loadChats();
-        loadStats();
+        refreshData();
       }
     });
   }
@@ -115,10 +135,13 @@ export default function App() {
   });
 
   return (
-    <Show when={authenticated() !== null} fallback={<div class="loading-screen"><div class="spinner" /></div>}>
-      <Show when={authenticated()} fallback={<Login />}>
-        <Dashboard />
+    <>
+      <div class="bg-pattern" />
+      <Show when={authenticated() !== null} fallback={<div class="loading-screen"><div class="spinner" /></div>}>
+        <Show when={authenticated()} fallback={<Login />}>
+          <Dashboard />
+        </Show>
       </Show>
-    </Show>
+    </>
   );
 }
