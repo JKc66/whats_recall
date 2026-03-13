@@ -1,7 +1,7 @@
 const AVATAR_COLORS = [
-  '#00a884', '#53bdeb', '#e06af4', '#f5a623',
-  '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899',
-  '#f97316', '#14b8a6', '#6366f1', '#84cc16',
+  '#0ea5e9', '#8b5cf6', '#f43f5e', '#f59e0b',
+  '#06b6d4', '#a855f7', '#ec4899', '#10b981',
+  '#6366f1', '#14b8a6', '#f97316', '#84cc16',
 ];
 
 export function avatarColor(name: string): string {
