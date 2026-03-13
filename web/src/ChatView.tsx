@@ -1,6 +1,6 @@
 import { createSignal, createEffect, Show, For, onCleanup } from 'solid-js';
 import { currentChatId, setCurrentChatId, messages, chats, setMessages } from './store';
-import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone } from './utils';
+import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message } from './types';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -66,9 +66,16 @@ export default function ChatView() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="chat-header-info">
-            <div class="avatar sm" style={{ background: avatarColor(chat()?.name || '?') }}>
-              {getInitials(chat()?.name || '?')}
-            </div>
+            <Show when={profilePicUrl(chat()?.profile_pic)} fallback={
+              <div class="avatar sm" style={{ background: avatarColor(chat()?.name || '?') }}>
+                {getInitials(chat()?.name || '?')}
+              </div>
+            }>
+              <div class="avatar sm avatar-dp" style={{ background: avatarColor(chat()?.name || '?') }}>
+                <span class="avatar-initials">{getInitials(chat()?.name || '?')}</span>
+                <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+            </Show>
             <div>
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
