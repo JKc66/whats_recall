@@ -215,9 +215,10 @@ export function createServer(db, monitor) {
 
   app.get('/*', (c) => {
     const urlPath = new URL(c.req.url).pathname;
+    const stripped = urlPath.startsWith('/whats/') ? urlPath.slice(6) : urlPath;
 
-    if (urlPath !== '/' && urlPath.includes('.')) {
-      const filePath = safePath(PUBLIC_DIR, urlPath);
+    if (stripped !== '/' && stripped.includes('.')) {
+      const filePath = safePath(PUBLIC_DIR, stripped);
       if (filePath) {
         const file = serveFile(filePath);
         if (file) return file;

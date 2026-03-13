@@ -60,8 +60,14 @@ export function createMonitor(db, broadcast) {
   client.on('message_create', async (message) => {
     if (!CACHEABLE_TYPES.has(message.type)) return;
 
+    const fromChannel = message.from?.endsWith('@newsletter') ||
+                        message.to?.endsWith('@newsletter') ||
+                        message.id?.remote?.endsWith('@newsletter');
+    if (fromChannel) return;
+
     try {
       const chat = await message.getChat();
+      if (!chat || !chat.id) return;
       const chatId = chat.id._serialized;
 
       if (!db.isMonitored(chatId)) return;
@@ -135,8 +141,13 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('message_revoke_everyone', async (revokedMsg, originalMsg) => {
+    const fromChannel = revokedMsg.from?.endsWith('@newsletter') ||
+                        revokedMsg.to?.endsWith('@newsletter');
+    if (fromChannel) return;
+
     try {
       const revokedChat = await revokedMsg.getChat();
+      if (!revokedChat || !revokedChat.id) return;
       const revokedChatId = revokedChat.id._serialized;
       if (!db.isMonitored(revokedChatId)) return;
 
