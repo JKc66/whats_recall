@@ -1,18 +1,19 @@
 import { createEffect, onMount, onCleanup, Show } from 'solid-js';
-import { verifyAuth, fetchStats, fetchChats, fetchMessages, createWs } from './api';
+import { verifyAuth, fetchStatsSilent, fetchChatsSilent, fetchMessagesSilent, createWs } from './api';
 import {
   authenticated, setAuthenticated,
   setChats, setStats, stats,
   currentChatId, setMessages,
-  addToast,
 } from './store';
+import { notify } from './notify';
 import type { Message, Chat } from './types';
 import Login from './Login';
 import Dashboard from './Dashboard';
 
 export default function App() {
   let bootstrapped = false;
-  let wsRef: { close: () => void } | null = null;
+  let lastRefresh = 0;
+  const REFRESH_COOLDOWN = 15_000;
 
   onMount(async () => {
     const ok = await verifyAuth();
@@ -22,47 +23,42 @@ export default function App() {
   function bootstrap() {
     if (bootstrapped) return;
     bootstrapped = true;
-    refreshData();
+    silentRefresh();
     connectWs();
     startFocusRefresh();
   }
 
-  async function refreshData() {
-    try {
-      const [c, s] = await Promise.all([fetchChats(), fetchStats()]);
-      setChats(c);
-      setStats(s);
-    } catch { /* handled by api redirect */ }
+  async function silentRefresh() {
+    const now = Date.now();
+    if (now - lastRefresh < REFRESH_COOLDOWN) return;
+    lastRefresh = now;
+
+    const [c, s] = await Promise.all([fetchChatsSilent(), fetchStatsSilent()]);
+    if (c) setChats(c);
+    if (s) setStats(s);
 
     const chatId = currentChatId();
     if (chatId) {
-      try {
-        const msgs = await fetchMessages(chatId);
-        setMessages(msgs);
-      } catch { /* handled */ }
+      const msgs = await fetchMessagesSilent(chatId);
+      if (msgs) setMessages(msgs);
     }
   }
 
   function startFocusRefresh() {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && authenticated() === true) {
-        refreshData();
+        silentRefresh();
       }
-    };
-    const onFocus = () => {
-      if (authenticated() === true) refreshData();
     };
 
     document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
     onCleanup(() => {
       document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
     });
   }
 
   function connectWs() {
-    wsRef = createWs((event, data) => {
+    createWs((event, data) => {
       if (event === 'status') {
         const d = data as { connected: boolean; authenticated?: boolean };
         setStats((s) => ({
@@ -108,9 +104,9 @@ export default function App() {
       if (event === 'message_deleted') {
         const msg = data as Message & { chatName: string };
 
-        addToast(
-          'Message Deleted',
-          `${msg.sender_name || 'Unknown'}: ${msg.body ? msg.body.slice(0, 60) : '[Media]'}`
+        notify.deleted(
+          msg.sender_name || 'Unknown',
+          msg.body ? msg.body.slice(0, 80) : '[Media]'
         );
 
         if (currentChatId() === msg.chat_id) {
@@ -123,7 +119,23 @@ export default function App() {
           );
         }
 
-        refreshData();
+        setChats((prev) => {
+          const idx = prev.findIndex((c) => c.chat_id === msg.chat_id);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = {
+              ...updated[idx],
+              deleted_count: updated[idx].deleted_count + 1,
+            };
+            return updated;
+          }
+          return prev;
+        });
+
+        setStats((s) => ({
+          ...s,
+          deletedMessages: s.deletedMessages + 1,
+        }));
       }
     });
   }

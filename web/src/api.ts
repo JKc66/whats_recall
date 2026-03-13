@@ -20,6 +20,22 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function silentRequest<T>(url: string, init?: RequestInit): Promise<T | null> {
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
+  const fingerprint = fp();
+  if (fingerprint) headers['X-Fingerprint'] = fingerprint;
+
+  try {
+    const res = await fetch(url, { ...init, headers });
+    if (!res.ok) return null;
+    return res.json() as Promise<T>;
+  } catch {
+    return null;
+  }
+}
+
 export async function login(password: string, fingerprint: string) {
   const res = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
@@ -58,9 +74,18 @@ export async function fetchStats(): Promise<Stats> {
   return request(`${BASE}/api/status`);
 }
 
+export async function fetchStatsSilent(): Promise<Stats | null> {
+  return silentRequest(`${BASE}/api/status`);
+}
+
 export async function fetchChats(): Promise<Chat[]> {
   const data = await request<{ chats: Chat[] }>(`${BASE}/api/chats`);
   return data.chats;
+}
+
+export async function fetchChatsSilent(): Promise<Chat[] | null> {
+  const data = await silentRequest<{ chats: Chat[] }>(`${BASE}/api/chats`);
+  return data?.chats ?? null;
 }
 
 export async function fetchMessages(chatId: string, limit = 200): Promise<Message[]> {
@@ -68,6 +93,13 @@ export async function fetchMessages(chatId: string, limit = 200): Promise<Messag
     `${BASE}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`
   );
   return data.messages;
+}
+
+export async function fetchMessagesSilent(chatId: string, limit = 200): Promise<Message[] | null> {
+  const data = await silentRequest<{ messages: Message[] }>(
+    `${BASE}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`
+  );
+  return data?.messages ?? null;
 }
 
 export async function fetchMonitored(): Promise<MonitoredChat[]> {
@@ -108,22 +140,15 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${location.host}${BASE}/ws`;
-    console.log(`[WS] Connecting to ${wsUrl}`);
     const ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      console.log('[WS] Connected');
-    };
+    ws.onopen = () => console.log('[WS] Connected');
 
     ws.onmessage = (e) => {
       try {
         const { event, data } = JSON.parse(e.data);
         onEvent(event, data);
       } catch { /* ignore */ }
-    };
-
-    ws.onerror = (e) => {
-      console.error('[WS] Error:', e);
     };
 
     ws.onclose = (e) => {

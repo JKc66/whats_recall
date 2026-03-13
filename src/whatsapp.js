@@ -186,9 +186,16 @@ export function createMonitor(db, broadcast) {
       const revokedChatId = revokedChat.id._serialized;
       if (!db.isMonitored(revokedChatId)) return;
 
-      const messageId = revokedMsg.id._serialized;
+      const revokeId = revokedMsg.id._serialized;
+      const origId = originalMsg?.id?._serialized;
+      const messageId = origId || revokeId;
+
+      log('WA', `Revoke event: revokeId=${revokeId}, origId=${origId || 'none'}, using=${messageId}`);
 
       let cached = db.getMessage(messageId);
+      if (!cached && origId !== revokeId) {
+        cached = db.getMessage(revokeId);
+      }
 
       if (!cached && originalMsg) {
         const chat = await originalMsg.getChat();
@@ -210,6 +217,26 @@ export function createMonitor(db, broadcast) {
           senderName = contact.pushname || contact.name || contact.number;
         }
 
+        let mediaPath = null;
+        let mediaType = null;
+        let mediaFilename = null;
+        if (originalMsg.hasMedia) {
+          try {
+            const media = await originalMsg.downloadMedia();
+            if (media) {
+              const ext = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
+              const filename = `${messageId}.${ext}`;
+              const filepath = join(MEDIA_DIR, filename);
+              writeFileSync(filepath, Buffer.from(media.data, 'base64'));
+              mediaPath = filename;
+              mediaType = media.mimetype;
+              mediaFilename = media.filename || filename;
+            }
+          } catch (err) {
+            log('WA', `Media download on revoke failed: ${err.message}`);
+          }
+        }
+
         db.saveMessage({
           messageId,
           chatId,
@@ -218,9 +245,9 @@ export function createMonitor(db, broadcast) {
           body: originalMsg.body || '',
           type: originalMsg.type || 'chat',
           hasMedia: originalMsg.hasMedia || false,
-          mediaType: null,
-          mediaFilename: null,
-          mediaPath: null,
+          mediaType,
+          mediaFilename,
+          mediaPath,
           timestamp: originalMsg.timestamp,
           isFromMe: originalMsg.fromMe,
         });
@@ -229,6 +256,9 @@ export function createMonitor(db, broadcast) {
       }
 
       db.markDeleted(messageId);
+      if (origId && origId !== revokeId) {
+        db.markDeleted(revokeId);
+      }
       const deleted = db.getMessage(messageId);
 
       if (deleted) {

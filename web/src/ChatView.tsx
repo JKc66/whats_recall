@@ -136,6 +136,11 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
   const m = () => props.msg;
   const dir = () => m().is_from_me ? 'out' : 'in';
   const time = () => formatTime(new Date(m().timestamp * 1000));
+  const isDeleted = () => !!m().is_deleted;
+
+  function mediaUrl(path: string) {
+    return `${BASE}/api/media/${encodeURIComponent(path)}`;
+  }
 
   function renderMedia() {
     const msg = m();
@@ -150,16 +155,36 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
       return null;
     }
 
-    const src = `${BASE}/api/media/${encodeURIComponent(msg.media_path)}`;
+    const src = mediaUrl(msg.media_path);
+    const mt = (msg.media_type || '').toLowerCase();
+    const type = msg.type;
 
-    if (msg.type === 'image' || msg.type === 'sticker') {
-      return <div class="msg-media"><img src={src} alt="" loading="lazy" onClick={() => props.onImageClick(src)} /></div>;
+    if (type === 'image' || type === 'sticker' || mt.startsWith('image/')) {
+      return (
+        <div class="msg-media" classList={{ sticker: type === 'sticker' }}>
+          <img
+            src={src}
+            alt=""
+            loading="lazy"
+            onClick={() => props.onImageClick(src)}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      );
     }
-    if (msg.type === 'video') {
-      return <div class="msg-media"><video src={src} controls preload="metadata" /></div>;
+    if (type === 'video' || mt.startsWith('video/')) {
+      return (
+        <div class="msg-media">
+          <video src={src} controls preload="metadata" />
+        </div>
+      );
     }
-    if (msg.type === 'audio' || msg.type === 'ptt') {
-      return <div class="msg-media"><audio src={src} controls preload="metadata" /></div>;
+    if (type === 'audio' || type === 'ptt' || mt.startsWith('audio/')) {
+      return (
+        <div class="msg-media">
+          <audio src={src} controls preload="metadata" />
+        </div>
+      );
     }
     return (
       <div class="msg-media-placeholder">
@@ -170,21 +195,21 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
   }
 
   return (
-    <div class={`msg ${dir()}`} classList={{ deleted: !!m().is_deleted }} data-msg-id={m().message_id}>
+    <div class={`msg ${dir()}`} classList={{ deleted: isDeleted() }} data-msg-id={m().message_id}>
       <Show when={props.isGroup && !m().is_from_me && m().sender_name}>
         <div class="msg-sender" style={{ color: avatarColor(m().sender_name || '') }}>{m().sender_name}</div>
       </Show>
-      <Show when={m().is_deleted}>
-        <div class="msg-deleted-tag">Deleted</div>
-      </Show>
+
       {renderMedia()}
+
       <Show when={m().body}>
         <div class="msg-body">{m().body}</div>
       </Show>
+
       <div class="msg-meta">
         <span class="time">{time()}</span>
-        <Show when={m().is_deleted && m().deleted_at}>
-          <span class="del-time">deleted {formatTime(new Date(m().deleted_at!))}</span>
+        <Show when={isDeleted()}>
+          <span class="del-tag">deleted</span>
         </Show>
       </div>
     </div>
