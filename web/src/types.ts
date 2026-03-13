@@ -45,6 +45,7 @@ export interface Stats {
   connected: boolean;
   authenticated: boolean;
   myId: string | null;
+  notifyEnabled: boolean;
   totalMessages: number;
   deletedMessages: number;
   totalChats: number;
