@@ -30,12 +30,58 @@ const MIME_TYPES = {
 };
 
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_LOGIN_ATTEMPTS = 3;
+const MAX_TRACKED_IPS = 10000;
 
 export function createServer(db, monitor) {
   const app = new Hono();
   const wsClients = new Set();
   const password = process.env.AUTH_PASSWORD || 'changeme';
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
+
+  const loginAttempts = new Map(); // ip -> { count, firstAttempt }
+
+  function getClientIp(c) {
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0].trim();
+    const realIp = c.req.header('x-real-ip');
+    if (realIp) return realIp.trim();
+    try { return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1'; } catch { return '127.0.0.1'; }
+  }
+
+  function pruneLoginAttempts() {
+    const now = Date.now();
+    for (const [ip, entry] of loginAttempts) {
+      if (now - entry.firstAttempt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
+    }
+  }
+
+  setInterval(pruneLoginAttempts, 60_000);
+
+  function isRateLimited(ip) {
+    const entry = loginAttempts.get(ip);
+    if (!entry) return false;
+    if (Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
+      loginAttempts.delete(ip);
+      return false;
+    }
+    return entry.count >= MAX_LOGIN_ATTEMPTS;
+  }
+
+  function recordLoginAttempt(ip) {
+    if (loginAttempts.size >= MAX_TRACKED_IPS) pruneLoginAttempts();
+    const entry = loginAttempts.get(ip);
+    if (!entry || Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
+      loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
+    } else {
+      entry.count++;
+    }
+  }
+
+  function resetLoginAttempts(ip) {
+    loginAttempts.delete(ip);
+  }
 
   function broadcast(event, data) {
     const payload = JSON.stringify({ event, data });
@@ -70,16 +116,36 @@ export function createServer(db, monitor) {
     return !!session;
   }
 
+  // --- Security headers ---
+
+  app.use('*', async (c, next) => {
+    await next();
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('X-Frame-Options', 'DENY');
+    c.header('X-XSS-Protection', '1; mode=block');
+    c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  });
+
   // --- Auth routes ---
 
   app.post('/api/auth/login', async (c) => {
+    const ip = getClientIp(c);
+
+    if (isRateLimited(ip)) {
+      return c.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
+    }
+
     const body = await c.req.json();
     const { password: pwd, fingerprint } = body;
 
     if (pwd !== password) {
-      return c.json({ error: 'Invalid password' }, 401);
+      recordLoginAttempt(ip);
+      const entry = loginAttempts.get(ip);
+      const remaining = MAX_LOGIN_ATTEMPTS - (entry?.count || 0);
+      return c.json({ error: `Invalid password${remaining > 0 ? ` (${remaining} attempts remaining)` : ''}` }, 401);
     }
 
+    resetLoginAttempts(ip);
     const token = generateToken();
     const expires = new Date(Date.now() + SESSION_DURATION_HOURS * 3600000);
 
@@ -215,9 +281,10 @@ export function createServer(db, monitor) {
 
   app.get('/*', (c) => {
     const urlPath = new URL(c.req.url).pathname;
+    const stripped = urlPath.startsWith('/whats/') ? urlPath.slice(6) : urlPath;
 
-    if (urlPath !== '/' && urlPath.includes('.')) {
-      const filePath = safePath(PUBLIC_DIR, urlPath);
+    if (stripped !== '/' && stripped.includes('.')) {
+      const filePath = safePath(PUBLIC_DIR, stripped);
       if (filePath) {
         const file = serveFile(filePath);
         if (file) return file;
