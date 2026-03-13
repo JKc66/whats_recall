@@ -1,4 +1,4 @@
-import { createSignal, createMemo, For, Show } from 'solid-js';
+import { createSignal, createMemo, For, Show, onMount, onCleanup } from 'solid-js';
 import { logout } from './api';
 import {
   chats, currentChatId, setCurrentChatId, stats,
@@ -11,6 +11,20 @@ import type { Chat } from './types';
 export default function Sidebar() {
   const [search, setSearch] = createSignal('');
   const [filter, setFilter] = createSignal<'all' | 'deleted'>('all');
+  const [isMobile, setIsMobile] = createSignal(window.innerWidth <= 768);
+
+  onMount(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    onCleanup(() => mq.removeEventListener('change', handler));
+  });
+
+  const sidebarHidden = () => {
+    if (!isMobile()) return false;
+    if (view() === 'settings') return true;
+    return !!currentChatId() && view() === 'chats';
+  };
 
   const filteredChats = createMemo(() => {
     let list = chats();
@@ -43,7 +57,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside class="sidebar" classList={{ hidden: !!currentChatId() && view() === 'chats' && window.innerWidth <= 768 }}>
+    <aside class="sidebar" classList={{ hidden: sidebarHidden() }}>
       <header class="sidebar-header">
         <h1>
           <span class="dot" classList={{ connected: stats().connected }} />
