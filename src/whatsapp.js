@@ -9,9 +9,15 @@ const CACHEABLE_TYPES = new Set([
   'sticker', 'location', 'vcard', 'multi_vcard',
 ]);
 
+function log(category, message, ...args) {
+  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  console.log(`[${ts}] [${category}] ${message}`, ...args);
+}
+
 export function createMonitor(db, broadcast) {
   const chromiumPath = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
   let clientReady = false;
+  let clientAuthenticated = false;
   let myId = null;
   const notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
 
@@ -38,12 +44,13 @@ export function createMonitor(db, broadcast) {
       showNotification: true,
     };
     const masked = phoneNumber.slice(0, 3) + '***' + phoneNumber.slice(-2);
-    console.log(`Phone pairing mode enabled for: ${masked}`);
+    log('WA', `Phone pairing mode enabled for: ${masked}`);
   }
 
   const client = new Client(clientOpts);
 
   client.on('code', (code) => {
+    log('WA', `Pairing code received: ${code}`);
     console.log(`\n========================================`);
     console.log(`  PAIRING CODE: ${code}`);
     console.log(`  Enter this code on your phone:`);
@@ -53,30 +60,35 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('qr', (qr) => {
-    console.log('Scan this QR code to log in:');
+    log('WA', 'QR code generated — scan to authenticate');
     qrcode.generate(qr, { small: true });
   });
 
   client.once('authenticated', () => {
-    console.log('WhatsApp authenticated');
+    clientAuthenticated = true;
+    log('WA', 'WhatsApp authenticated (session validated)');
+    broadcast('status', { connected: false, authenticated: true });
   });
 
   client.on('auth_failure', (msg) => {
-    console.error('WhatsApp auth failure:', msg);
+    clientAuthenticated = false;
+    log('WA', `Auth failure: ${msg}`);
+    broadcast('status', { connected: false, authenticated: false, reason: msg });
   });
 
   client.on('disconnected', (reason) => {
-    console.log('WhatsApp disconnected:', reason);
+    log('WA', `Disconnected: ${reason}`);
     clientReady = false;
-    broadcast('status', { connected: false, reason });
+    clientAuthenticated = false;
+    broadcast('status', { connected: false, authenticated: false, reason });
   });
 
   client.once('ready', () => {
     myId = client.info.wid._serialized;
     clientReady = true;
-    console.log('WhatsApp ready — monitoring messages');
-    console.log('Logged in as:', myId);
-    broadcast('status', { connected: true, id: myId });
+    clientAuthenticated = true;
+    log('WA', `Ready — monitoring messages (logged in as: ${myId})`);
+    broadcast('status', { connected: true, authenticated: true, id: myId });
   });
 
   client.on('message_create', async (message) => {
@@ -131,7 +143,7 @@ export function createMonitor(db, broadcast) {
             mediaFilename = media.filename || filename;
           }
         } catch (err) {
-          console.error('Media download failed:', err.message);
+          log('WA', `Media download failed: ${err.message}`);
         }
       }
 
@@ -151,6 +163,7 @@ export function createMonitor(db, broadcast) {
       };
 
       db.saveMessage(msgData);
+      log('WA', `Message cached: ${message.type} in ${chatName} from ${senderName}`);
 
       broadcast('new_message', {
         ...msgData,
@@ -158,7 +171,7 @@ export function createMonitor(db, broadcast) {
         isGroup: chat.isGroup,
       });
     } catch (err) {
-      console.error('Error caching message:', err.message);
+      log('WA', `Error caching message: ${err.message}`);
     }
   });
 
@@ -222,6 +235,8 @@ export function createMonitor(db, broadcast) {
         const chat = db.getChats().find(c => c.chat_id === deleted.chat_id);
         const chatName = chat?.name || deleted.chat_id;
 
+        log('WA', `Message deleted in ${chatName} by ${deleted.sender_name || 'unknown'}: "${(deleted.body || '').slice(0, 50)}"`);
+
         broadcast('message_deleted', {
           ...deleted,
           chatName,
@@ -233,7 +248,7 @@ export function createMonitor(db, broadcast) {
         }
       }
     } catch (err) {
-      console.error('Error handling message revoke:', err.message);
+      log('WA', `Error handling message revoke: ${err.message}`);
     }
   });
 
@@ -258,13 +273,17 @@ export function createMonitor(db, broadcast) {
       ].filter(Boolean).join('\n');
 
       await client.sendMessage(myId, text);
+      log('WA', `Deletion notification sent to self`);
     } catch (err) {
-      console.error('Failed to send deletion notification:', err.message);
+      log('WA', `Failed to send deletion notification: ${err.message}`);
     }
   }
 
   async function getWhatsAppChats() {
-    if (!clientReady) return [];
+    if (!clientReady) {
+      log('WA', 'getWhatsAppChats called but client not ready');
+      return [];
+    }
     try {
       const allChats = await client.getChats();
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
@@ -279,15 +298,19 @@ export function createMonitor(db, broadcast) {
         }))
         .sort((a, b) => b.timestamp - a.timestamp);
     } catch (err) {
-      console.error('Error fetching WhatsApp chats:', err.message);
+      log('WA', `Error fetching WhatsApp chats: ${err.message}`);
       return [];
     }
   }
 
   return {
     client,
-    start: () => client.initialize(),
+    start: () => {
+      log('WA', `Initializing WhatsApp client (chromium: ${chromiumPath})`);
+      client.initialize();
+    },
     isReady: () => clientReady,
+    isAuthenticated: () => clientAuthenticated,
     getMyId: () => myId,
     getWhatsAppChats,
   };
