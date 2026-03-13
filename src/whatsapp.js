@@ -19,7 +19,7 @@ export function createMonitor(db, broadcast) {
   let clientReady = false;
   let clientAuthenticated = false;
   let myId = null;
-  const notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
+  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -107,7 +107,7 @@ export function createMonitor(db, broadcast) {
       if (!db.isMonitored(chatId)) return;
 
       const contact = await message.getContact();
-      const chatName = chat.isGroup ? chat.name : (contact.pushname || contact.name || contact.number);
+      const chatName = chat.name || chat.id.user;
 
       db.upsertChat(chatId, chatName, chat.isGroup);
 
@@ -313,5 +313,10 @@ export function createMonitor(db, broadcast) {
     isAuthenticated: () => clientAuthenticated,
     getMyId: () => myId,
     getWhatsAppChats,
+    getNotifyEnabled: () => notifyWhatsApp,
+    setNotifyEnabled: (enabled) => {
+      notifyWhatsApp = !!enabled;
+      log('WA', `Notification forwarding ${notifyWhatsApp ? 'enabled' : 'disabled'}`);
+    },
   };
 }

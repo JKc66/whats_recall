@@ -94,6 +94,14 @@ export async function fetchWhatsAppChats(): Promise<WhatsAppChat[]> {
   return data.chats;
 }
 
+export async function setNotifyEnabled(enabled: boolean): Promise<void> {
+  await request(`${BASE}/api/settings/notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+}
+
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {
   let stopped = false;
 
@@ -110,7 +118,6 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
     ws.onmessage = (e) => {
       try {
         const { event, data } = JSON.parse(e.data);
-        console.log(`[WS] Event: ${event}`, data);
         onEvent(event, data);
       } catch { /* ignore */ }
     };
@@ -120,7 +127,7 @@ export function createWs(onEvent: (event: string, data: unknown) => void): { clo
     };
 
     ws.onclose = (e) => {
-      console.log(`[WS] Closed (code: ${e.code}, reason: ${e.reason || 'none'})`);
+      console.log(`[WS] Closed (code: ${e.code})`);
       if (!stopped) setTimeout(connect, 3000);
     };
   }

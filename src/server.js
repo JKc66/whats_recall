@@ -264,9 +264,21 @@ export function createServer(db, monitor) {
       connected: monitor.isReady(),
       authenticated: monitor.isAuthenticated(),
       myId: monitor.getMyId(),
+      notifyEnabled: monitor.getNotifyEnabled(),
       ...s,
     };
     return c.json(status);
+  });
+
+  app.get('/api/settings/notify', (c) => {
+    return c.json({ enabled: monitor.getNotifyEnabled() });
+  });
+
+  app.post('/api/settings/notify', async (c) => {
+    const { enabled } = await c.req.json();
+    monitor.setNotifyEnabled(enabled);
+    log('API', `Notification forwarding set to: ${!!enabled}`);
+    return c.json({ ok: true, enabled: monitor.getNotifyEnabled() });
   });
 
   app.get('/api/chats', (c) => {

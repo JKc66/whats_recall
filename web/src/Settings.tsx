@@ -1,6 +1,6 @@
 import { createSignal, createResource, Show, For } from 'solid-js';
-import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored } from './api';
-import { stats, setView } from './store';
+import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled } from './api';
+import { stats, setStats, setView } from './store';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials } from './utils';
 
@@ -16,18 +16,14 @@ export default function Settings() {
   const filteredAvailable = () => {
     const q = search().toLowerCase().trim();
     let list = available() || [];
-    if (q) {
-      list = list.filter((c) => c.name.toLowerCase().includes(q));
-    }
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
     return list;
   };
 
   const filteredMonitored = () => {
     const q = search().toLowerCase().trim();
     let list = monitored() || [];
-    if (q) {
-      list = list.filter((c) => c.name.toLowerCase().includes(q));
-    }
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
     return list;
   };
 
@@ -37,9 +33,7 @@ export default function Settings() {
       await addMonitored(chat.id, chat.name, chat.isGroup);
       refetchMonitored();
       refetchAvailable();
-    } finally {
-      setBusy(null);
-    }
+    } finally { setBusy(null); }
   }
 
   async function handleRemove(chatId: string) {
@@ -48,35 +42,56 @@ export default function Settings() {
       await removeMonitored(chatId);
       refetchMonitored();
       refetchAvailable();
-    } finally {
-      setBusy(null);
+    } finally { setBusy(null); }
+  }
+
+  async function toggleNotify() {
+    const next = !stats().notifyEnabled;
+    setStats((s) => ({ ...s, notifyEnabled: next }));
+    try {
+      await setNotifyEnabled(next);
+    } catch {
+      setStats((s) => ({ ...s, notifyEnabled: !next }));
     }
   }
 
   return (
     <div class="settings">
-      <header class="settings-header">
+      <header class="settings-top">
         <div class="settings-title-row">
-          <button class="back-btn settings-back" onClick={() => setView('chats')} aria-label="Back to chats" title="Back to chats">←</button>
-          <h2>Manage Monitored Chats</h2>
+          <button class="icon-btn settings-back" onClick={() => setView('chats')} title="Back">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>Settings</h2>
         </div>
-        <p>Add the chats you want to track. Only monitored chats will have their messages cached and deletions detected.</p>
+        <p>Manage monitored chats and notification preferences.</p>
       </header>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Forward deletions to WhatsApp</div>
+          <div class="toggle-sublabel">Send yourself a message when someone deletes a message</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked={stats().notifyEnabled} onChange={toggleNotify} />
+          <span class="toggle-track" />
+        </label>
+      </div>
 
       <div class="settings-search">
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Search chats..."
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
         />
       </div>
 
       <div class="settings-tabs">
-        <button classList={{ active: tab() === 'monitored' }} onClick={() => setTab('monitored')}>
+        <button class="pill" classList={{ active: tab() === 'monitored' }} onClick={() => setTab('monitored')}>
           Monitored ({(monitored() || []).length})
         </button>
-        <button classList={{ active: tab() === 'available' }} onClick={() => setTab('available')}>
+        <button class="pill" classList={{ active: tab() === 'available' }} onClick={() => setTab('available')}>
           Available
         </button>
       </div>
@@ -85,8 +100,8 @@ export default function Settings() {
         <div class="settings-list">
           <Show when={(monitored() || []).length === 0 && !monitored.loading}>
             <div class="list-empty">
-              <p>No chats being monitored yet.</p>
-              <p>Switch to the <strong>Available</strong> tab to add chats.</p>
+              <p>No chats monitored yet.</p>
+              <p>Switch to <strong>Available</strong> to add chats.</p>
             </div>
           </Show>
           <Show when={monitored.loading}>
@@ -95,18 +110,14 @@ export default function Settings() {
           <For each={filteredMonitored()}>
             {(chat) => (
               <div class="settings-item">
-                <div class="chat-avatar sm" style={{ background: avatarColor(chat.name) }}>
+                <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
                   {getInitials(chat.name)}
                 </div>
                 <div class="settings-item-info">
                   <div class="name">{chat.name}</div>
                   <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
                 </div>
-                <button
-                  class="btn-remove"
-                  disabled={busy() === chat.chat_id}
-                  onClick={() => handleRemove(chat.chat_id)}
-                >
+                <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
                   {busy() === chat.chat_id ? '...' : 'Remove'}
                 </button>
               </div>
@@ -132,7 +143,7 @@ export default function Settings() {
                 const isAdded = () => monitoredIds().has(chat.id);
                 return (
                   <div class="settings-item">
-                    <div class="chat-avatar sm" style={{ background: avatarColor(chat.name) }}>
+                    <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
                       {getInitials(chat.name)}
                     </div>
                     <div class="settings-item-info">
@@ -140,19 +151,11 @@ export default function Settings() {
                       <div class="meta-text">{chat.isGroup ? 'Group' : 'Private'}</div>
                     </div>
                     <Show when={isAdded()} fallback={
-                      <button
-                        class="btn-add"
-                        disabled={busy() === chat.id}
-                        onClick={() => handleAdd(chat)}
-                      >
+                      <button class="btn-add" disabled={busy() === chat.id} onClick={() => handleAdd(chat)}>
                         {busy() === chat.id ? '...' : 'Add'}
                       </button>
                     }>
-                      <button
-                        class="btn-remove"
-                        disabled={busy() === chat.id}
-                        onClick={() => handleRemove(chat.id)}
-                      >
+                      <button class="btn-remove" disabled={busy() === chat.id} onClick={() => handleRemove(chat.id)}>
                         {busy() === chat.id ? '...' : 'Remove'}
                       </button>
                     </Show>
