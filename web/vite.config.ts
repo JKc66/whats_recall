@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 
 export default defineConfig({
-  base: '/',
+  base: '/whats/',
   plugins: [solid()],
   build: {
     outDir: '../public',
@@ -10,12 +10,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/whats/api': {
         target: 'http://localhost:3001',
+        rewrite: (path) => path.replace(/^\/whats/, ''),
       },
-      '/ws': {
+      '/whats/ws': {
         target: 'ws://localhost:3001',
         ws: true,
+        rewrite: (path) => path.replace(/^\/whats/, ''),
       },
     },
   },
