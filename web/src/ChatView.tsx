@@ -167,7 +167,8 @@ function MessageBubble(props: {
       return null;
     }
 
-    const src = `/api/media/${encodeURIComponent(msg.media_path)}`;
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    const src = `${base}/api/media/${encodeURIComponent(msg.media_path)}`;
 
     if (msg.type === 'image' || msg.type === 'sticker') {
       return (

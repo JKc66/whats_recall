@@ -10,8 +10,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
-      '/ws': { target: 'ws://localhost:3001', ws: true },
+      '/whats/api': {
+        target: 'http://localhost:3001',
+        rewrite: (path) => path.replace(/^\/whats/, ''),
+      },
+      '/whats/ws': {
+        target: 'ws://localhost:3001',
+        ws: true,
+        rewrite: (path) => path.replace(/^\/whats/, ''),
+      },
     },
   },
 });
