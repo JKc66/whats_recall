@@ -51,3 +51,8 @@ export function mediaIcon(type: string): string {
   };
   return icons[type] || '📎';
 }
+
+export function extractPhone(id: string): string {
+  if (!id) return '';
+  return id.replace(/@[cgs]\..+$/, '').replace(/@newsletter$/, '');
+}

@@ -92,7 +92,9 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('message_create', async (message) => {
-    if (!CACHEABLE_TYPES.has(message.type)) return;
+    const isViewOnce = !!(message.isViewOnce || message._data?.isViewOnce);
+
+    if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
     const fromChannel = message.from?.endsWith('@newsletter') ||
                         message.to?.endsWith('@newsletter') ||
@@ -147,6 +149,10 @@ export function createMonitor(db, broadcast) {
         }
       }
 
+      if (isViewOnce) {
+        log('WA', `View-once message captured: ${message.type} in ${chatName} from ${senderName}`);
+      }
+
       const msgData = {
         messageId: message.id._serialized,
         chatId,
@@ -160,10 +166,11 @@ export function createMonitor(db, broadcast) {
         mediaPath,
         timestamp: message.timestamp,
         isFromMe: message.fromMe,
+        isViewOnce,
       };
 
       db.saveMessage(msgData);
-      log('WA', `Message cached: ${message.type} in ${chatName} from ${senderName}`);
+      log('WA', `Message cached: ${message.type}${isViewOnce ? ' (view-once)' : ''} in ${chatName} from ${senderName}`);
 
       broadcast('new_message', {
         ...msgData,
