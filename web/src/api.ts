@@ -136,27 +136,67 @@ export async function setNotifyEnabled(enabled: boolean): Promise<void> {
 
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {
   let stopped = false;
+  let ws: WebSocket | null = null;
+  let reconnectDelay = 1000;
+  let pingCheckTimer: ReturnType<typeof setInterval> | null = null;
+  let lastPong = Date.now();
+
+  const MAX_RECONNECT_DELAY = 15_000;
+  const PING_TIMEOUT = 40_000;
 
   function connect() {
+    if (stopped) return;
+
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${location.host}${BASE}/ws`;
-    const ws = new WebSocket(wsUrl);
+    ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => console.log('[WS] Connected');
+    ws.onopen = () => {
+      console.log('[WS] Connected');
+      reconnectDelay = 1000;
+      lastPong = Date.now();
+
+      pingCheckTimer = setInterval(() => {
+        if (Date.now() - lastPong > PING_TIMEOUT) {
+          console.log('[WS] No ping from server, reconnecting...');
+          ws?.close();
+        }
+      }, PING_TIMEOUT);
+    };
 
     ws.onmessage = (e) => {
       try {
         const { event, data } = JSON.parse(e.data);
+        if (event === 'ping') {
+          lastPong = Date.now();
+          ws?.send(JSON.stringify({ event: 'pong', data }));
+          return;
+        }
         onEvent(event, data);
       } catch { /* ignore */ }
     };
 
     ws.onclose = (e) => {
       console.log(`[WS] Closed (code: ${e.code})`);
-      if (!stopped) setTimeout(connect, 3000);
+      if (pingCheckTimer) { clearInterval(pingCheckTimer); pingCheckTimer = null; }
+      if (!stopped) {
+        setTimeout(connect, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 1.5, MAX_RECONNECT_DELAY);
+      }
+    };
+
+    ws.onerror = () => {
+      console.log('[WS] Error');
     };
   }
 
   connect();
-  return { close: () => { stopped = true; } };
+
+  return {
+    close: () => {
+      stopped = true;
+      if (pingCheckTimer) { clearInterval(pingCheckTimer); pingCheckTimer = null; }
+      ws?.close();
+    },
+  };
 }
