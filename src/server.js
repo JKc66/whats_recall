@@ -31,7 +31,7 @@ const MIME_TYPES = {
 
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_LOGIN_ATTEMPTS = 5;
+const MAX_LOGIN_ATTEMPTS = 3;
 
 export function createServer(db, monitor) {
   const app = new Hono();
