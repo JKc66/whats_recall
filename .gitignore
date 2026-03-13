@@ -1,8 +1,6 @@
 node_modules/
-.wwebjs_auth/
-.wwebjs_cache/
 data/
 public/
 *.log
 nohup.out
-.env
+
