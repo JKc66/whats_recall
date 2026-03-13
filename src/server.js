@@ -74,7 +74,7 @@ export function createServer(db, monitor) {
     }
   }
 
-  setInterval(pruneLoginAttempts, 60_000);
+  const pruneInterval = setInterval(pruneLoginAttempts, 60_000);
 
   function isRateLimited(ip) {
     const entry = loginAttempts.get(ip);
@@ -209,6 +209,16 @@ export function createServer(db, monitor) {
       maxAge: SESSION_DURATION_HOURS * 3600,
     });
 
+    if (fingerprint) {
+      setCookie(c, 'fp', fingerprint, {
+        path: COOKIE_PATH,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+        maxAge: SESSION_DURATION_HOURS * 3600,
+      });
+    }
+
     log('AUTH', `Login success from ${ip}, fingerprint: ${fingerprint ? 'yes' : 'none'}`);
     return c.json({ ok: true });
   });
@@ -220,6 +230,7 @@ export function createServer(db, monitor) {
       log('AUTH', 'Session invalidated on logout');
     }
     deleteCookie(c, 'session', { path: COOKIE_PATH });
+    deleteCookie(c, 'fp', { path: COOKIE_PATH });
     return c.json({ ok: true });
   });
 
@@ -261,16 +272,18 @@ export function createServer(db, monitor) {
       return c.json({ error: 'Session expired' }, 401);
     }
 
-    const isMediaRequest = c.req.path.startsWith('/api/media/');
-    if (!isMediaRequest) {
-      const fingerprint = c.req.header('X-Fingerprint');
-      if (session.fingerprint) {
-        if (!fingerprint || fingerprint !== session.fingerprint) {
-          log('AUTH', `Unauthorized: fingerprint mismatch for ${c.req.path} (expected: ${session.fingerprint?.slice(0, 8)}…, got: ${fingerprint?.slice(0, 8) || 'none'}…)`);
-          db.deleteSession(token);
-          deleteCookie(c, 'session', { path: COOKIE_PATH });
-          return c.json({ error: 'Fingerprint mismatch' }, 401);
-        }
+    if (session.fingerprint) {
+      const isMediaRequest = c.req.path.startsWith('/api/media/');
+      const fingerprint = isMediaRequest
+        ? getCookie(c, 'fp')
+        : c.req.header('X-Fingerprint');
+
+      if (!fingerprint || fingerprint !== session.fingerprint) {
+        log('AUTH', `Unauthorized: fingerprint mismatch for ${c.req.path} (expected: ${session.fingerprint?.slice(0, 8)}…, got: ${fingerprint?.slice(0, 8) || 'none'}…)`);
+        db.deleteSession(token);
+        deleteCookie(c, 'session', { path: COOKIE_PATH });
+        deleteCookie(c, 'fp', { path: COOKIE_PATH });
+        return c.json({ error: 'Fingerprint mismatch' }, 401);
       }
     }
 
@@ -439,5 +452,10 @@ export function createServer(db, monitor) {
     return server;
   }
 
-  return { start, broadcast };
+  function stop() {
+    clearInterval(pingInterval);
+    clearInterval(pruneInterval);
+  }
+
+  return { start, broadcast, stop };
 }
