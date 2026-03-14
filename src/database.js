@@ -61,9 +61,17 @@ export function initDatabase() {
       added_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      ip TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      first_attempt INTEGER NOT NULL,
+      last_attempt INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
     CREATE INDEX IF NOT EXISTS idx_messages_is_deleted ON messages(is_deleted);
     CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_login_attempts_last_attempt ON login_attempts(last_attempt);
   `);
 
   try {
@@ -206,6 +214,46 @@ export function initDatabase() {
 
     cleanExpiredSessions() {
       db.query("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
+    },
+
+    isLoginRateLimited(ip, maxAttempts, windowMs) {
+      const now = Date.now();
+      const row = db.query('SELECT count, first_attempt FROM login_attempts WHERE ip = ?').get(ip);
+      if (!row) return false;
+
+      if (now - row.first_attempt > windowMs) {
+        db.query('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+        return false;
+      }
+
+      return row.count >= maxAttempts;
+    },
+
+    recordFailedLoginAttempt(ip, windowMs) {
+      const now = Date.now();
+      db.query(`
+        INSERT INTO login_attempts (ip, count, first_attempt, last_attempt)
+        VALUES (?, 1, ?, ?)
+        ON CONFLICT(ip) DO UPDATE SET
+          count = CASE
+            WHEN (? - login_attempts.first_attempt) > ? THEN 1
+            ELSE login_attempts.count + 1
+          END,
+          first_attempt = CASE
+            WHEN (? - login_attempts.first_attempt) > ? THEN ?
+            ELSE login_attempts.first_attempt
+          END,
+          last_attempt = ?
+      `).run(ip, now, now, now, windowMs, now, windowMs, now, now);
+    },
+
+    resetLoginAttempts(ip) {
+      db.query('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+    },
+
+    pruneLoginAttempts(windowMs) {
+      const minLastAttempt = Date.now() - windowMs;
+      db.query('DELETE FROM login_attempts WHERE last_attempt < ?').run(minLastAttempt);
     },
 
     searchMessages(query, limit = 50) {

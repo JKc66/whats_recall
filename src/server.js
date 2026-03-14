@@ -44,7 +44,6 @@ const MIME_TYPES = {
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
-const MAX_TRACKED_IPS = 10000;
 
 function log(category, message, ...args) {
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
@@ -57,47 +56,53 @@ export function createServer(db, monitor) {
   const password = process.env.AUTH_PASSWORD || 'changeme';
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
-  const loginAttempts = new Map(); // ip -> { count, firstAttempt }
-
   function getClientIp(c) {
-    const forwarded = c.req.header('x-forwarded-for');
-    if (forwarded) return forwarded.split(',')[0].trim();
+    const cloudflareIp = c.req.header('cf-connecting-ip');
+    if (cloudflareIp) return cloudflareIp.trim();
     const realIp = c.req.header('x-real-ip');
     if (realIp) return realIp.trim();
+    if (process.env.TRUST_X_FORWARDED_FOR === 'true') {
+      const forwarded = c.req.header('x-forwarded-for');
+      if (forwarded) return forwarded.split(',')[0].trim();
+    }
     try { return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1'; } catch { return '127.0.0.1'; }
   }
 
   function pruneLoginAttempts() {
-    const now = Date.now();
-    for (const [ip, entry] of loginAttempts) {
-      if (now - entry.firstAttempt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
-    }
+    db.pruneLoginAttempts(LOGIN_WINDOW_MS);
   }
 
   const pruneInterval = setInterval(pruneLoginAttempts, 60_000);
 
   function isRateLimited(ip) {
-    const entry = loginAttempts.get(ip);
-    if (!entry) return false;
-    if (Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
-      loginAttempts.delete(ip);
-      return false;
-    }
-    return entry.count >= MAX_LOGIN_ATTEMPTS;
+    return db.isLoginRateLimited(ip, MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS);
   }
 
   function recordLoginAttempt(ip) {
-    if (loginAttempts.size >= MAX_TRACKED_IPS) pruneLoginAttempts();
-    const entry = loginAttempts.get(ip);
-    if (!entry || Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
-      loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
-    } else {
-      entry.count++;
-    }
+    db.recordFailedLoginAttempt(ip, LOGIN_WINDOW_MS);
   }
 
   function resetLoginAttempts(ip) {
-    loginAttempts.delete(ip);
+    db.resetLoginAttempts(ip);
+  }
+
+  async function parseJsonBody(c) {
+    try {
+      return await c.req.json();
+    } catch {
+      return null;
+    }
+  }
+
+  function parseCookies(cookieHeader) {
+    const out = {};
+    if (!cookieHeader) return out;
+    for (const part of cookieHeader.split(';')) {
+      const [rawKey, ...rest] = part.trim().split('=');
+      if (!rawKey || rest.length === 0) continue;
+      out[rawKey] = decodeURIComponent(rest.join('='));
+    }
+    return out;
   }
 
   function broadcast(event, data) {
@@ -156,6 +161,15 @@ export function createServer(db, monitor) {
     c.header('X-Frame-Options', 'DENY');
     c.header('X-XSS-Protection', '1; mode=block');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    c.header(
+      'Content-Security-Policy',
+      "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; form-action 'self'"
+    );
+    const forwardedProto = c.req.header('x-forwarded-proto');
+    const isHttps = forwardedProto === 'https' || new URL(c.req.url).protocol === 'https:';
+    if (isHttps) {
+      c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
   });
 
   // --- Request logging ---
@@ -185,15 +199,18 @@ export function createServer(db, monitor) {
       return c.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
     }
 
-    const body = await c.req.json();
-    const { password: pwd, fingerprint } = body;
+    const body = await parseJsonBody(c);
+    if (!body || typeof body !== 'object') {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+
+    const pwd = typeof body.password === 'string' ? body.password : '';
+    const fingerprint = typeof body.fingerprint === 'string' ? body.fingerprint : null;
 
     if (pwd !== password) {
       recordLoginAttempt(ip);
-      const entry = loginAttempts.get(ip);
-      const remaining = MAX_LOGIN_ATTEMPTS - (entry?.count || 0);
-      log('AUTH', `Login failed from ${ip} (${remaining} attempts remaining)`);
-      return c.json({ error: `Invalid password${remaining > 0 ? ` (${remaining} attempts remaining)` : ''}` }, 401);
+      log('AUTH', `Login failed from ${ip}`);
+      return c.json({ error: 'Invalid password' }, 401);
     }
 
     resetLoginAttempts(ip);
@@ -310,7 +327,11 @@ export function createServer(db, monitor) {
   });
 
   app.post('/api/settings/notify', async (c) => {
-    const { enabled } = await c.req.json();
+    const body = await parseJsonBody(c);
+    if (!body || typeof body !== 'object') {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+    const enabled = !!body.enabled;
     monitor.setNotifyEnabled(enabled);
     log('API', `Notification forwarding set to: ${!!enabled}`);
     return c.json({ ok: true, enabled: monitor.getNotifyEnabled() });
@@ -374,9 +395,15 @@ export function createServer(db, monitor) {
   });
 
   app.post('/api/monitored', async (c) => {
-    const { chatId, name, isGroup } = await c.req.json();
+    const body = await parseJsonBody(c);
+    if (!body || typeof body !== 'object') {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+    const chatId = typeof body.chatId === 'string' ? body.chatId : '';
+    const name = typeof body.name === 'string' ? body.name : chatId;
+    const isGroup = !!body.isGroup;
     if (!chatId) return c.json({ error: 'chatId required' }, 400);
-    db.addMonitoredChat(chatId, name || chatId, !!isGroup);
+    db.addMonitoredChat(chatId, name || chatId, isGroup);
     log('API', `Added monitored chat: ${name || chatId}`);
     return c.json({ ok: true });
   });
@@ -428,22 +455,32 @@ export function createServer(db, monitor) {
   function start() {
     db.cleanExpiredSessions();
 
-    function getSessionFromCookie(req) {
-      const cookieHeader = req.headers.get('cookie') || '';
-      const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
-      return match ? match[1] : null;
-    }
-
     const server = Bun.serve({
       port,
       fetch(req, server) {
         const url = new URL(req.url);
         if (url.pathname === '/ws') {
-          const token = getSessionFromCookie(req);
-          if (!token || !db.getSession(token)) {
+          const cookies = parseCookies(req.headers.get('cookie') || '');
+          const token = cookies.session || null;
+          if (!token) {
             log('WS', `WebSocket upgrade rejected: ${token ? 'invalid session' : 'no session cookie'}`);
             return new Response('Unauthorized', { status: 401 });
           }
+
+          const session = db.getSession(token);
+          if (!session) {
+            log('WS', 'WebSocket upgrade rejected: invalid session');
+            return new Response('Unauthorized', { status: 401 });
+          }
+          if (session.fingerprint) {
+            const fp = cookies.fp || null;
+            if (!fp || fp !== session.fingerprint) {
+              log('WS', 'WebSocket upgrade rejected: fingerprint mismatch');
+              db.deleteSession(token);
+              return new Response('Unauthorized', { status: 401 });
+            }
+          }
+
           const upgraded = server.upgrade(req, { data: { token } });
           if (!upgraded) {
             log('WS', 'WebSocket upgrade failed');

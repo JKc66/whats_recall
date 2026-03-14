@@ -11,6 +11,18 @@ export default defineConfig({
   build: {
     outDir: '../public',
     emptyOutDir: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        if (
+          warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
+          typeof warning.id === 'string' &&
+          warning.id.includes('node_modules')
+        ) {
+          return;
+        }
+        warn(warning);
+      },
+    },
   },
   server: {
     proxy: {
