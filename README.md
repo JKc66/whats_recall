@@ -93,7 +93,7 @@ Caddy auto-provisions HTTPS. Set `NODE_ENV=production` in `.env` so session cook
 |---|---|---|
 | `WEB_PORT` | `3000` | Web server port |
 | `AUTH_PASSWORD` | `changeme` | Dashboard login password |
-| `NOTIFY_WHATSAPP` | `true` | Send deletion alerts to your own WhatsApp |
+| `NOTIFY_WHATSAPP` | `false` | Send deletion alerts to your own WhatsApp |
 | `CHROMIUM_PATH` | `/usr/bin/chromium-browser` | Path to Chromium binary |
 | `NODE_ENV` | — | Set to `production` for secure cookies |
 
