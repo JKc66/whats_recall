@@ -121,7 +121,8 @@ export function createMonitor(db, broadcast) {
       db.upsertChat(chatId, chatName, chat.isGroup);
 
       if (!db.getChatProfilePic(chatId)) {
-        fetchAndSaveProfilePic(chat, chatId).then((pic) => {
+        const picSource = chat.isGroup ? chat : contact;
+        fetchAndSaveProfilePic(picSource, chatId).then((pic) => {
           if (pic) db.updateChatProfilePic(chatId, pic);
         });
       }
@@ -338,8 +339,30 @@ export function createMonitor(db, broadcast) {
 
   async function fetchAndSaveProfilePic(chatOrContact, chatId) {
     try {
-      const url = await chatOrContact.getProfilePicUrl();
-      if (!url) return null;
+      let url = null;
+      try {
+        url = await chatOrContact.getProfilePicUrl();
+      } catch { /* ignore */ }
+
+      if (!url) {
+        try {
+          url = await client.getProfilePicUrl(chatId);
+        } catch { /* ignore */ }
+      }
+
+      if (!url && chatOrContact.id) {
+        const altId = chatOrContact.id._serialized || chatOrContact.id.user;
+        if (altId && altId !== chatId) {
+          try {
+            url = await client.getProfilePicUrl(altId);
+          } catch { /* ignore */ }
+        }
+      }
+
+      if (!url) {
+        log('WA', `No profile pic available for ${chatId}`);
+        return null;
+      }
 
       const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
       const filepath = join(MEDIA_DIR, filename);
@@ -352,7 +375,8 @@ export function createMonitor(db, broadcast) {
       writeFileSync(filepath, buffer);
       log('WA', `Profile pic saved for ${chatId}`);
       return filename;
-    } catch {
+    } catch (err) {
+      log('WA', `Profile pic fetch error for ${chatId}: ${err.message}`);
       return null;
     }
   }
