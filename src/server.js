@@ -394,7 +394,7 @@ export function createServer(db, monitor) {
       log('API', 'Clear data rejected: wrong password');
       return c.json({ error: 'Password required to confirm data deletion' }, 403);
     }
-    db.clearAllData();
+    await db.clearAllData();
     log('API', 'All messages and chat data cleared');
     return c.json({ ok: true });
   });
