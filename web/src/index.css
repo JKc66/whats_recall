@@ -1185,3 +1185,13 @@ html, body, #root {
   .login-card { margin: 16px; padding: 32px 20px; }
   .messages-container { padding: 8px 12px; }
 }
+
+/* ── Toast notifications ─────────────────────
+   solid-toast uses inline styles + Web Animations API;
+   no external CSS file exists in the package.
+   These rules provide z-index integration with our
+   lightbox (z-index: 2000) and reduced-motion support. ── */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-solid-toast] div { animation: none !important; }
+}

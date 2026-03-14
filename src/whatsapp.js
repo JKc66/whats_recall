@@ -22,6 +22,7 @@ export function createMonitor(db, broadcast) {
   let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
   const profilePicFailed = new Map();
   const profilePicInFlight = new Set();
+  const privateChatNameCache = new Map();
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -126,14 +127,10 @@ export function createMonitor(db, broadcast) {
       if (chat.isGroup) {
         chatName = chat.name || chat.id.user;
       } else if (message.fromMe) {
-        try {
-          const chatContact = await client.getContactById(chat.id._serialized);
-          chatName = chatContact.name || chatContact.pushname || chat.name || chat.id.user;
-        } catch {
-          chatName = chat.name || chat.id.user;
-        }
+        chatName = chat.name || privateChatNameCache.get(chatId) || chat.id.user;
       } else {
         chatName = contact.name || contact.pushname || chat.name || chat.id.user;
+        privateChatNameCache.set(chatId, chatName);
       }
 
       db.upsertChat(chatId, chatName, chat.isGroup);
