@@ -7,6 +7,7 @@ export interface Chat {
   total_messages: number;
   last_message_preview: string | null;
   last_message_sender: string | null;
+  profile_pic: string | null;
 }
 
 export interface Message {
@@ -24,6 +25,7 @@ export interface Message {
   is_from_me: number;
   is_deleted: number;
   deleted_at: string | null;
+  is_view_once: number;
 }
 
 export interface MonitoredChat {

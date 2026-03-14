@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -43,6 +43,7 @@ export function initDatabase() {
       is_from_me INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,
       deleted_at TEXT,
+      is_view_once INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -65,6 +66,14 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
   `);
 
+  try {
+    db.exec('ALTER TABLE messages ADD COLUMN is_view_once INTEGER DEFAULT 0');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('ALTER TABLE chats ADD COLUMN profile_pic TEXT');
+  } catch { /* already exists */ }
+
   return {
     upsertChat(chatId, name, isGroup) {
       db.query(`
@@ -82,13 +91,13 @@ export function initDatabase() {
       db.query(`
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
-         media_type, media_filename, media_path, timestamp, is_from_me)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         msg.messageId, msg.chatId, msg.senderId, msg.senderName,
         msg.body, msg.type, msg.hasMedia ? 1 : 0,
         msg.mediaType, msg.mediaFilename, msg.mediaPath,
-        msg.timestamp, msg.isFromMe ? 1 : 0
+        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0
       );
     },
 
@@ -200,6 +209,25 @@ export function initDatabase() {
     isMonitored(chatId) {
       const row = db.query('SELECT 1 FROM monitored_chats WHERE chat_id = ?').get(chatId);
       return !!row;
+    },
+
+    getChatProfilePic(chatId) {
+      const row = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
+      return row?.profile_pic || null;
+    },
+
+    updateChatProfilePic(chatId, profilePic) {
+      db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
+    },
+
+    clearAllData() {
+      db.exec('DELETE FROM messages');
+      db.exec('DELETE FROM chats');
+      try {
+        for (const file of readdirSync(MEDIA_DIR)) {
+          unlinkSync(join(MEDIA_DIR, file));
+        }
+      } catch { /* media dir may not exist */ }
     },
 
     close() {

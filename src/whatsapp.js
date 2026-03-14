@@ -1,6 +1,6 @@
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
-import { writeFileSync } from 'fs';
+import { writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 
@@ -92,7 +92,9 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('message_create', async (message) => {
-    if (!CACHEABLE_TYPES.has(message.type)) return;
+    const isViewOnce = !!(message.isViewOnce || message._data?.isViewOnce);
+
+    if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
     const fromChannel = message.from?.endsWith('@newsletter') ||
                         message.to?.endsWith('@newsletter') ||
@@ -110,6 +112,12 @@ export function createMonitor(db, broadcast) {
       const chatName = chat.name || chat.id.user;
 
       db.upsertChat(chatId, chatName, chat.isGroup);
+
+      if (!db.getChatProfilePic(chatId)) {
+        fetchAndSaveProfilePic(chat, chatId).then((pic) => {
+          if (pic) db.updateChatProfilePic(chatId, pic);
+        });
+      }
 
       let senderId = null;
       let senderName = null;
@@ -147,6 +155,10 @@ export function createMonitor(db, broadcast) {
         }
       }
 
+      if (isViewOnce) {
+        log('WA', `View-once message captured: ${message.type} in ${chatName} from ${senderName}`);
+      }
+
       const msgData = {
         messageId: message.id._serialized,
         chatId,
@@ -160,10 +172,11 @@ export function createMonitor(db, broadcast) {
         mediaPath,
         timestamp: message.timestamp,
         isFromMe: message.fromMe,
+        isViewOnce,
       };
 
       db.saveMessage(msgData);
-      log('WA', `Message cached: ${message.type} in ${chatName} from ${senderName}`);
+      log('WA', `Message cached: ${message.type}${isViewOnce ? ' (view-once)' : ''} in ${chatName} from ${senderName}`);
 
       broadcast('new_message', {
         ...msgData,
@@ -309,6 +322,27 @@ export function createMonitor(db, broadcast) {
     }
   }
 
+  async function fetchAndSaveProfilePic(chatOrContact, chatId) {
+    try {
+      const url = await chatOrContact.getProfilePicUrl();
+      if (!url) return null;
+
+      const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+      const filepath = join(MEDIA_DIR, filename);
+
+      if (existsSync(filepath)) return filename;
+
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const buffer = Buffer.from(await res.arrayBuffer());
+      writeFileSync(filepath, buffer);
+      log('WA', `Profile pic saved for ${chatId}`);
+      return filename;
+    } catch {
+      return null;
+    }
+  }
+
   async function getWhatsAppChats() {
     if (!clientReady) {
       log('WA', 'getWhatsAppChats called but client not ready');
@@ -317,7 +351,7 @@ export function createMonitor(db, broadcast) {
     try {
       const allChats = await client.getChats();
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
-      return allChats
+      const results = allChats
         .filter(c => c.id._serialized !== 'status@broadcast')
         .map(c => ({
           id: c.id._serialized,
@@ -327,6 +361,17 @@ export function createMonitor(db, broadcast) {
           isMonitored: monitored.has(c.id._serialized),
         }))
         .sort((a, b) => b.timestamp - a.timestamp);
+
+      for (const chat of allChats.slice(0, 30)) {
+        const cid = chat.id._serialized;
+        if (cid === 'status@broadcast') continue;
+        if (db.getChatProfilePic(cid)) continue;
+        fetchAndSaveProfilePic(chat, cid).then((pic) => {
+          if (pic) db.updateChatProfilePic(cid, pic);
+        });
+      }
+
+      return results;
     } catch (err) {
       log('WA', `Error fetching WhatsApp chats: ${err.message}`);
       return [];

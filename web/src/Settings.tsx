@@ -1,8 +1,9 @@
 import { createSignal, createResource, Show, For } from 'solid-js';
-import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled } from './api';
-import { stats, setStats, setView } from './store';
+import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled, clearData } from './api';
+import { stats, setStats, setView, setChats, setMessages, setCurrentChatId } from './store';
+import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
-import { avatarColor, getInitials } from './utils';
+import { avatarColor, getInitials, profilePicUrl } from './utils';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
@@ -10,6 +11,9 @@ export default function Settings() {
   const [monitored, { refetch: refetchMonitored }] = createResource(fetchMonitored);
   const [available, { refetch: refetchAvailable }] = createResource(fetchWhatsAppChats);
   const [busy, setBusy] = createSignal<string | null>(null);
+  const [confirmClear, setConfirmClear] = createSignal(false);
+  const [clearing, setClearing] = createSignal(false);
+  const [clearPassword, setClearPassword] = createSignal('');
 
   const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
 
@@ -43,6 +47,33 @@ export default function Settings() {
       refetchMonitored();
       refetchAvailable();
     } finally { setBusy(null); }
+  }
+
+  function handleClearData() {
+    setClearPassword('');
+    setConfirmClear(true);
+  }
+
+  async function confirmClearData() {
+    if (!clearPassword()) {
+      notify.warning('Password required', 'Enter your password to confirm.');
+      return;
+    }
+    setClearing(true);
+    setConfirmClear(false);
+    try {
+      await clearData(clearPassword());
+      setChats([]);
+      setMessages([]);
+      setCurrentChatId(null);
+      setStats((s) => ({ ...s, totalMessages: 0, deletedMessages: 0, totalChats: 0 }));
+      notify.success('Data cleared', 'All messages and chat data have been deleted.');
+    } catch {
+      notify.warning('Failed to clear data', 'Wrong password or something went wrong.');
+    } finally {
+      setClearing(false);
+      setClearPassword('');
+    }
   }
 
   async function toggleNotify() {
@@ -169,6 +200,36 @@ export default function Settings() {
           </div>
         </Show>
       </Show>
+
+      <div class="settings-danger-zone">
+        <h3>Danger Zone</h3>
+        <div class="danger-item">
+          <div>
+            <div class="toggle-label">Clear all data</div>
+            <div class="toggle-sublabel">Delete all stored messages, media, and chat history. This cannot be undone.</div>
+          </div>
+          <button class="btn-danger" disabled={clearing()} onClick={handleClearData}>
+            {clearing() ? 'Clearing...' : 'Clear Data'}
+          </button>
+        </div>
+        <Show when={confirmClear()}>
+          <div class="danger-confirm">
+            <p>Enter your password to confirm permanent deletion of all data.</p>
+            <input
+              type="password"
+              class="danger-password"
+              placeholder="Enter password"
+              value={clearPassword()}
+              onInput={(e) => setClearPassword(e.currentTarget.value)}
+              autofocus
+            />
+            <div class="danger-confirm-actions">
+              <button class="btn-danger" disabled={!clearPassword()} onClick={confirmClearData}>Yes, delete everything</button>
+              <button class="btn-cancel" onClick={() => setConfirmClear(false)}>Cancel</button>
+            </div>
+          </div>
+        </Show>
+      </div>
     </div>
   );
 }
