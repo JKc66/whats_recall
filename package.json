@@ -1,18 +1,20 @@
 {
-  "name": "whatsapp-deleted-messages-monitor",
+  "name": "msg-monitor",
   "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "type": "module",
-  "main": "src/index.js",
   "scripts": {
-    "start": "bun src/index.js",
-    "dev": "bun --watch src/index.js",
-    "build:web": "cd web && bun install && bun run build",
-    "build": "bun run build:web",
-    "bench": "bun run scripts/benchmark.js"
+    "start": "bun run src/server.js",
+    "dev": "bun run --watch src/server.js",
+    "test": "bun test --define \"import.meta.env.BASE_URL=\\\"/\\\"\"",
+    "build:web": "cd web && npm run build"
   },
   "dependencies": {
-    "hono": "^4.7.0",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.34.6"
+    "hono": "^4.6.12",
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#webpack-exodus"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
   }
 }
