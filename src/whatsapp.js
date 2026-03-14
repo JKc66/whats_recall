@@ -440,10 +440,14 @@ export function createMonitor(db, broadcast) {
         }))
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      for (const chat of allChats.slice(0, 30)) {
+      const topChats = allChats.slice(0, 30);
+      const topCids = topChats.map(c => c.id._serialized).filter(cid => cid !== 'status@broadcast');
+      const existingPics = db.getChatProfilePics(topCids);
+
+      for (const chat of topChats) {
         const cid = chat.id._serialized;
         if (cid === 'status@broadcast') continue;
-        if (db.getChatProfilePic(cid)) continue;
+        if (existingPics[cid]) continue;
         fetchAndSaveProfilePic(chat, cid).then((pic) => {
           if (pic) db.updateChatProfilePic(cid, pic);
         });

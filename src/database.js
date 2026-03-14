@@ -211,6 +211,15 @@ export function initDatabase() {
       return !!row;
     },
 
+        getChatProfilePics(chatIds) {
+      if (!chatIds || chatIds.length === 0) return {};
+      const placeholders = chatIds.map(() => '?').join(',');
+      const rows = db.query(`SELECT chat_id, profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...chatIds);
+      return rows.reduce((acc, row) => {
+        acc[row.chat_id] = row.profile_pic;
+        return acc;
+      }, {});
+    },
     getChatProfilePic(chatId) {
       const row = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
       return row?.profile_pic || null;
