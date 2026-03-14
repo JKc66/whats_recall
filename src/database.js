@@ -4,9 +4,9 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', 'data');
 const MEDIA_DIR = join(DATA_DIR, 'media');
-const DB_PATH = join(DATA_DIR, 'messages.db');
+const DB_PATH = process.env.DB_PATH || join(DATA_DIR, 'messages.db');
 
 export { MEDIA_DIR, DATA_DIR };
 
