@@ -57,10 +57,13 @@ export function createServer(db, monitor) {
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   function getClientIp(c) {
+    const hasCloudflareHeaders = !!c.req.header('cf-ray');
     const cloudflareIp = c.req.header('cf-connecting-ip');
-    if (cloudflareIp) return cloudflareIp.trim();
-    const realIp = c.req.header('x-real-ip');
-    if (realIp) return realIp.trim();
+    if (hasCloudflareHeaders && cloudflareIp) return cloudflareIp.trim();
+    if (process.env.TRUST_X_REAL_IP === 'true') {
+      const realIp = c.req.header('x-real-ip');
+      if (realIp) return realIp.trim();
+    }
     if (process.env.TRUST_X_FORWARDED_FOR === 'true') {
       const forwarded = c.req.header('x-forwarded-for');
       if (forwarded) return forwarded.split(',')[0].trim();
