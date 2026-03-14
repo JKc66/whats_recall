@@ -188,6 +188,8 @@ export function createMonitor(db, broadcast) {
         log('WA', `View-once message captured: ${message.type} in ${chatName} from ${senderName}`);
       }
 
+      const originalId = message.id.id; // The pure hash ID without serialized metadata (useful for revoke matching)
+
       const msgData = {
         messageId: message.id._serialized,
         chatId,
@@ -202,6 +204,7 @@ export function createMonitor(db, broadcast) {
         timestamp: message.timestamp,
         isFromMe: message.fromMe,
         isViewOnce,
+        originalId,
       };
 
       db.saveMessage(msgData);
@@ -233,13 +236,25 @@ export function createMonitor(db, broadcast) {
 
       const revokeId = revokedMsg.id._serialized;
       const origId = originalMsg?.id?._serialized;
-      const messageId = origId || revokeId;
 
-      log('WA', `Revoke event: revokeId=${revokeId}, origId=${origId || 'none'}, using=${messageId}`);
+      // Stickers often have a different serialized ID but same core `id` hash.
+      const protocolMessageId = revokedMsg._data?.protocolMessageKey?.id || originalMsg?.id?.id;
+
+      let messageId = origId || revokeId;
+
+      log('WA', `Revoke event: revokeId=${revokeId}, origId=${origId || 'none'}, protocolMsgId=${protocolMessageId || 'none'}, using=${messageId}`);
 
       let cached = db.getMessage(messageId);
       if (!cached && origId !== revokeId) {
         cached = db.getMessage(revokeId);
+      }
+      if (!cached && protocolMessageId) {
+        // Fallback to match by the pure hash. This fixes sticker deletion mismatches.
+        cached = db.getMessageByOriginalId(protocolMessageId);
+        if (cached) {
+          messageId = cached.message_id; // override to the correctly matched serialized ID
+          log('WA', `Revoke matched by originalId hash: ${messageId}`);
+        }
       }
 
       if (!cached && originalMsg) {
@@ -302,6 +317,7 @@ export function createMonitor(db, broadcast) {
           timestamp: originalMsg.timestamp,
           isFromMe: originalMsg.fromMe,
           isViewOnce: detectViewOnce(originalMsg),
+          originalId: originalMsg.id?.id,
         });
 
         cached = db.getMessage(messageId);

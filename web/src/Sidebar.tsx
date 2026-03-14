@@ -1,10 +1,9 @@
 import { createSignal, createMemo, For, Show, onMount, onCleanup } from 'solid-js';
-import { logout } from './api';
+import { logout, fetchMessages, markChatAsRead, fetchChats } from './api';
 import {
-  chats, currentChatId, setCurrentChatId, stats,
+  chats, setChats, currentChatId, setCurrentChatId, stats,
   view, setView, setAuthenticated, setMessages,
 } from './store';
-import { fetchMessages } from './api';
 import { avatarColor, getInitials, formatRelativeDate, truncate, extractPhone, profilePicUrl } from './utils';
 import type { Chat } from './types';
 
@@ -45,6 +44,17 @@ export default function Sidebar() {
   async function openChat(chatId: string) {
     setCurrentChatId(chatId);
     setView('chats');
+
+    // Optimistically clear the badge
+    const chatList = chats();
+    const chatToUpdate = chatList.find(c => c.chat_id === chatId);
+    if (chatToUpdate && chatToUpdate.deleted_count > 0) {
+      setChats(chatList.map(c =>
+        c.chat_id === chatId ? { ...c, deleted_count: 0 } : c
+      ));
+      markChatAsRead(chatId).catch(() => {});
+    }
+
     try {
       const msgs = await fetchMessages(chatId);
       setMessages(msgs);
