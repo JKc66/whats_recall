@@ -92,7 +92,12 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('message_create', async (message) => {
-    const isViewOnce = !!(message.isViewOnce || message._data?.isViewOnce);
+    const viewMode = message._data?.viewMode;
+    const isViewOnce = !!(
+      message.isViewOnce ||
+      message._data?.isViewOnce ||
+      (viewMode && viewMode !== 0 && viewMode !== 'NONE')
+    );
 
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
