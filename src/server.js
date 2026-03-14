@@ -127,7 +127,8 @@ export function createServer(db, monitor) {
   }
 
   function safePath(baseDir, userPath) {
-    const resolved = resolve(baseDir, userPath.replace(/^\/+/, ''));
+    const decodedPath = decodeURIComponent(userPath);
+    const resolved = resolve(baseDir, decodedPath.replace(/^\/+/, ''));
     if (!resolved.startsWith(resolve(baseDir))) return null;
     return resolved;
   }
