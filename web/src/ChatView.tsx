@@ -1,5 +1,5 @@
 import { createSignal, createEffect, Show, For, onCleanup } from 'solid-js';
-import { currentChatId, setCurrentChatId, messages, chats, setMessages } from './store';
+import { currentChatId, setCurrentChatId, messages, chats } from './store';
 import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message } from './types';
 
@@ -53,8 +53,8 @@ export default function ChatView() {
     <>
       <Show when={!currentChatId()}>
         <div class="empty-state">
-          <div class="empty-icon">💬</div>
-          <h2>WhatsApp Message Monitor</h2>
+          <div class="empty-icon" aria-hidden="true">💬</div>
+          <h2>Message Monitor</h2>
           <p>Select a chat to view messages. Deleted messages are highlighted and preserved.</p>
           <p class="empty-hint">Go to Settings to add chats you want to monitor.</p>
         </div>
@@ -62,7 +62,7 @@ export default function ChatView() {
 
       <Show when={currentChatId()}>
         <header class="chat-header">
-          <button class="icon-btn back-btn" onClick={back}>
+          <button class="icon-btn back-btn" onClick={back} aria-label="Back to chat list">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="chat-header-info">
@@ -73,7 +73,7 @@ export default function ChatView() {
             }>
               <div class="avatar sm avatar-dp" style={{ background: avatarColor(chat()?.name || '?') }}>
                 <span class="avatar-initials">{getInitials(chat()?.name || '?')}</span>
-                <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" width="34" height="34" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             </Show>
             <div>
@@ -92,6 +92,7 @@ export default function ChatView() {
               classList={{ active: filterDeleted() }}
               onClick={() => setFilterDeleted(!filterDeleted())}
               title="Show deleted only"
+              aria-label="Toggle deleted messages filter"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
@@ -110,8 +111,8 @@ export default function ChatView() {
       </Show>
 
       <Show when={lightboxSrc()}>
-        <div class="lightbox" onClick={closeLightbox}>
-          <img src={lightboxSrc()!} alt="" />
+        <div class="lightbox" onClick={closeLightbox} role="dialog" aria-label="Image preview">
+          <img src={lightboxSrc()!} alt="Full size preview" />
         </div>
       </Show>
     </>
@@ -158,7 +159,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
       if (msg.has_media) {
         return (
           <div class="msg-media-placeholder">
-            <span class="icon">{mediaIcon(msg.type)}</span> {msg.type}
+            <span class="icon" aria-hidden="true">{mediaIcon(msg.type)}</span> {msg.type}
           </div>
         );
       }
@@ -174,7 +175,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
         <div class="msg-media" classList={{ sticker: type === 'sticker' }}>
           <img
             src={src}
-            alt=""
+            alt={type === 'sticker' ? 'Sticker' : 'Image'}
             loading="lazy"
             onClick={() => props.onImageClick(src)}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -198,7 +199,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
     }
     return (
       <div class="msg-media-placeholder">
-        <span class="icon">📄</span>
+        <span class="icon" aria-hidden="true">📄</span>
         <a href={src} target="_blank" rel="noopener">{msg.media_filename || 'Download'}</a>
       </div>
     );
@@ -225,7 +226,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
       </Show>
 
       <Show when={isViewOnce()}>
-        <div class="view-once-tag">👁 View Once</div>
+        <div class="view-once-tag">👁 View once</div>
       </Show>
 
       {renderMedia()}
@@ -236,7 +237,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
 
       <Show when={isViewOnce() && !m().body && !m().has_media}>
         <div class="msg-media-placeholder">
-          <span class="icon">👁</span> View-once {m().type || 'message'}
+          <span class="icon" aria-hidden="true">👁</span> View-once {m().type || 'message'}
         </div>
       </Show>
 

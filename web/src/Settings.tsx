@@ -3,7 +3,7 @@ import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setN
 import { stats, setStats, setView, setChats, setMessages, setCurrentChatId } from './store';
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
-import { avatarColor, getInitials, profilePicUrl } from './utils';
+import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
@@ -20,14 +20,14 @@ export default function Settings() {
   const filteredAvailable = () => {
     const q = search().toLowerCase().trim();
     let list = available() || [];
-    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || extractPhone(c.id).includes(q));
     return list;
   };
 
   const filteredMonitored = () => {
     const q = search().toLowerCase().trim();
     let list = monitored() || [];
-    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || extractPhone(c.chat_id).includes(q));
     return list;
   };
 
@@ -90,7 +90,7 @@ export default function Settings() {
     <div class="settings">
       <header class="settings-top">
         <div class="settings-title-row">
-          <button class="icon-btn settings-back" onClick={() => setView('chats')} title="Back">
+          <button class="icon-btn settings-back" onClick={() => setView('chats')} title="Back" aria-label="Back to chats">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <h2>Settings</h2>
@@ -104,7 +104,7 @@ export default function Settings() {
           <div class="toggle-sublabel">Send yourself a message when someone deletes a message</div>
         </div>
         <label class="toggle">
-          <input type="checkbox" checked={stats().notifyEnabled} onChange={toggleNotify} />
+          <input type="checkbox" checked={stats().notifyEnabled} onChange={toggleNotify} aria-label="Forward deletions toggle" />
           <span class="toggle-track" />
         </label>
       </div>
@@ -112,9 +112,11 @@ export default function Settings() {
       <div class="settings-search">
         <input
           type="text"
-          placeholder="Search chats..."
+          placeholder="Search chats…"
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
+          spellcheck={false}
+          aria-label="Search chats"
         />
       </div>
 
@@ -136,23 +138,29 @@ export default function Settings() {
             </div>
           </Show>
           <Show when={monitored.loading}>
-            <div class="list-loading"><div class="spinner" /> Loading...</div>
+            <div class="list-loading"><div class="spinner" /> Loading…</div>
           </Show>
           <For each={filteredMonitored()}>
-            {(chat) => (
-              <div class="settings-item">
-                <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
-                  {getInitials(chat.name)}
+            {(chat) => {
+              const phone = () => !chat.is_group ? extractPhone(chat.chat_id) : '';
+              return (
+                <div class="settings-item">
+                  <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
+                    {getInitials(chat.name)}
+                  </div>
+                  <div class="settings-item-info">
+                    <div class="name">{chat.name}</div>
+                    <Show when={phone() && chat.name !== phone()}>
+                      <div class="meta-phone">{phone()}</div>
+                    </Show>
+                    <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
+                  </div>
+                  <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
+                    {busy() === chat.chat_id ? '…' : 'Remove'}
+                  </button>
                 </div>
-                <div class="settings-item-info">
-                  <div class="name">{chat.name}</div>
-                  <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
-                </div>
-                <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
-                  {busy() === chat.chat_id ? '...' : 'Remove'}
-                </button>
-              </div>
-            )}
+              );
+            }}
           </For>
         </div>
       </Show>
@@ -167,11 +175,12 @@ export default function Settings() {
         <Show when={stats().connected}>
           <div class="settings-list">
             <Show when={available.loading}>
-              <div class="list-loading"><div class="spinner" /> Loading chats from WhatsApp...</div>
+              <div class="list-loading"><div class="spinner" /> Loading chats from WhatsApp…</div>
             </Show>
             <For each={filteredAvailable()}>
               {(chat) => {
                 const isAdded = () => monitoredIds().has(chat.id);
+                const phone = () => !chat.isGroup ? extractPhone(chat.id) : '';
                 return (
                   <div class="settings-item">
                     <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
@@ -179,15 +188,18 @@ export default function Settings() {
                     </div>
                     <div class="settings-item-info">
                       <div class="name">{chat.name}</div>
+                      <Show when={phone() && chat.name !== phone()}>
+                        <div class="meta-phone">{phone()}</div>
+                      </Show>
                       <div class="meta-text">{chat.isGroup ? 'Group' : 'Private'}</div>
                     </div>
                     <Show when={isAdded()} fallback={
                       <button class="btn-add" disabled={busy() === chat.id} onClick={() => handleAdd(chat)}>
-                        {busy() === chat.id ? '...' : 'Add'}
+                        {busy() === chat.id ? '…' : 'Add'}
                       </button>
                     }>
                       <button class="btn-remove" disabled={busy() === chat.id} onClick={() => handleRemove(chat.id)}>
-                        {busy() === chat.id ? '...' : 'Remove'}
+                        {busy() === chat.id ? '…' : 'Remove'}
                       </button>
                     </Show>
                   </div>
@@ -202,14 +214,14 @@ export default function Settings() {
       </Show>
 
       <div class="settings-danger-zone">
-        <h3>Danger Zone</h3>
+        <h3>Danger zone</h3>
         <div class="danger-item">
           <div>
             <div class="toggle-label">Clear all data</div>
             <div class="toggle-sublabel">Delete all stored messages, media, and chat history. This cannot be undone.</div>
           </div>
           <button class="btn-danger" disabled={clearing()} onClick={handleClearData}>
-            {clearing() ? 'Clearing...' : 'Clear Data'}
+            {clearing() ? 'Clearing…' : 'Clear Data'}
           </button>
         </div>
         <Show when={confirmClear()}>
@@ -218,9 +230,10 @@ export default function Settings() {
             <input
               type="password"
               class="danger-password"
-              placeholder="Enter password"
+              placeholder="Enter password…"
               value={clearPassword()}
               onInput={(e) => setClearPassword(e.currentTarget.value)}
+              aria-label="Confirm password for data deletion"
               autofocus
             />
             <div class="danger-confirm-actions">
