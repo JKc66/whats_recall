@@ -203,7 +203,6 @@ export function createMonitor(db, broadcast) {
         timestamp: message.timestamp,
         isFromMe: message.fromMe,
         isViewOnce,
-        originalId,
       };
 
       db.saveMessage(msgData);
@@ -235,7 +234,6 @@ export function createMonitor(db, broadcast) {
 
       const revokeId = revokedMsg.id._serialized;
       const origId = originalMsg?.id?._serialized;
-
       // Stickers often have a different serialized ID but same core `id` hash.
       const protocolMessageId = revokedMsg._data?.protocolMessageKey?.id || originalMsg?.id?.id;
 
@@ -247,6 +245,7 @@ export function createMonitor(db, broadcast) {
       if (!cached && origId !== revokeId) {
         cached = db.getMessage(revokeId);
       }
+
       if (!cached && protocolMessageId) {
         // Fallback to match by the pure hash. This fixes sticker deletion mismatches.
         cached = db.getMessageByOriginalId(protocolMessageId);

@@ -91,13 +91,13 @@ export function initDatabase() {
       db.query(`
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
-         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once, original_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         msg.messageId, msg.chatId, msg.senderId, msg.senderName,
         msg.body, msg.type, msg.hasMedia ? 1 : 0,
         msg.mediaType, msg.mediaFilename, msg.mediaPath,
-        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0
+        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0, msg.originalId || null
       );
     },
 
@@ -110,6 +110,10 @@ export function initDatabase() {
 
     getMessage(messageId) {
       return db.query('SELECT * FROM messages WHERE message_id = ?').get(messageId);
+    },
+
+    getMessageByOriginalId(originalId) {
+      return db.query('SELECT * FROM messages WHERE original_id = ?').get(originalId);
     },
 
     getChats() {
@@ -214,6 +218,16 @@ export function initDatabase() {
     getChatProfilePic(chatId) {
       const row = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
       return row?.profile_pic || null;
+    },
+
+    getChatProfilePics(chatIds) {
+      if (!chatIds || chatIds.length === 0) return {};
+      const placeholders = chatIds.map(() => '?').join(',');
+      const rows = db.query(`SELECT chat_id, profile_pic FROM chats WHERE chat_id IN (${placeholders})`).all(...chatIds);
+      return rows.reduce((acc, row) => {
+        if (row.profile_pic) acc[row.chat_id] = row.profile_pic;
+        return acc;
+      }, {});
     },
 
     updateChatProfilePic(chatId, profilePic) {
