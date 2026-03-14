@@ -410,8 +410,7 @@ export function createMonitor(db, broadcast) {
 
       const res = await fetch(url);
       if (!res.ok) return null;
-      const buffer = Buffer.from(await res.arrayBuffer());
-      await Bun.write(filepath, buffer);
+      await Bun.write(filepath, await res.arrayBuffer());
       log('WA', `Profile pic saved for ${chatId}`);
       return filename;
     } catch (err) {

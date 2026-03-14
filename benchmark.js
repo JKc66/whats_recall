@@ -1,3 +1,8 @@
+if (typeof Bun === 'undefined') {
+  console.error('Please run this benchmark using Bun (e.g., bun run benchmark.js)');
+  process.exit(1);
+}
+
 import { writeFileSync, unlinkSync } from 'fs';
 import { writeFile } from 'fs/promises';
 
@@ -13,7 +18,7 @@ async function measureLag(action, duration = 10) {
 
   const interval = setInterval(() => {
     const now = performance.now();
-    lagSamples.push(now - lastTick - duration);
+    lagSamples.push(Math.max(0, now - lastTick - duration));
     lastTick = now;
   }, duration);
 
