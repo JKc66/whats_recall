@@ -144,7 +144,7 @@ export function initDatabase() {
 
     markChatDeletedAsSeen(chatId) {
       db.query(`
-        UPDATE chats SET last_seen_deleted_at = datetime('now') WHERE chat_id = ?
+        UPDATE chats SET last_seen_deleted_at = strftime('%s', 'now') WHERE chat_id = ?
       `).run(chatId);
     },
 
