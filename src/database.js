@@ -75,11 +75,15 @@ export function initDatabase() {
   } catch { /* already exists */ }
 
   try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_original_id ON messages(original_id)');
+  } catch { /* already exists */ }
+
+  try {
     db.exec('ALTER TABLE chats ADD COLUMN profile_pic TEXT');
   } catch { /* already exists */ }
 
   try {
-    db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at TEXT');
+    db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER');
   } catch { /* already exists */ }
 
   return {
