@@ -1,6 +1,6 @@
 import { createSignal, createEffect, Show, For, onCleanup } from 'solid-js';
 import { currentChatId, setCurrentChatId, messages, chats, setMessages } from './store';
-import { avatarColor, getInitials, formatTime, mediaIcon } from './utils';
+import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message } from './types';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -66,13 +66,23 @@ export default function ChatView() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="chat-header-info">
-            <div class="avatar sm" style={{ background: avatarColor(chat()?.name || '?') }}>
-              {getInitials(chat()?.name || '?')}
-            </div>
+            <Show when={profilePicUrl(chat()?.profile_pic)} fallback={
+              <div class="avatar sm" style={{ background: avatarColor(chat()?.name || '?') }}>
+                {getInitials(chat()?.name || '?')}
+              </div>
+            }>
+              <div class="avatar sm avatar-dp" style={{ background: avatarColor(chat()?.name || '?') }}>
+                <span class="avatar-initials">{getInitials(chat()?.name || '?')}</span>
+                <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+            </Show>
             <div>
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
                 {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_messages ?? 0} messages
+                <Show when={!chat()?.is_group && currentChatId()}>
+                  {' · '}{extractPhone(currentChatId()!)}
+                </Show>
               </span>
             </div>
           </div>
@@ -194,10 +204,28 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
     );
   }
 
+  const phone = () => m().sender_id ? extractPhone(m().sender_id) : '';
+  const isViewOnce = () => !!m().is_view_once;
+
   return (
-    <div class={`msg ${dir()}`} classList={{ deleted: isDeleted() }} data-msg-id={m().message_id}>
-      <Show when={props.isGroup && !m().is_from_me && m().sender_name}>
-        <div class="msg-sender" style={{ color: avatarColor(m().sender_name || '') }}>{m().sender_name}</div>
+    <div class={`msg ${dir()}`} classList={{ deleted: isDeleted(), 'view-once': isViewOnce() }} data-msg-id={m().message_id}>
+      <Show when={props.isGroup && !m().is_from_me}>
+        <div class="msg-sender" style={{ color: avatarColor(m().sender_name || phone()) }}>
+          {m().sender_name || phone() || 'Unknown'}
+          <Show when={phone() && m().sender_name}>
+            <span class="msg-sender-phone">{phone()}</span>
+          </Show>
+        </div>
+      </Show>
+
+      <Show when={!props.isGroup && !m().is_from_me && !m().sender_name && phone()}>
+        <div class="msg-sender" style={{ color: avatarColor(phone()) }}>
+          {phone()}
+        </div>
+      </Show>
+
+      <Show when={isViewOnce()}>
+        <div class="view-once-tag">👁 View Once</div>
       </Show>
 
       {renderMedia()}
@@ -208,6 +236,9 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
 
       <div class="msg-meta">
         <span class="time">{time()}</span>
+        <Show when={isViewOnce()}>
+          <span class="view-once-badge">view once</span>
+        </Show>
         <Show when={isDeleted()}>
           <span class="del-tag">deleted</span>
         </Show>

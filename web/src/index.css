@@ -395,6 +395,26 @@ html, body, #root {
 
 .avatar.sm { width: 36px; height: 36px; min-width: 36px; font-size: 12.5px; }
 
+.avatar-dp {
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-dp .avatar-initials {
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-dp .avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  z-index: 2;
+}
+
 .chat-row-body { flex: 1; min-width: 0; overflow: hidden; }
 .chat-row-name {
   font-size: 14px;
@@ -404,6 +424,13 @@ html, body, #root {
   text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
+.chat-row-phone {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 1px;
+}
+
 .chat-row-preview {
   font-size: 12.5px;
   color: var(--text-2);
@@ -468,6 +495,8 @@ html, body, #root {
   flex-direction: column;
   background: var(--bg);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   position: relative;
 }
 
@@ -587,7 +616,31 @@ html, body, #root {
 
 .msg.deleted .msg-body { font-style: italic; }
 
-.msg-sender { font-size: 12px; font-weight: 600; margin-bottom: 3px; letter-spacing: -0.01em; }
+.msg-sender { font-size: 12px; font-weight: 600; margin-bottom: 3px; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 6px; }
+.msg-sender-phone { font-size: 10.5px; font-weight: 400; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+
+.view-once-tag {
+  font-size: 11px;
+  color: var(--violet);
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: var(--radius-full);
+  margin-bottom: 4px;
+  display: inline-block;
+}
+
+.view-once-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--violet);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.msg.view-once {
+  border-left: 3px solid var(--violet) !important;
+}
 
 .msg-media.sticker { background: none; max-width: 180px; }
 .msg-media.sticker img { background: transparent; }
@@ -789,95 +842,106 @@ html, body, #root {
 .btn-remove:hover { background: var(--red-dim); color: #fff; }
 .btn-add:disabled, .btn-remove:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ── Sileo Notifications ──────────────────────── */
+/* ── Danger Zone ────────────────────────────────── */
 
-#sileo-toasts {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.sileo-toast {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 13px 16px;
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.88));
-  border: 1px solid var(--border-strong);
+.settings-danger-zone {
+  margin: 16px 24px;
+  padding: 16px;
+  border: 1px solid rgba(251, 113, 133, 0.15);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-width: 360px;
-  min-width: 260px;
-  cursor: pointer;
-  pointer-events: auto;
-  backdrop-filter: blur(20px);
-  opacity: 0;
-  transform: translateX(40px) scale(0.96);
-  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  background: rgba(251, 113, 133, 0.03);
 }
 
-.sileo-toast.sileo-enter {
-  opacity: 1;
-  transform: translateX(0) scale(1);
+.settings-danger-zone h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
 }
 
-.sileo-toast.sileo-exit {
-  animation: sileo-out 0.25s var(--ease) forwards;
-}
-
-@keyframes sileo-out {
-  to { opacity: 0; transform: translateX(40px) scale(0.96); }
-}
-
-.sileo-badge {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  border-radius: 8px;
+.danger-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.sileo-content { flex: 1; min-width: 0; }
-
-.sileo-title {
+.btn-danger {
+  padding: 8px 18px;
+  border: 1px solid rgba(251, 113, 133, 0.2);
+  border-radius: var(--radius);
+  background: var(--red-muted);
+  color: var(--red);
+  font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--text);
-  margin-bottom: 2px;
-  line-height: 1.3;
-}
-
-.sileo-body {
-  font-size: 11.5px;
-  color: var(--text-2);
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all var(--t-fast);
   white-space: nowrap;
 }
 
-.sileo-close {
-  background: none;
-  border: none;
-  color: var(--text-3);
-  font-size: 16px;
+.btn-danger:hover { background: var(--red-dim); color: #fff; border-color: var(--red-dim); }
+.btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-cancel {
+  padding: 8px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity var(--t-fast);
+  transition: all var(--t-fast);
 }
 
-.sileo-toast:hover .sileo-close { opacity: 1; }
+.btn-cancel:hover { background: var(--bg-hover); color: var(--text); }
+
+.danger-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(251, 113, 133, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid rgba(251, 113, 133, 0.12);
+}
+
+.danger-confirm p {
+  font-size: 12.5px;
+  color: var(--red);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.danger-password {
+  width: 100%;
+  padding: 9px 14px;
+  margin-bottom: 10px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(251, 113, 133, 0.2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--t-normal), box-shadow var(--t-normal);
+}
+
+.danger-password:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-muted);
+}
+
+.danger-password::placeholder { color: var(--text-3); }
+
+.danger-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Sileo Notifications (library-provided styles) ── */
 
 /* ── Lightbox ──────────────────────────────────── */
 
@@ -917,6 +981,8 @@ html, body, #root {
   .app {
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .sidebar {
@@ -929,10 +995,23 @@ html, body, #root {
 
   .sidebar.hidden { transform: translateX(-100%); pointer-events: none; }
 
+  .main-panel {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .chat-header .back-btn { display: flex; }
   .settings-title-row .settings-back { display: flex; }
 
-  .messages-container { padding: 12px 16px; }
+  .messages-container {
+    padding: 12px 16px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
   .msg { max-width: 85%; }
 
   .icon-btn {
@@ -949,15 +1028,22 @@ html, body, #root {
     min-height: 44px;
   }
 
+  .settings {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
   .settings-top { padding: 16px 20px 12px; }
   .settings-search { padding: 8px 20px; }
   .settings-tabs { padding: 8px 20px; }
   .toggle-row { padding: 14px 20px; }
 
-  #sileo-toasts { left: 16px; right: 16px; }
-  .sileo-toast { max-width: 100%; min-width: 0; }
-
   .msg-media audio { min-width: 180px; }
+
+  .settings-danger-zone { margin: 12px 16px; }
+  .danger-item { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
 @media (max-width: 480px) {

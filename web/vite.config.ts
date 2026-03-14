@@ -3,7 +3,11 @@ import solid from 'vite-plugin-solid';
 
 export default defineConfig({
   base: '/whats/',
-  plugins: [solid()],
+  plugins: [
+    solid({
+      exclude: ['**/sileo-bridge.ts', '**/node_modules/**'],
+    }),
+  ],
   build: {
     outDir: '../public',
     emptyOutDir: true,
