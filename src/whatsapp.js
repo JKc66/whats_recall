@@ -97,8 +97,12 @@ export function createMonitor(db, broadcast) {
     const isViewOnce = !!(
       message.isViewOnce ||
       message._data?.isViewOnce ||
-      (isMediaType && (viewMode === 'ONCE' || viewMode === 'PLAYED_ONCE' || viewMode === 1 || viewMode === 2))
+      (isMediaType && viewMode && viewMode !== 0 && viewMode !== 'VISIBLE')
     );
+
+    if (isMediaType) {
+      log('WA', `Media msg: type=${message.type} viewMode=${JSON.stringify(viewMode)} isViewOnce=${message.isViewOnce} _data.isViewOnce=${message._data?.isViewOnce} => detected=${isViewOnce}`);
+    }
 
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
@@ -342,29 +346,39 @@ export function createMonitor(db, broadcast) {
   async function fetchAndSaveProfilePic(chatOrContact, chatId, contactCusId) {
     try {
       let url = null;
-      try {
-        url = await chatOrContact.getProfilePicUrl();
-      } catch { /* ignore */ }
+
+      const idsToTry = [contactCusId, chatId];
+      if (chatOrContact.id) {
+        const altId = chatOrContact.id._serialized;
+        if (altId) idsToTry.push(altId);
+      }
+      const uniqueIds = [...new Set(idsToTry.filter(Boolean))];
+
+      for (const id of uniqueIds) {
+        if (url) break;
+        try { url = await client.getProfilePicUrl(id); } catch { /* ignore */ }
+      }
 
       if (!url) {
         try {
-          url = await client.getProfilePicUrl(chatId);
-        } catch { /* ignore */ }
-      }
-
-      if (!url && contactCusId && contactCusId !== chatId) {
-        try {
-          url = await client.getProfilePicUrl(contactCusId);
-        } catch { /* ignore */ }
-      }
-
-      if (!url && chatOrContact.id) {
-        const altId = chatOrContact.id._serialized || chatOrContact.id.user;
-        if (altId && altId !== chatId && altId !== contactCusId) {
-          try {
-            url = await client.getProfilePicUrl(altId);
-          } catch { /* ignore */ }
-        }
+          const thumbUrl = await client.pupPage.evaluate(async (ids) => {
+            for (const id of ids) {
+              try {
+                const contact = window.Store.Contact.get(id);
+                if (contact?.profilePicThumb?.eurl) return contact.profilePicThumb.eurl;
+                if (contact?.profilePicThumb?.imgFull) return contact.profilePicThumb.imgFull;
+              } catch { /* ignore */ }
+              try {
+                const wid = window.Store.WidFactory.createWid(id);
+                const contact = window.Store.Contact.get(wid);
+                if (contact?.profilePicThumb?.eurl) return contact.profilePicThumb.eurl;
+                if (contact?.profilePicThumb?.imgFull) return contact.profilePicThumb.imgFull;
+              } catch { /* ignore */ }
+            }
+            return null;
+          }, uniqueIds);
+          if (thumbUrl) url = thumbUrl;
+        } catch { /* pupPage not available or evaluate failed */ }
       }
 
       if (!url) {
