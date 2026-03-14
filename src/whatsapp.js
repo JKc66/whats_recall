@@ -19,7 +19,9 @@ export function createMonitor(db, broadcast) {
   let clientReady = false;
   let clientAuthenticated = false;
   let myId = null;
-  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
+  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
+  const profilePicFailed = new Map();
+  const profilePicInFlight = new Set();
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -91,8 +93,19 @@ export function createMonitor(db, broadcast) {
     broadcast('status', { connected: true, authenticated: true, id: myId });
   });
 
-  client.on('message_create', async (message) => {
-    const isViewOnce = !!(message.isViewOnce || message._data?.isViewOnce);
+  function detectViewOnce(message) {
+    const isMediaType = ['image', 'video', 'audio', 'ptt'].includes(message.type) || message.hasMedia;
+    const d = message._data || {};
+    const viewMode = d.viewMode;
+    return !!(
+      message.isViewOnce ||
+      d.isViewOnce ||
+      (isMediaType && viewMode && viewMode !== 0 && viewMode !== 'VISIBLE')
+    );
+  }
+
+  async function handleMessage(message) {
+    const isViewOnce = detectViewOnce(message);
 
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
@@ -109,14 +122,29 @@ export function createMonitor(db, broadcast) {
       if (!db.isMonitored(chatId)) return;
 
       const contact = await message.getContact();
-      const chatName = chat.name || chat.id.user;
+      const chatName = chat.isGroup
+        ? (chat.name || chat.id.user)
+        : (contact.pushname || contact.name || chat.name || chat.id.user);
 
       db.upsertChat(chatId, chatName, chat.isGroup);
 
       if (!db.getChatProfilePic(chatId)) {
-        fetchAndSaveProfilePic(chat, chatId).then((pic) => {
-          if (pic) db.updateChatProfilePic(chatId, pic);
-        });
+        const lastFail = profilePicFailed.get(chatId);
+        if (!profilePicInFlight.has(chatId) && (!lastFail || Date.now() - lastFail > 300_000)) {
+          const picSource = chat.isGroup ? chat : contact;
+          const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
+          profilePicInFlight.add(chatId);
+          fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
+            if (pic) {
+              db.updateChatProfilePic(chatId, pic);
+              profilePicFailed.delete(chatId);
+            } else {
+              profilePicFailed.set(chatId, Date.now());
+            }
+          }).finally(() => {
+            profilePicInFlight.delete(chatId);
+          });
+        }
       }
 
       let senderId = null;
@@ -182,11 +210,14 @@ export function createMonitor(db, broadcast) {
         ...msgData,
         chatName,
         isGroup: chat.isGroup,
+        profilePic: db.getChatProfilePic(chatId) || null,
       });
     } catch (err) {
       log('WA', `Error caching message: ${err.message}`);
     }
-  });
+  }
+
+  client.on('message_create', (message) => handleMessage(message));
 
   client.on('message_revoke_everyone', async (revokedMsg, originalMsg) => {
     const fromChannel = revokedMsg.from?.endsWith('@newsletter') ||
@@ -214,6 +245,12 @@ export function createMonitor(db, broadcast) {
         const chat = await originalMsg.getChat();
         const contact = await originalMsg.getContact();
         const chatId = chat.id._serialized;
+
+        const revokedChatName = chat.isGroup
+          ? (chat.name || chat.id.user)
+          : (contact.pushname || contact.name || chat.name || chat.id.user);
+
+        db.upsertChat(chatId, revokedChatName, chat.isGroup);
 
         let senderId = null;
         let senderName = null;
@@ -263,6 +300,7 @@ export function createMonitor(db, broadcast) {
           mediaPath,
           timestamp: originalMsg.timestamp,
           isFromMe: originalMsg.fromMe,
+          isViewOnce: detectViewOnce(originalMsg),
         });
 
         cached = db.getMessage(messageId);
@@ -322,10 +360,48 @@ export function createMonitor(db, broadcast) {
     }
   }
 
-  async function fetchAndSaveProfilePic(chatOrContact, chatId) {
+  async function fetchAndSaveProfilePic(chatOrContact, chatId, contactCusId) {
     try {
-      const url = await chatOrContact.getProfilePicUrl();
-      if (!url) return null;
+      let url = null;
+
+      const idsToTry = [contactCusId, chatId];
+      if (chatOrContact.id) {
+        const altId = chatOrContact.id._serialized;
+        if (altId) idsToTry.push(altId);
+      }
+      const uniqueIds = [...new Set(idsToTry.filter(Boolean))];
+
+      for (const id of uniqueIds) {
+        if (url) break;
+        try { url = await client.getProfilePicUrl(id); } catch { /* ignore */ }
+      }
+
+      if (!url) {
+        try {
+          const thumbUrl = await client.pupPage.evaluate(async (ids) => {
+            for (const id of ids) {
+              try {
+                const contact = window.Store.Contact.get(id);
+                if (contact?.profilePicThumb?.eurl) return contact.profilePicThumb.eurl;
+                if (contact?.profilePicThumb?.imgFull) return contact.profilePicThumb.imgFull;
+              } catch { /* ignore */ }
+              try {
+                const wid = window.Store.WidFactory.createWid(id);
+                const contact = window.Store.Contact.get(wid);
+                if (contact?.profilePicThumb?.eurl) return contact.profilePicThumb.eurl;
+                if (contact?.profilePicThumb?.imgFull) return contact.profilePicThumb.imgFull;
+              } catch { /* ignore */ }
+            }
+            return null;
+          }, uniqueIds);
+          if (thumbUrl) url = thumbUrl;
+        } catch { /* pupPage not available or evaluate failed */ }
+      }
+
+      if (!url) {
+        log('WA', `No profile pic available for ${chatId}`);
+        return null;
+      }
 
       const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
       const filepath = join(MEDIA_DIR, filename);
@@ -338,7 +414,8 @@ export function createMonitor(db, broadcast) {
       writeFileSync(filepath, buffer);
       log('WA', `Profile pic saved for ${chatId}`);
       return filename;
-    } catch {
+    } catch (err) {
+      log('WA', `Profile pic fetch error for ${chatId}: ${err.message}`);
       return null;
     }
   }

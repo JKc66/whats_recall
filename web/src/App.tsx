@@ -71,40 +71,66 @@ export default function App() {
       }
 
       if (event === 'new_message') {
-        const msg = data as Message & { chatId: string; chatName: string; isGroup: boolean; senderName: string };
+        const msg = data as Record<string, unknown>;
+
+        const chatId = msg.chatId as string;
+        const chatName = msg.chatName as string;
+        const isGroup = msg.isGroup as boolean;
+        const senderName = msg.senderName as string;
+        const profilePic = (msg.profilePic as string) || null;
 
         setChats((prev) => {
-          const idx = prev.findIndex((c) => c.chat_id === msg.chatId);
+          const idx = prev.findIndex((c) => c.chat_id === chatId);
           if (idx >= 0) {
             const updated = [...prev];
             updated[idx] = {
               ...updated[idx],
-              last_message_preview: msg.body || `[${msg.type}]`,
-              last_message_sender: msg.senderName,
+              name: chatName || updated[idx].name,
+              last_message_preview: (msg.body as string) || `[${msg.type}]`,
+              last_message_sender: senderName,
               last_message_at: new Date().toISOString(),
               total_messages: updated[idx].total_messages + 1,
+              profile_pic: profilePic || updated[idx].profile_pic,
             };
             return updated;
           }
           return [{
-            chat_id: msg.chatId,
-            name: msg.chatName,
-            is_group: msg.isGroup ? 1 : 0,
+            chat_id: chatId,
+            name: chatName,
+            is_group: isGroup ? 1 : 0,
             last_message_at: new Date().toISOString(),
-            last_message_preview: msg.body || `[${msg.type}]`,
-            last_message_sender: msg.senderName,
+            last_message_preview: (msg.body as string) || `[${msg.type}]`,
+            last_message_sender: senderName,
             deleted_count: 0,
             total_messages: 1,
+            profile_pic: profilePic,
           } as Chat, ...prev];
         });
 
-        if (currentChatId() === msg.chatId) {
-          setMessages((m) => [...m, msg as unknown as Message]);
+        if (currentChatId() === chatId) {
+          const normalized: Message = {
+            message_id: msg.messageId as string,
+            chat_id: chatId,
+            sender_id: (msg.senderId as string) || null,
+            sender_name: senderName || null,
+            body: (msg.body as string) || null,
+            type: (msg.type as string) || 'chat',
+            has_media: (msg.hasMedia as boolean) ? 1 : 0,
+            media_type: (msg.mediaType as string) || null,
+            media_filename: (msg.mediaFilename as string) || null,
+            media_path: (msg.mediaPath as string) || null,
+            timestamp: msg.timestamp as number,
+            is_from_me: (msg.isFromMe as boolean) ? 1 : 0,
+            is_deleted: 0,
+            deleted_at: null,
+            is_view_once: (msg.isViewOnce as boolean) ? 1 : 0,
+          };
+          setMessages((m) => [...m, normalized]);
         }
       }
 
       if (event === 'message_deleted') {
-        const msg = data as Message & { chatName: string };
+        const msg = data as Message & { chatName: string; isGroup: number };
 
         notify.deleted(
           msg.sender_name || 'Unknown',
@@ -131,7 +157,17 @@ export default function App() {
             };
             return updated;
           }
-          return prev;
+          return [{
+            chat_id: msg.chat_id,
+            name: msg.chatName || msg.sender_name || msg.chat_id,
+            is_group: msg.isGroup || 0,
+            last_message_at: new Date().toISOString(),
+            last_message_preview: msg.body || '[Deleted message]',
+            last_message_sender: msg.sender_name || null,
+            deleted_count: 1,
+            total_messages: 1,
+            profile_pic: null,
+          } as Chat, ...prev];
         });
 
         setStats((s) => ({

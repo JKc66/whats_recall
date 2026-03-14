@@ -61,14 +61,25 @@ export default function Login() {
         </div>
         <h1>Message Monitor</h1>
         <p>Secure access to your message monitoring dashboard</p>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} name="whatsapp-monitor-login">
+          <input
+            type="text"
+            name="username"
+            autocomplete="username"
+            value="whatsapp-monitor"
+            readOnly
+            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden', 'pointer-events': 'none' }}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
           <div class="login-field">
             <input
               type="password"
+              name="password"
               placeholder="Enter password"
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
-              autocomplete="current-password"
+              autocomplete="current-password webauthn"
               required
               autofocus
             />
