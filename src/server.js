@@ -321,7 +321,7 @@ export function createServer(db, monitor) {
   });
 
   app.post('/api/chats/:chatId/read', (c) => {
-    const chatId = c.req.param('chatId');
+    const chatId = decodeURIComponent(c.req.param('chatId'));
     db.markChatDeletedAsSeen(chatId);
     return c.json({ ok: true });
   });
