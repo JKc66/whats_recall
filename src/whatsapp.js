@@ -1,6 +1,6 @@
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
-import { access } from 'fs/promises';
+import { access, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 
@@ -173,7 +173,7 @@ export function createMonitor(db, broadcast) {
             const ext = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
             const filename = `${message.id._serialized}.${ext}`;
             const filepath = join(MEDIA_DIR, filename);
-            await Bun.write(filepath, Buffer.from(media.data, 'base64'));
+            await writeFile(filepath, Buffer.from(media.data, 'base64'));
             mediaPath = filename;
             mediaType = media.mimetype;
             mediaFilename = media.filename || filename;
@@ -292,7 +292,7 @@ export function createMonitor(db, broadcast) {
               const ext = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
               const filename = `${messageId}.${ext}`;
               const filepath = join(MEDIA_DIR, filename);
-              await Bun.write(filepath, Buffer.from(media.data, 'base64'));
+              await writeFile(filepath, Buffer.from(media.data, 'base64'));
               mediaPath = filename;
               mediaType = media.mimetype;
               mediaFilename = media.filename || filename;
@@ -437,7 +437,7 @@ export function createMonitor(db, broadcast) {
 
       const res = await fetch(url);
       if (!res.ok) return null;
-      await Bun.write(filepath, await res.arrayBuffer());
+      await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
       log('WA', `Profile pic saved for ${chatId}`);
       return filename;
     } catch (err) {
