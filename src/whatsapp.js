@@ -92,14 +92,19 @@ export function createMonitor(db, broadcast) {
     broadcast('status', { connected: true, authenticated: true, id: myId });
   });
 
-  client.on('message_create', async (message) => {
+  function detectViewOnce(message) {
     const isMediaType = ['image', 'video', 'audio', 'ptt'].includes(message.type) || message.hasMedia;
-    const viewMode = message._data?.viewMode;
-    const isViewOnce = !!(
+    const d = message._data || {};
+    const viewMode = d.viewMode;
+    return !!(
       message.isViewOnce ||
-      message._data?.isViewOnce ||
+      d.isViewOnce ||
       (isMediaType && viewMode && viewMode !== 0 && viewMode !== 'VISIBLE')
     );
+  }
+
+  async function handleMessage(message) {
+    const isViewOnce = detectViewOnce(message);
 
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
@@ -206,6 +211,14 @@ export function createMonitor(db, broadcast) {
     } catch (err) {
       log('WA', `Error caching message: ${err.message}`);
     }
+  }
+
+  client.on('message_create', (message) => handleMessage(message));
+  client.on('message', (message) => {
+    if (detectViewOnce(message) && !db.getMessage(message.id?._serialized)) {
+      log('WA', `View-once caught via 'message' event: ${message.type}`);
+      handleMessage(message);
+    }
   });
 
   client.on('message_revoke_everyone', async (revokedMsg, originalMsg) => {
@@ -289,6 +302,7 @@ export function createMonitor(db, broadcast) {
           mediaPath,
           timestamp: originalMsg.timestamp,
           isFromMe: originalMsg.fromMe,
+          isViewOnce: detectViewOnce(originalMsg),
         });
 
         cached = db.getMessage(messageId);
