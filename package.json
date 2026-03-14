@@ -7,7 +7,8 @@
     "start": "bun src/index.js",
     "dev": "bun --watch src/index.js",
     "build:web": "cd web && bun install && bun run build",
-    "build": "bun run build:web"
+    "build": "bun run build:web",
+    "bench": "bun run scripts/benchmark.js"
   },
   "dependencies": {
     "hono": "^4.7.0",
