@@ -71,7 +71,19 @@ export function initDatabase() {
   } catch { /* already exists */ }
 
   try {
+    db.exec('ALTER TABLE messages ADD COLUMN original_id TEXT');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_original_id ON messages(original_id)');
+  } catch { /* already exists */ }
+
+  try {
     db.exec('ALTER TABLE chats ADD COLUMN profile_pic TEXT');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER');
   } catch { /* already exists */ }
 
   return {
@@ -91,13 +103,13 @@ export function initDatabase() {
       db.query(`
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
-         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once, original_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         msg.messageId, msg.chatId, msg.senderId, msg.senderName,
         msg.body, msg.type, msg.hasMedia ? 1 : 0,
         msg.mediaType, msg.mediaFilename, msg.mediaPath,
-        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0
+        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0, msg.originalId || null
       );
     },
 
@@ -112,16 +124,32 @@ export function initDatabase() {
       return db.query('SELECT * FROM messages WHERE message_id = ?').get(messageId);
     },
 
+    getMessageByOriginalId(originalId) {
+      return db.query('SELECT * FROM messages WHERE original_id = ?').get(originalId);
+    },
+
     getChats() {
       return db.query(`
         SELECT c.*,
-          (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.chat_id AND m.is_deleted = 1) as deleted_count,
+          (
+            SELECT COUNT(*)
+            FROM messages m
+            WHERE m.chat_id = c.chat_id
+              AND m.is_deleted = 1
+              AND (c.last_seen_deleted_at IS NULL OR m.timestamp > c.last_seen_deleted_at)
+          ) as deleted_count,
           (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.chat_id) as total_messages,
           (SELECT body FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_preview,
           (SELECT sender_name FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_sender
         FROM chats c
         ORDER BY c.last_message_at DESC
       `).all();
+    },
+
+    markChatDeletedAsSeen(chatId) {
+      db.query(`
+        UPDATE chats SET last_seen_deleted_at = strftime('%s', 'now') WHERE chat_id = ?
+      `).run(chatId);
     },
 
     getMessages(chatId, limit = 100, before = null) {
