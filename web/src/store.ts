@@ -9,7 +9,7 @@ export const [stats, setStats] = createSignal<Stats>({
   connected: false,
   authenticated: false,
   myId: null,
-  notifyEnabled: true,
+  notifyEnabled: false,
   totalMessages: 0,
   deletedMessages: 0,
   totalChats: 0,

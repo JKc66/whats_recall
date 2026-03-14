@@ -234,6 +234,12 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
         <div class="msg-body">{m().body}</div>
       </Show>
 
+      <Show when={isViewOnce() && !m().body && !m().has_media}>
+        <div class="msg-media-placeholder">
+          <span class="icon">👁</span> View-once {m().type || 'message'}
+        </div>
+      </Show>
+
       <div class="msg-meta">
         <span class="time">{time()}</span>
         <Show when={isViewOnce()}>

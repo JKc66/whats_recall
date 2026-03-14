@@ -19,7 +19,7 @@ export function createMonitor(db, broadcast) {
   let clientReady = false;
   let clientAuthenticated = false;
   let myId = null;
-  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP !== 'false';
+  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -109,7 +109,9 @@ export function createMonitor(db, broadcast) {
       if (!db.isMonitored(chatId)) return;
 
       const contact = await message.getContact();
-      const chatName = chat.name || chat.id.user;
+      const chatName = chat.isGroup
+        ? (chat.name || chat.id.user)
+        : (contact.pushname || contact.name || chat.name || chat.id.user);
 
       db.upsertChat(chatId, chatName, chat.isGroup);
 
@@ -182,6 +184,7 @@ export function createMonitor(db, broadcast) {
         ...msgData,
         chatName,
         isGroup: chat.isGroup,
+        profilePic: db.getChatProfilePic(chatId) || null,
       });
     } catch (err) {
       log('WA', `Error caching message: ${err.message}`);
@@ -214,6 +217,12 @@ export function createMonitor(db, broadcast) {
         const chat = await originalMsg.getChat();
         const contact = await originalMsg.getContact();
         const chatId = chat.id._serialized;
+
+        const revokedChatName = chat.isGroup
+          ? (chat.name || chat.id.user)
+          : (contact.pushname || contact.name || chat.name || chat.id.user);
+
+        db.upsertChat(chatId, revokedChatName, chat.isGroup);
 
         let senderId = null;
         let senderName = null;
