@@ -91,7 +91,7 @@ export default function Sidebar() {
       <div class="sidebar-search">
         <input
           type="text"
-          placeholder="Search chats\u2026"
+          placeholder="Search chats…"
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
           spellcheck={false}
@@ -109,7 +109,7 @@ export default function Sidebar() {
       </div>
 
       <div class="status-strip">
-        <span>{stats().connected ? 'Connected' : stats().authenticated ? 'Initializing\u2026' : 'Disconnected'}</span>
+        <span>{stats().connected ? 'Connected' : stats().authenticated ? 'Initializing…' : 'Disconnected'}</span>
         <Show when={stats().deletedMessages > 0}>
           <span class="stats-deleted">{stats().deletedMessages} deleted</span>
         </Show>
