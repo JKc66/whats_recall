@@ -1,8 +1,83 @@
 import { test, expect, describe, beforeAll, afterAll } from "bun:test";
-import { rmSync, existsSync } from "fs";
+import { rmSync, existsSync, statSync } from "fs";
 import { join } from "path";
+import { Database } from "bun:sqlite";
+
+
+describe("Database initDatabase", () => {
+  let initDatabase;
+  let originalDataDir;
+  let originalDbPath;
+  const TEST_INIT_DATA_DIR = join(process.cwd(), "test-init-data");
+  const TEST_INIT_MEDIA_DIR = join(TEST_INIT_DATA_DIR, "media");
+  const TEST_INIT_DB_PATH = join(TEST_INIT_DATA_DIR, "init-test.db");
+
+  beforeAll(async () => {
+    originalDataDir = process.env.DATA_DIR;
+    originalDbPath = process.env.DB_PATH;
+
+    process.env.DATA_DIR = TEST_INIT_DATA_DIR;
+    process.env.DB_PATH = TEST_INIT_DB_PATH;
+
+    // Dynamic import to respect env vars
+    const module = await import("./database.js");
+    initDatabase = module.initDatabase;
+  });
+
+  afterAll(() => {
+    if (existsSync(TEST_INIT_DATA_DIR)) {
+      rmSync(TEST_INIT_DATA_DIR, { recursive: true, force: true });
+    }
+    if (originalDataDir !== undefined) process.env.DATA_DIR = originalDataDir;
+    else delete process.env.DATA_DIR;
+    if (originalDbPath !== undefined) process.env.DB_PATH = originalDbPath;
+    else delete process.env.DB_PATH;
+  });
+
+  test("should create data and media directories", () => {
+    if (existsSync(TEST_INIT_DATA_DIR)) rmSync(TEST_INIT_DATA_DIR, { recursive: true, force: true });
+    const db = initDatabase();
+
+    expect(existsSync(TEST_INIT_DATA_DIR)).toBe(true);
+    expect(existsSync(TEST_INIT_MEDIA_DIR)).toBe(true);
+    expect(statSync(TEST_INIT_DATA_DIR).isDirectory()).toBe(true);
+    expect(statSync(TEST_INIT_MEDIA_DIR).isDirectory()).toBe(true);
+
+    db.close();
+  });
+
+  test("should initialize database schema correctly", () => {
+    const dbInstance = initDatabase();
+    expect(existsSync(TEST_INIT_DB_PATH)).toBe(true);
+
+    const sqliteDb = new Database(TEST_INIT_DB_PATH);
+
+    // Check if tables were created
+    const tables = sqliteDb.query("SELECT name FROM sqlite_master WHERE type='table'").all();
+    const tableNames = tables.map(t => t.name);
+
+    expect(tableNames).toContain("chats");
+    expect(tableNames).toContain("messages");
+    expect(tableNames).toContain("sessions");
+    expect(tableNames).toContain("monitored_chats");
+
+    sqliteDb.close();
+    dbInstance.close();
+  });
+
+  test("should be idempotent (can be called multiple times without error)", () => {
+    expect(() => {
+      const db1 = initDatabase();
+      const db2 = initDatabase();
+      db1.close();
+      db2.close();
+    }).not.toThrow();
+  });
+});
 
 describe("Database upsertChat", () => {
+
+
   let db;
   let initDatabase;
   let originalDataDir;
