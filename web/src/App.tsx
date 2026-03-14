@@ -191,7 +191,23 @@ export default function App() {
           <Dashboard />
         </Show>
       </Show>
-      <Toaster position="top-right" gutter={8} />
+      <Toaster
+        position="top-right"
+        gutter={8}
+        containerStyle={{ 'z-index': '2100' }}
+        toastOptions={{
+          style: {
+            background: 'var(--bg-elevated)',
+            color: 'var(--text)',
+            border: '1px solid var(--border-strong)',
+            'border-radius': 'var(--radius)',
+            'font-family': 'inherit',
+            'font-size': '13px',
+            'box-shadow': 'var(--shadow-lg)',
+          },
+          duration: 4000,
+        }}
+      />
     </>
   );
 }
