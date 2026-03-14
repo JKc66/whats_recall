@@ -1,78 +1,96 @@
-import { writeFileSync } from 'fs';
+import { writeFileSync, unlinkSync } from 'fs';
 import { writeFile } from 'fs/promises';
 
 const NUM_FILES = 1000;
-const DATA = Buffer.from('benchmark data'.repeat(1000)); // 14KB per file
+const DATA = Buffer.from('benchmark data'.repeat(1000)); // ~14KB per file
 
-async function benchSync() {
-  console.log('--- Sync Write (baseline) ---');
-  const start = performance.now();
-  let completed = 0;
+// Helper to wait a bit so setInterval ticks can be recorded
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // To simulate concurrent requests hitting the sync block, we'll run a loop
-  // and do sync writes, but we also run an interval to measure event loop lag.
+async function measureLag(action, duration = 10) {
   let lagSamples = [];
   let lastTick = performance.now();
+
   const interval = setInterval(() => {
     const now = performance.now();
-    lagSamples.push(now - lastTick - 10);
+    lagSamples.push(now - lastTick - duration);
     lastTick = now;
-  }, 10);
+  }, duration);
 
-  for (let i = 0; i < NUM_FILES; i++) {
-    writeFileSync(`test_sync_${i}.bin`, DATA);
-  }
-
-  clearInterval(interval);
+  const start = performance.now();
+  await action();
   const end = performance.now();
+
+  // Wait one tick to let any pending interval callbacks fire if the event loop was blocked
+  await sleep(duration + 5);
+  clearInterval(interval);
+
   const maxLag = lagSamples.length > 0 ? Math.max(...lagSamples) : 0;
   const avgLag = lagSamples.length > 0 ? lagSamples.reduce((a, b) => a + b, 0) / lagSamples.length : 0;
 
-  console.log(`Total time: ${(end - start).toFixed(2)}ms`);
-  console.log(`Max event loop lag: ${maxLag.toFixed(2)}ms`);
-  console.log(`Avg event loop lag: ${avgLag.toFixed(2)}ms`);
+  return { time: end - start, maxLag, avgLag };
+}
 
-  // Cleanup
+function cleanup(prefix) {
   for (let i = 0; i < NUM_FILES; i++) {
-    import('fs').then(fs => fs.unlinkSync(`test_sync_${i}.bin`));
+    try {
+      unlinkSync(`${prefix}_${i}.bin`);
+    } catch (err) {
+      // ignore
+    }
   }
+}
+
+async function benchSync() {
+  console.log('--- Sync Write (blocking) ---');
+  const result = await measureLag(async () => {
+    for (let i = 0; i < NUM_FILES; i++) {
+      writeFileSync(`test_sync_${i}.bin`, DATA);
+    }
+  });
+
+  console.log(`Total time: ${result.time.toFixed(2)}ms`);
+  console.log(`Max event loop lag: ${result.maxLag.toFixed(2)}ms`);
+  console.log(`Avg event loop lag: ${result.avgLag.toFixed(2)}ms`);
+  cleanup('test_sync');
+}
+
+async function benchPromises() {
+  console.log('--- fs/promises Write (baseline) ---');
+  const result = await measureLag(async () => {
+    const promises = [];
+    for (let i = 0; i < NUM_FILES; i++) {
+      promises.push(writeFile(`test_promise_${i}.bin`, DATA));
+    }
+    await Promise.all(promises);
+  });
+
+  console.log(`Total time: ${result.time.toFixed(2)}ms`);
+  console.log(`Max event loop lag: ${result.maxLag.toFixed(2)}ms`);
+  console.log(`Avg event loop lag: ${result.avgLag.toFixed(2)}ms`);
+  cleanup('test_promise');
 }
 
 async function benchBunWrite() {
   console.log('--- Bun.write (optimized) ---');
-  const start = performance.now();
+  const result = await measureLag(async () => {
+    const promises = [];
+    for (let i = 0; i < NUM_FILES; i++) {
+      promises.push(Bun.write(`test_bun_${i}.bin`, DATA));
+    }
+    await Promise.all(promises);
+  });
 
-  let lagSamples = [];
-  let lastTick = performance.now();
-  const interval = setInterval(() => {
-    const now = performance.now();
-    lagSamples.push(now - lastTick - 10);
-    lastTick = now;
-  }, 10);
-
-  const promises = [];
-  for (let i = 0; i < NUM_FILES; i++) {
-    promises.push(Bun.write(`test_bun_${i}.bin`, DATA));
-  }
-  await Promise.all(promises);
-
-  clearInterval(interval);
-  const end = performance.now();
-  const maxLag = lagSamples.length > 0 ? Math.max(...lagSamples) : 0;
-  const avgLag = lagSamples.length > 0 ? lagSamples.reduce((a, b) => a + b, 0) / lagSamples.length : 0;
-
-  console.log(`Total time: ${(end - start).toFixed(2)}ms`);
-  console.log(`Max event loop lag: ${maxLag.toFixed(2)}ms`);
-  console.log(`Avg event loop lag: ${avgLag.toFixed(2)}ms`);
-
-  // Cleanup
-  for (let i = 0; i < NUM_FILES; i++) {
-    import('fs').then(fs => fs.unlinkSync(`test_bun_${i}.bin`));
-  }
+  console.log(`Total time: ${result.time.toFixed(2)}ms`);
+  console.log(`Max event loop lag: ${result.maxLag.toFixed(2)}ms`);
+  console.log(`Avg event loop lag: ${result.avgLag.toFixed(2)}ms`);
+  cleanup('test_bun');
 }
 
 async function run() {
   await benchSync();
+  console.log('\n');
+  await benchPromises();
   console.log('\n');
   await benchBunWrite();
 }
