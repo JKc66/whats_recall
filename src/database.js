@@ -257,14 +257,16 @@ export function initDatabase() {
       db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
     },
 
-    clearAllData() {
+    async clearAllData() {
       db.exec('DELETE FROM messages');
       db.exec('DELETE FROM chats');
       try {
-        for (const file of readdirSync(MEDIA_DIR)) {
-          unlinkSync(join(MEDIA_DIR, file));
-        }
-      } catch { /* media dir may not exist */ }
+        const { rm, mkdir } = await import('fs/promises');
+        await rm(MEDIA_DIR, { recursive: true, force: true });
+        await mkdir(MEDIA_DIR, { recursive: true });
+      } catch (err) {
+        console.error('Error clearing media directory:', err);
+      }
     },
 
     close() {
