@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -211,6 +211,11 @@ export function initDatabase() {
       return !!row;
     },
 
+    getChatProfilePic(chatId) {
+      const row = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
+      return row?.profile_pic || null;
+    },
+
     updateChatProfilePic(chatId, profilePic) {
       db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
     },
@@ -218,6 +223,11 @@ export function initDatabase() {
     clearAllData() {
       db.exec('DELETE FROM messages');
       db.exec('DELETE FROM chats');
+      try {
+        for (const file of readdirSync(MEDIA_DIR)) {
+          unlinkSync(join(MEDIA_DIR, file));
+        }
+      } catch { /* media dir may not exist */ }
     },
 
     close() {

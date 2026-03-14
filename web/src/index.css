@@ -915,6 +915,27 @@ html, body, #root {
   font-weight: 500;
 }
 
+.danger-password {
+  width: 100%;
+  padding: 9px 14px;
+  margin-bottom: 10px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(251, 113, 133, 0.2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--t-normal), box-shadow var(--t-normal);
+}
+
+.danger-password:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-muted);
+}
+
+.danger-password::placeholder { color: var(--text-3); }
+
 .danger-confirm-actions {
   display: flex;
   gap: 8px;
@@ -960,8 +981,8 @@ html, body, #root {
   .app {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
   }
 
   .sidebar {
@@ -975,8 +996,8 @@ html, body, #root {
   .sidebar.hidden { transform: translateX(-100%); pointer-events: none; }
 
   .main-panel {
-    height: 100dvh;
     height: 100vh;
+    height: 100dvh;
     min-height: 0;
     overflow: hidden;
   }

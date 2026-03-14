@@ -134,8 +134,12 @@ export async function setNotifyEnabled(enabled: boolean): Promise<void> {
   });
 }
 
-export async function clearData(): Promise<void> {
-  await request(`${BASE}/api/data`, { method: 'DELETE' });
+export async function clearData(password: string): Promise<void> {
+  await request(`${BASE}/api/data`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
 }
 
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {
