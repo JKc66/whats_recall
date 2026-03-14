@@ -214,12 +214,6 @@ export function createMonitor(db, broadcast) {
   }
 
   client.on('message_create', (message) => handleMessage(message));
-  client.on('message', (message) => {
-    if (detectViewOnce(message) && !db.getMessage(message.id?._serialized)) {
-      log('WA', `View-once caught via 'message' event: ${message.type}`);
-      handleMessage(message);
-    }
-  });
 
   client.on('message_revoke_everyone', async (revokedMsg, originalMsg) => {
     const fromChannel = revokedMsg.from?.endsWith('@newsletter') ||
