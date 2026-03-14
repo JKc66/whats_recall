@@ -20,6 +20,7 @@ export function createMonitor(db, broadcast) {
   let clientAuthenticated = false;
   let myId = null;
   let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
+  const profilePicFailed = new Map();
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -100,10 +101,6 @@ export function createMonitor(db, broadcast) {
       (isMediaType && viewMode && viewMode !== 0 && viewMode !== 'VISIBLE')
     );
 
-    if (isMediaType) {
-      log('WA', `Media msg: type=${message.type} viewMode=${JSON.stringify(viewMode)} isViewOnce=${message.isViewOnce} _data.isViewOnce=${message._data?.isViewOnce} => detected=${isViewOnce}`);
-    }
-
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
 
     const fromChannel = message.from?.endsWith('@newsletter') ||
@@ -126,11 +123,19 @@ export function createMonitor(db, broadcast) {
       db.upsertChat(chatId, chatName, chat.isGroup);
 
       if (!db.getChatProfilePic(chatId)) {
-        const picSource = chat.isGroup ? chat : contact;
-        const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
-        fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
-          if (pic) db.updateChatProfilePic(chatId, pic);
-        });
+        const lastFail = profilePicFailed.get(chatId);
+        if (!lastFail || Date.now() - lastFail > 300_000) {
+          const picSource = chat.isGroup ? chat : contact;
+          const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
+          fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
+            if (pic) {
+              db.updateChatProfilePic(chatId, pic);
+              profilePicFailed.delete(chatId);
+            } else {
+              profilePicFailed.set(chatId, Date.now());
+            }
+          });
+        }
       }
 
       let senderId = null;
