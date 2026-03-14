@@ -44,7 +44,7 @@ export default function Login() {
       await login(password(), fp);
       setAuthenticated(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Login failed. Check your password and try again.');
     } finally {
       setLoading(false);
     }
@@ -52,15 +52,14 @@ export default function Login() {
 
   return (
     <div class="login-page">
-      <div class="bg-pattern" />
       <div class="login-card">
-        <div class="login-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="login-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
         <h1>Message Monitor</h1>
-        <p>Secure access to your message monitoring dashboard</p>
+        <p>Enter your password to access the dashboard</p>
         <form onSubmit={handleSubmit} name="whatsapp-monitor-login">
           <input
             type="text"
@@ -73,24 +72,27 @@ export default function Login() {
             aria-hidden="true"
           />
           <div class="login-field">
+            <label for="login-password">Password</label>
             <input
+              id="login-password"
               type="password"
               name="password"
-              placeholder="Enter password"
+              placeholder="Enter password\u2026"
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
               autocomplete="current-password webauthn"
+              spellcheck={false}
               required
               autofocus
             />
           </div>
           <button class="login-btn" type="submit" disabled={loading()}>
-            {loading() ? 'Authenticating...' : 'Unlock Dashboard'}
+            {loading() ? 'Authenticating\u2026' : 'Unlock Dashboard'}
           </button>
         </form>
-        <div class="login-error">{error()}</div>
+        <div class="login-error" aria-live="polite">{error()}</div>
         <div class="login-footer">
-          <span class="lock-icon">
+          <span class="lock-icon" aria-hidden="true">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </span>
           End-to-end encrypted session

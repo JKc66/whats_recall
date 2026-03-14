@@ -122,9 +122,19 @@ export function createMonitor(db, broadcast) {
       if (!db.isMonitored(chatId)) return;
 
       const contact = await message.getContact();
-      const chatName = chat.isGroup
-        ? (chat.name || chat.id.user)
-        : (contact.pushname || contact.name || chat.name || chat.id.user);
+      let chatName;
+      if (chat.isGroup) {
+        chatName = chat.name || chat.id.user;
+      } else if (message.fromMe) {
+        try {
+          const chatContact = await client.getContactById(chat.id._serialized);
+          chatName = chatContact.name || chatContact.pushname || chat.name || chat.id.user;
+        } catch {
+          chatName = chat.name || chat.id.user;
+        }
+      } else {
+        chatName = contact.name || contact.pushname || chat.name || chat.id.user;
+      }
 
       db.upsertChat(chatId, chatName, chat.isGroup);
 
@@ -153,13 +163,13 @@ export function createMonitor(db, broadcast) {
         senderId = message.author;
         try {
           const senderContact = await client.getContactById(message.author);
-          senderName = senderContact.pushname || senderContact.name || senderContact.number;
+          senderName = senderContact.name || senderContact.pushname || senderContact.number;
         } catch {
           senderName = message.author.replace('@c.us', '');
         }
       } else {
         senderId = contact.id._serialized;
-        senderName = contact.pushname || contact.name || contact.number;
+        senderName = contact.name || contact.pushname || contact.number;
       }
 
       let mediaPath = null;
@@ -263,7 +273,7 @@ export function createMonitor(db, broadcast) {
 
         const revokedChatName = chat.isGroup
           ? (chat.name || chat.id.user)
-          : (contact.pushname || contact.name || chat.name || chat.id.user);
+          : (contact.name || contact.pushname || chat.name || chat.id.user);
 
         db.upsertChat(chatId, revokedChatName, chat.isGroup);
 
@@ -273,13 +283,13 @@ export function createMonitor(db, broadcast) {
           senderId = originalMsg.author;
           try {
             const sc = await client.getContactById(originalMsg.author);
-            senderName = sc.pushname || sc.name || sc.number;
+            senderName = sc.name || sc.pushname || sc.number;
           } catch {
             senderName = originalMsg.author.replace('@c.us', '');
           }
         } else {
           senderId = contact.id._serialized;
-          senderName = contact.pushname || contact.name || contact.number;
+          senderName = contact.name || contact.pushname || contact.number;
         }
 
         let mediaPath = null;
@@ -462,7 +472,7 @@ export function createMonitor(db, broadcast) {
           if (!name) {
             try {
               const contact = await c.getContact();
-              name = contact.pushname || contact.name || c.id.user;
+              name = contact.name || contact.pushname || c.id.user;
             } catch (err) {
               name = c.id.user;
             }
