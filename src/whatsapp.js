@@ -113,9 +113,11 @@ export function createMonitor(db, broadcast) {
 
       db.upsertChat(chatId, chatName, chat.isGroup);
 
-      fetchAndSaveProfilePic(chat, chatId).then((pic) => {
-        if (pic) db.updateChatProfilePic(chatId, pic);
-      });
+      if (!db.getChatProfilePic(chatId)) {
+        fetchAndSaveProfilePic(chat, chatId).then((pic) => {
+          if (pic) db.updateChatProfilePic(chatId, pic);
+        });
+      }
 
       let senderId = null;
       let senderName = null;
@@ -363,6 +365,7 @@ export function createMonitor(db, broadcast) {
       for (const chat of allChats.slice(0, 30)) {
         const cid = chat.id._serialized;
         if (cid === 'status@broadcast') continue;
+        if (db.getChatProfilePic(cid)) continue;
         fetchAndSaveProfilePic(chat, cid).then((pic) => {
           if (pic) db.updateChatProfilePic(cid, pic);
         });

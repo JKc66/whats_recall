@@ -1,7 +1,5 @@
 import { sileo } from 'sileo';
 
-export { sileo };
-
 export const notify = {
   deleted: (sender: string, preview: string) =>
     sileo.error({
