@@ -320,6 +320,12 @@ export function createServer(db, monitor) {
     return c.json({ chats });
   });
 
+  app.post('/api/chats/:chatId/read', (c) => {
+    const chatId = c.req.param('chatId');
+    db.markChatDeletedAsSeen(chatId);
+    return c.json({ ok: true });
+  });
+
   app.get('/api/chats/:chatId/messages', (c) => {
     const chatId = decodeURIComponent(c.req.param('chatId'));
     const limit = parseInt(c.req.query('limit') || '200', 10);
@@ -410,7 +416,10 @@ export function createServer(db, monitor) {
       }
     }
 
-    return serveFile(join(PUBLIC_DIR, 'index.html')) || c.text('Not found', 404);
+    const indexHtml = serveFile(join(PUBLIC_DIR, 'index.html'));
+    if (indexHtml) return indexHtml;
+
+    return c.text('Not found', 404);
   });
 
   // --- Start server ---

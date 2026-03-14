@@ -88,6 +88,10 @@ export async function fetchChatsSilent(): Promise<Chat[] | null> {
   return data?.chats ?? null;
 }
 
+export async function markChatAsRead(chatId: string): Promise<void> {
+  await request(`${BASE}/api/chats/${encodeURIComponent(chatId)}/read`, { method: 'POST' });
+}
+
 export async function fetchMessages(chatId: string, limit = 200): Promise<Message[]> {
   const data = await request<{ messages: Message[] }>(
     `${BASE}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`
