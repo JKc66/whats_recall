@@ -350,14 +350,17 @@ export function createServer(db, monitor) {
 
   app.get('/api/chats/:chatId/messages', (c) => {
     const chatId = decodeURIComponent(c.req.param('chatId'));
-    const limit = parseInt(c.req.query('limit') || '200', 10);
-    const before = c.req.query('before') ? parseInt(c.req.query('before'), 10) : null;
+    const rawLimit = parseInt(c.req.query('limit') || '200', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 500) : 200;
+    const rawBefore = c.req.query('before') ? parseInt(c.req.query('before'), 10) : null;
+    const before = Number.isFinite(rawBefore) && rawBefore > 0 ? rawBefore : null;
     const messages = db.getMessages(chatId, limit, before);
     return c.json({ messages, hasMore: messages.length === limit });
   });
 
   app.get('/api/deleted', (c) => {
-    const limit = parseInt(c.req.query('limit') || '50', 10);
+    const rawLimit = parseInt(c.req.query('limit') || '50', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
     const messages = db.getDeletedMessages(limit);
     return c.json({ messages });
   });
@@ -429,6 +432,10 @@ export function createServer(db, monitor) {
   app.get('/api/whatsapp/chats', async (c) => {
     const chats = await monitor.getWhatsAppChats();
     return c.json({ chats });
+  });
+
+  app.all('/api/*', (c) => {
+    return c.json({ error: 'Not found' }, 404);
   });
 
   // --- Static files (SPA) ---
