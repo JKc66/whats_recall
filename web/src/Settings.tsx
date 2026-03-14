@@ -112,7 +112,7 @@ export default function Settings() {
       <div class="settings-search">
         <input
           type="text"
-          placeholder="Search chats\u2026"
+          placeholder="Search chats…"
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
           spellcheck={false}
@@ -138,7 +138,7 @@ export default function Settings() {
             </div>
           </Show>
           <Show when={monitored.loading}>
-            <div class="list-loading"><div class="spinner" /> Loading\u2026</div>
+            <div class="list-loading"><div class="spinner" /> Loading…</div>
           </Show>
           <For each={filteredMonitored()}>
             {(chat) => {
@@ -156,7 +156,7 @@ export default function Settings() {
                     <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
                   </div>
                   <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
-                    {busy() === chat.chat_id ? '\u2026' : 'Remove'}
+                    {busy() === chat.chat_id ? '…' : 'Remove'}
                   </button>
                 </div>
               );
@@ -175,7 +175,7 @@ export default function Settings() {
         <Show when={stats().connected}>
           <div class="settings-list">
             <Show when={available.loading}>
-              <div class="list-loading"><div class="spinner" /> Loading chats from WhatsApp\u2026</div>
+              <div class="list-loading"><div class="spinner" /> Loading chats from WhatsApp…</div>
             </Show>
             <For each={filteredAvailable()}>
               {(chat) => {
@@ -195,11 +195,11 @@ export default function Settings() {
                     </div>
                     <Show when={isAdded()} fallback={
                       <button class="btn-add" disabled={busy() === chat.id} onClick={() => handleAdd(chat)}>
-                        {busy() === chat.id ? '\u2026' : 'Add'}
+                        {busy() === chat.id ? '…' : 'Add'}
                       </button>
                     }>
                       <button class="btn-remove" disabled={busy() === chat.id} onClick={() => handleRemove(chat.id)}>
-                        {busy() === chat.id ? '\u2026' : 'Remove'}
+                        {busy() === chat.id ? '…' : 'Remove'}
                       </button>
                     </Show>
                   </div>
@@ -221,7 +221,7 @@ export default function Settings() {
             <div class="toggle-sublabel">Delete all stored messages, media, and chat history. This cannot be undone.</div>
           </div>
           <button class="btn-danger" disabled={clearing()} onClick={handleClearData}>
-            {clearing() ? 'Clearing\u2026' : 'Clear Data'}
+            {clearing() ? 'Clearing…' : 'Clear Data'}
           </button>
         </div>
         <Show when={confirmClear()}>
@@ -230,7 +230,7 @@ export default function Settings() {
             <input
               type="password"
               class="danger-password"
-              placeholder="Enter password\u2026"
+              placeholder="Enter password…"
               value={clearPassword()}
               onInput={(e) => setClearPassword(e.currentTarget.value)}
               aria-label="Confirm password for data deletion"

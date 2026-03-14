@@ -77,7 +77,7 @@ export default function Login() {
               id="login-password"
               type="password"
               name="password"
-              placeholder="Enter password\u2026"
+              placeholder="Enter password…"
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
               autocomplete="current-password webauthn"
@@ -87,7 +87,7 @@ export default function Login() {
             />
           </div>
           <button class="login-btn" type="submit" disabled={loading()}>
-            {loading() ? 'Authenticating\u2026' : 'Unlock Dashboard'}
+            {loading() ? 'Authenticating…' : 'Unlock Dashboard'}
           </button>
         </form>
         <div class="login-error" aria-live="polite">{error()}</div>
