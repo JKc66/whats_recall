@@ -397,6 +397,17 @@ export function createMonitor(db, broadcast) {
           const thumbUrl = await client.pupPage.evaluate(async (ids) => {
             for (const id of ids) {
               try {
+                const chatWid = window.Store.WidFactory.createWid(id);
+                let pic = null;
+                if (window.compareWwebVersions && window.Debug && window.compareWwebVersions(window.Debug.VERSION, "<", "2.3000.0")) {
+                  pic = await window.Store.ProfilePic.profilePicFind(chatWid);
+                } else if (window.Store.ProfilePic.requestProfilePicFromServer) {
+                  pic = await window.Store.ProfilePic.requestProfilePicFromServer(chatWid);
+                }
+                if (pic && pic.eurl) return pic.eurl;
+              } catch (e) { /* ignore request failures */ }
+
+              try {
                 const contact = window.Store.Contact.get(id);
                 if (contact?.profilePicThumb?.eurl) return contact.profilePicThumb.eurl;
                 if (contact?.profilePicThumb?.imgFull) return contact.profilePicThumb.imgFull;
@@ -443,15 +454,29 @@ export function createMonitor(db, broadcast) {
     try {
       const allChats = await client.getChats();
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
-      const results = allChats
+
+      const resultsPromises = allChats
         .filter(c => c.id._serialized !== 'status@broadcast')
-        .map(c => ({
-          id: c.id._serialized,
-          name: c.name || c.id.user,
-          isGroup: c.isGroup,
-          timestamp: c.timestamp || 0,
-          isMonitored: monitored.has(c.id._serialized),
-        }))
+        .map(async (c) => {
+          let name = c.name;
+          if (!name) {
+            try {
+              const contact = await c.getContact();
+              name = contact.pushname || contact.name || c.id.user;
+            } catch (err) {
+              name = c.id.user;
+            }
+          }
+          return {
+            id: c.id._serialized,
+            name: name,
+            isGroup: c.isGroup,
+            timestamp: c.timestamp || 0,
+            isMonitored: monitored.has(c.id._serialized),
+          };
+        });
+
+      const results = (await Promise.all(resultsPromises))
         .sort((a, b) => b.timestamp - a.timestamp);
 
       const topChats = allChats.slice(0, 30);
