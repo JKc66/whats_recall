@@ -5,10 +5,16 @@ import { join } from "path";
 describe("Database upsertChat", () => {
   let db;
   let initDatabase;
+  let originalDataDir;
+  let originalDbPath;
   const TEST_DATA_DIR = join(process.cwd(), "test-data");
   const TEST_DB_PATH = join(TEST_DATA_DIR, "test.db");
 
   beforeAll(async () => {
+    // Save original environment variables
+    originalDataDir = process.env.DATA_DIR;
+    originalDbPath = process.env.DB_PATH;
+
     // Set environment variables BEFORE importing initDatabase
     process.env.DATA_DIR = TEST_DATA_DIR;
     process.env.DB_PATH = TEST_DB_PATH;
@@ -23,6 +29,19 @@ describe("Database upsertChat", () => {
     if (db) db.close();
     if (existsSync(TEST_DATA_DIR)) {
       rmSync(TEST_DATA_DIR, { recursive: true, force: true });
+    }
+
+    // Restore original environment variables
+    if (originalDataDir !== undefined) {
+      process.env.DATA_DIR = originalDataDir;
+    } else {
+      delete process.env.DATA_DIR;
+    }
+
+    if (originalDbPath !== undefined) {
+      process.env.DB_PATH = originalDbPath;
+    } else {
+      delete process.env.DB_PATH;
     }
   });
 
