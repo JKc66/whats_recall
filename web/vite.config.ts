@@ -15,6 +15,8 @@ export default defineConfig({
       onwarn(warning, warn) {
         if (
           warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
+          typeof warning.message === 'string' &&
+          warning.message.includes('"use client"') &&
           typeof warning.id === 'string' &&
           warning.id.includes('node_modules')
         ) {

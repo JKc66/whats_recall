@@ -44,6 +44,8 @@ const MIME_TYPES = {
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
+const TRUST_X_FORWARDED_PROTO = process.env.TRUST_X_FORWARDED_PROTO === 'true';
+const TRUST_CF_CONNECTING_IP = process.env.TRUST_CF_CONNECTING_IP === 'true';
 
 function log(category, message, ...args) {
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
@@ -57,7 +59,7 @@ export function createServer(db, monitor) {
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   function getClientIp(c) {
-    const hasCloudflareHeaders = !!c.req.header('cf-ray');
+    const hasCloudflareHeaders = TRUST_CF_CONNECTING_IP && !!c.req.header('cf-ray');
     const cloudflareIp = c.req.header('cf-connecting-ip');
     if (hasCloudflareHeaders && cloudflareIp) return cloudflareIp.trim();
     if (process.env.TRUST_X_REAL_IP === 'true') {
@@ -103,9 +105,18 @@ export function createServer(db, monitor) {
     for (const part of cookieHeader.split(';')) {
       const [rawKey, ...rest] = part.trim().split('=');
       if (!rawKey || rest.length === 0) continue;
-      out[rawKey] = decodeURIComponent(rest.join('='));
+      const rawValue = rest.join('=');
+      try {
+        out[rawKey] = decodeURIComponent(rawValue);
+      } catch {
+        out[rawKey] = rawValue;
+      }
     }
     return out;
+  }
+
+  function isObjectBody(body) {
+    return !!body && typeof body === 'object' && !Array.isArray(body);
   }
 
   function broadcast(event, data) {
@@ -164,12 +175,15 @@ export function createServer(db, monitor) {
     c.header('X-Frame-Options', 'DENY');
     c.header('X-XSS-Protection', '1; mode=block');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    const reqUrl = new URL(c.req.url);
+    const wsProto = reqUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsOrigin = `${wsProto}//${reqUrl.host}`;
     c.header(
       'Content-Security-Policy',
-      "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; form-action 'self'"
+      `default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${wsOrigin}; form-action 'self'`
     );
     const forwardedProto = c.req.header('x-forwarded-proto');
-    const isHttps = forwardedProto === 'https' || new URL(c.req.url).protocol === 'https:';
+    const isHttps = (TRUST_X_FORWARDED_PROTO && forwardedProto === 'https') || reqUrl.protocol === 'https:';
     if (isHttps) {
       c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
@@ -203,7 +217,7 @@ export function createServer(db, monitor) {
     }
 
     const body = await parseJsonBody(c);
-    if (!body || typeof body !== 'object') {
+    if (!isObjectBody(body)) {
       return c.json({ error: 'Invalid JSON body' }, 400);
     }
 
@@ -331,7 +345,7 @@ export function createServer(db, monitor) {
 
   app.post('/api/settings/notify', async (c) => {
     const body = await parseJsonBody(c);
-    if (!body || typeof body !== 'object') {
+    if (!isObjectBody(body)) {
       return c.json({ error: 'Invalid JSON body' }, 400);
     }
     const enabled = !!body.enabled;
@@ -402,7 +416,7 @@ export function createServer(db, monitor) {
 
   app.post('/api/monitored', async (c) => {
     const body = await parseJsonBody(c);
-    if (!body || typeof body !== 'object') {
+    if (!isObjectBody(body)) {
       return c.json({ error: 'Invalid JSON body' }, 400);
     }
     const chatId = typeof body.chatId === 'string' ? body.chatId : '';
@@ -473,7 +487,7 @@ export function createServer(db, monitor) {
           const cookies = parseCookies(req.headers.get('cookie') || '');
           const token = cookies.session || null;
           if (!token) {
-            log('WS', `WebSocket upgrade rejected: ${token ? 'invalid session' : 'no session cookie'}`);
+            log('WS', 'WebSocket upgrade rejected: no session cookie');
             return new Response('Unauthorized', { status: 401 });
           }
 
