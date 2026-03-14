@@ -92,11 +92,12 @@ export function createMonitor(db, broadcast) {
   });
 
   client.on('message_create', async (message) => {
+    const isMediaType = ['image', 'video', 'audio', 'ptt'].includes(message.type) || message.hasMedia;
     const viewMode = message._data?.viewMode;
     const isViewOnce = !!(
       message.isViewOnce ||
       message._data?.isViewOnce ||
-      (viewMode && viewMode !== 0 && viewMode !== 'NONE')
+      (isMediaType && (viewMode === 'ONCE' || viewMode === 'PLAYED_ONCE' || viewMode === 1 || viewMode === 2))
     );
 
     if (!CACHEABLE_TYPES.has(message.type) && !isViewOnce) return;
