@@ -1,7 +1,6 @@
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import { access } from 'fs/promises';
-import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 
@@ -174,7 +173,7 @@ export function createMonitor(db, broadcast) {
             const ext = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
             const filename = `${message.id._serialized}.${ext}`;
             const filepath = join(MEDIA_DIR, filename);
-            await writeFile(filepath, Buffer.from(media.data, 'base64'));
+            await Bun.write(filepath, Buffer.from(media.data, 'base64'));
             mediaPath = filename;
             mediaType = media.mimetype;
             mediaFilename = media.filename || filename;
@@ -187,6 +186,8 @@ export function createMonitor(db, broadcast) {
       if (isViewOnce) {
         log('WA', `View-once message captured: ${message.type} in ${chatName} from ${senderName}`);
       }
+
+      const originalId = message.id.id; // The pure hash ID without serialized metadata (useful for revoke matching)
 
       const msgData = {
         messageId: message.id._serialized,
@@ -202,6 +203,7 @@ export function createMonitor(db, broadcast) {
         timestamp: message.timestamp,
         isFromMe: message.fromMe,
         isViewOnce,
+        originalId,
       };
 
       db.saveMessage(msgData);
@@ -233,13 +235,25 @@ export function createMonitor(db, broadcast) {
 
       const revokeId = revokedMsg.id._serialized;
       const origId = originalMsg?.id?._serialized;
-      const messageId = origId || revokeId;
 
-      log('WA', `Revoke event: revokeId=${revokeId}, origId=${origId || 'none'}, using=${messageId}`);
+      // Stickers often have a different serialized ID but same core `id` hash.
+      const protocolMessageId = revokedMsg._data?.protocolMessageKey?.id || originalMsg?.id?.id;
+
+      let messageId = origId || revokeId;
+
+      log('WA', `Revoke event: revokeId=${revokeId}, origId=${origId || 'none'}, protocolMsgId=${protocolMessageId || 'none'}, using=${messageId}`);
 
       let cached = db.getMessage(messageId);
       if (!cached && origId !== revokeId) {
         cached = db.getMessage(revokeId);
+      }
+      if (!cached && protocolMessageId) {
+        // Fallback to match by the pure hash. This fixes sticker deletion mismatches.
+        cached = db.getMessageByOriginalId(protocolMessageId);
+        if (cached) {
+          messageId = cached.message_id; // override to the correctly matched serialized ID
+          log('WA', `Revoke matched by originalId hash: ${messageId}`);
+        }
       }
 
       if (!cached && originalMsg) {
@@ -278,7 +292,7 @@ export function createMonitor(db, broadcast) {
               const ext = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
               const filename = `${messageId}.${ext}`;
               const filepath = join(MEDIA_DIR, filename);
-              await writeFile(filepath, Buffer.from(media.data, 'base64'));
+              await Bun.write(filepath, Buffer.from(media.data, 'base64'));
               mediaPath = filename;
               mediaType = media.mimetype;
               mediaFilename = media.filename || filename;
@@ -302,6 +316,7 @@ export function createMonitor(db, broadcast) {
           timestamp: originalMsg.timestamp,
           isFromMe: originalMsg.fromMe,
           isViewOnce: detectViewOnce(originalMsg),
+          originalId: originalMsg.id?.id,
         });
 
         cached = db.getMessage(messageId);
@@ -411,8 +426,7 @@ export function createMonitor(db, broadcast) {
 
       const res = await fetch(url);
       if (!res.ok) return null;
-      const buffer = Buffer.from(await res.arrayBuffer());
-      await writeFile(filepath, buffer);
+      await Bun.write(filepath, await res.arrayBuffer());
       log('WA', `Profile pic saved for ${chatId}`);
       return filename;
     } catch (err) {
@@ -440,10 +454,14 @@ export function createMonitor(db, broadcast) {
         }))
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      for (const chat of allChats.slice(0, 30)) {
+      const topChats = allChats.slice(0, 30);
+      const topCids = topChats.map(c => c.id._serialized).filter(cid => cid !== 'status@broadcast');
+      const existingPics = db.getChatProfilePics(topCids);
+
+      for (const chat of topChats) {
         const cid = chat.id._serialized;
         if (cid === 'status@broadcast') continue;
-        if (db.getChatProfilePic(cid)) continue;
+        if (existingPics[cid]) continue;
         fetchAndSaveProfilePic(chat, cid).then((pic) => {
           if (pic) db.updateChatProfilePic(cid, pic);
         });
