@@ -21,6 +21,7 @@ export function createMonitor(db, broadcast) {
   let myId = null;
   let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
   const profilePicFailed = new Map();
+  const profilePicInFlight = new Set();
 
   const phoneNumber = process.env.WHATSAPP_PHONE || null;
 
@@ -129,9 +130,10 @@ export function createMonitor(db, broadcast) {
 
       if (!db.getChatProfilePic(chatId)) {
         const lastFail = profilePicFailed.get(chatId);
-        if (!lastFail || Date.now() - lastFail > 300_000) {
+        if (!profilePicInFlight.has(chatId) && (!lastFail || Date.now() - lastFail > 300_000)) {
           const picSource = chat.isGroup ? chat : contact;
           const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
+          profilePicInFlight.add(chatId);
           fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
             if (pic) {
               db.updateChatProfilePic(chatId, pic);
@@ -139,6 +141,8 @@ export function createMonitor(db, broadcast) {
             } else {
               profilePicFailed.set(chatId, Date.now());
             }
+          }).finally(() => {
+            profilePicInFlight.delete(chatId);
           });
         }
       }

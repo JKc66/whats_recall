@@ -130,7 +130,7 @@ export default function App() {
       }
 
       if (event === 'message_deleted') {
-        const msg = data as Message & { chatName: string; is_group: number };
+        const msg = data as Message & { chatName: string; isGroup: number };
 
         notify.deleted(
           msg.sender_name || 'Unknown',
@@ -160,7 +160,7 @@ export default function App() {
           return [{
             chat_id: msg.chat_id,
             name: msg.chatName || msg.sender_name || msg.chat_id,
-            is_group: msg.is_group || 0,
+            is_group: msg.isGroup || 0,
             last_message_at: new Date().toISOString(),
             last_message_preview: msg.body || '[Deleted message]',
             last_message_sender: msg.sender_name || null,
