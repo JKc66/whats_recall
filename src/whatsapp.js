@@ -1,6 +1,6 @@
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
-import { existsSync } from 'fs';
+import { access } from 'fs/promises';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 
@@ -422,7 +422,7 @@ export function createMonitor(db, broadcast) {
       const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
       const filepath = join(MEDIA_DIR, filename);
 
-      if (existsSync(filepath)) return filename;
+      try { await access(filepath); return filename; } catch { /* file doesn't exist yet, proceed to download */ }
 
       const res = await fetch(url);
       if (!res.ok) return null;
