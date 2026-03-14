@@ -13,6 +13,7 @@ export default function Settings() {
   const [busy, setBusy] = createSignal<string | null>(null);
   const [confirmClear, setConfirmClear] = createSignal(false);
   const [clearing, setClearing] = createSignal(false);
+  const [clearPassword, setClearPassword] = createSignal('');
 
   const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
 
@@ -49,23 +50,29 @@ export default function Settings() {
   }
 
   function handleClearData() {
+    setClearPassword('');
     setConfirmClear(true);
   }
 
   async function confirmClearData() {
+    if (!clearPassword()) {
+      notify.warning('Password required', 'Enter your password to confirm.');
+      return;
+    }
     setClearing(true);
     setConfirmClear(false);
     try {
-      await clearData();
+      await clearData(clearPassword());
       setChats([]);
       setMessages([]);
       setCurrentChatId(null);
       setStats((s) => ({ ...s, totalMessages: 0, deletedMessages: 0, totalChats: 0 }));
       notify.success('Data cleared', 'All messages and chat data have been deleted.');
     } catch {
-      notify.warning('Failed to clear data', 'Something went wrong. Please try again.');
+      notify.warning('Failed to clear data', 'Wrong password or something went wrong.');
     } finally {
       setClearing(false);
+      setClearPassword('');
     }
   }
 
@@ -207,9 +214,17 @@ export default function Settings() {
         </div>
         <Show when={confirmClear()}>
           <div class="danger-confirm">
-            <p>Are you sure? This will permanently delete all messages and chat data.</p>
+            <p>Enter your password to confirm permanent deletion of all data.</p>
+            <input
+              type="password"
+              class="danger-password"
+              placeholder="Enter password"
+              value={clearPassword()}
+              onInput={(e) => setClearPassword(e.currentTarget.value)}
+              autofocus
+            />
             <div class="danger-confirm-actions">
-              <button class="btn-danger" onClick={confirmClearData}>Yes, delete everything</button>
+              <button class="btn-danger" disabled={!clearPassword()} onClick={confirmClearData}>Yes, delete everything</button>
               <button class="btn-cancel" onClick={() => setConfirmClear(false)}>Cancel</button>
             </div>
           </div>
