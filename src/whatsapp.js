@@ -122,7 +122,8 @@ export function createMonitor(db, broadcast) {
 
       if (!db.getChatProfilePic(chatId)) {
         const picSource = chat.isGroup ? chat : contact;
-        fetchAndSaveProfilePic(picSource, chatId).then((pic) => {
+        const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
+        fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
           if (pic) db.updateChatProfilePic(chatId, pic);
         });
       }
@@ -337,7 +338,7 @@ export function createMonitor(db, broadcast) {
     }
   }
 
-  async function fetchAndSaveProfilePic(chatOrContact, chatId) {
+  async function fetchAndSaveProfilePic(chatOrContact, chatId, contactCusId) {
     try {
       let url = null;
       try {
@@ -350,9 +351,15 @@ export function createMonitor(db, broadcast) {
         } catch { /* ignore */ }
       }
 
+      if (!url && contactCusId && contactCusId !== chatId) {
+        try {
+          url = await client.getProfilePicUrl(contactCusId);
+        } catch { /* ignore */ }
+      }
+
       if (!url && chatOrContact.id) {
         const altId = chatOrContact.id._serialized || chatOrContact.id.user;
-        if (altId && altId !== chatId) {
+        if (altId && altId !== chatId && altId !== contactCusId) {
           try {
             url = await client.getProfilePicUrl(altId);
           } catch { /* ignore */ }
