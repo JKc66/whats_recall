@@ -65,8 +65,15 @@ export default function Sidebar() {
     <aside class="sidebar" classList={{ hidden: sidebarHidden() }}>
       <header class="sidebar-header">
         <div class="sidebar-brand">
-          <span class="status-dot" classList={{ on: stats().connected }} />
+          <span
+            class="status-dot"
+            classList={{ on: stats().connected }}
+            title={stats().connected ? 'Connected' : stats().authenticated ? 'Initializing…' : 'Disconnected'}
+          />
           Monitor
+          <Show when={stats().deletedMessages > 0}>
+            <span class="brand-badge">{stats().deletedMessages} deleted</span>
+          </Show>
         </div>
         <nav class="sidebar-actions" aria-label="Sidebar actions">
           <button
@@ -93,13 +100,6 @@ export default function Sidebar() {
           spellcheck={false}
           aria-label="Search chats"
         />
-      </div>
-
-      <div class="status-strip">
-        <span>{stats().connected ? 'Connected' : stats().authenticated ? 'Initializing…' : 'Disconnected'}</span>
-        <Show when={stats().deletedMessages > 0}>
-          <span class="stats-deleted">{stats().deletedMessages} deleted</span>
-        </Show>
       </div>
 
       <div class="chat-list">
