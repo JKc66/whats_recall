@@ -155,12 +155,12 @@ export function initDatabase() {
     getMessages(chatId, limit = 100, before = null) {
       if (before) {
         return db.query(`
-          SELECT * FROM messages WHERE chat_id = ? AND timestamp < ?
+          SELECT * FROM messages WHERE chat_id = ? AND timestamp < ? AND is_deleted = 1
           ORDER BY timestamp DESC LIMIT ?
         `).all(chatId, before, limit).reverse();
       }
       return db.query(`
-        SELECT * FROM messages WHERE chat_id = ?
+        SELECT * FROM messages WHERE chat_id = ? AND is_deleted = 1
         ORDER BY timestamp DESC LIMIT ?
       `).all(chatId, limit).reverse();
     },

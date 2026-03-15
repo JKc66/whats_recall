@@ -138,8 +138,13 @@ export function createMonitor(db, broadcast) {
       if (!db.getChatProfilePic(chatId)) {
         const lastFail = profilePicFailed.get(chatId);
         if (!profilePicInFlight.has(chatId) && (!lastFail || Date.now() - lastFail > 300_000)) {
-          const picSource = chat.isGroup ? chat : contact;
-          const contactCusId = !chat.isGroup ? contact.id?._serialized : null;
+          let picSource = chat;
+          let contactCusId = null;
+          if (!chat.isGroup) {
+            picSource = message.fromMe ? (await chat.getContact() || contact) : contact;
+            contactCusId = picSource.id?._serialized;
+          }
+
           profilePicInFlight.add(chatId);
           fetchAndSaveProfilePic(picSource, chatId, contactCusId).then((pic) => {
             if (pic) {
