@@ -308,6 +308,13 @@ html, body, #root {
 .status-dot.on {
   background: var(--green);
   box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 4px rgba(52, 211, 153, 0.3); }
+  50% { box-shadow: 0 0 10px rgba(52, 211, 153, 0.7); }
+  100% { box-shadow: 0 0 4px rgba(52, 211, 153, 0.3); }
 }
 
 .icon-btn {
@@ -382,22 +389,19 @@ html, body, #root {
 }
 .pill:hover:not(.active) { background: var(--bg-hover); color: var(--text-2); border-color: var(--border-strong); }
 
-.status-strip {
-  padding: 6px 16px;
-  font-size: 11px;
-  color: var(--text-3);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 500;
-}
-
-.stats-deleted {
+.brand-badge {
+  margin-left: 8px;
+  background: var(--red-muted);
   color: var(--red);
+  border: 1px solid rgba(248, 113, 113, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
 }
 
 .chat-list {
