@@ -6,7 +6,6 @@ import type { Message } from './types';
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export default function ChatView() {
-  const [filterDeleted, setFilterDeleted] = createSignal(false);
   const [lightboxSrc, setLightboxSrc] = createSignal<string | null>(null);
   let containerRef: HTMLDivElement | undefined;
 
@@ -14,12 +13,11 @@ export default function ChatView() {
 
   const displayMessages = () => {
     const msgs = messages();
-    return filterDeleted() ? msgs.filter((m) => m.is_deleted) : msgs;
+    return msgs.filter((m) => m.is_deleted);
   };
 
   createEffect(() => {
     if (currentChatId()) {
-      setFilterDeleted(false);
       requestAnimationFrame(() => scrollToBottom());
     }
   });
@@ -87,22 +85,13 @@ export default function ChatView() {
             </div>
           </div>
           <div class="chat-header-actions">
-            <button
-              class="icon-btn"
-              classList={{ active: filterDeleted() }}
-              onClick={() => setFilterDeleted(!filterDeleted())}
-              title="Show deleted only"
-              aria-label="Toggle deleted messages filter"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            </button>
           </div>
         </header>
 
         <div class="messages-container" ref={(el) => (containerRef = el)}>
           <Show when={displayMessages().length > 0} fallback={
             <div class="list-empty">
-              {filterDeleted() ? 'No deleted messages in this chat' : 'No messages yet'}
+              No deleted messages in this chat
             </div>
           }>
             <MsgList messages={displayMessages()} isGroup={!!chat()?.is_group} onImageClick={setLightboxSrc} />
