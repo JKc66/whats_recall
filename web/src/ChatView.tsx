@@ -77,7 +77,7 @@ export default function ChatView() {
             <div>
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
-                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_messages ?? 0} messages
+                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.deleted_count ?? 0} deleted messages
                 <Show when={!chat()?.is_group && currentChatId()}>
                   {' · '}{extractPhone(currentChatId()!)}
                 </Show>
