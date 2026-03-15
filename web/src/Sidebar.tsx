@@ -9,7 +9,6 @@ import type { Chat } from './types';
 
 export default function Sidebar() {
   const [search, setSearch] = createSignal('');
-  const [filter, setFilter] = createSignal<'all' | 'deleted'>('all');
   const [isMobile, setIsMobile] = createSignal(window.innerWidth <= 768);
 
   onMount(() => {
@@ -26,10 +25,7 @@ export default function Sidebar() {
   };
 
   const filteredChats = createMemo(() => {
-    let list = chats();
-    if (filter() === 'deleted') {
-      list = list.filter((c) => c.deleted_count > 0);
-    }
+    let list = chats().filter((c) => c.deleted_count > 0);
     const q = search().toLowerCase().trim();
     if (q) {
       list = list.filter(
@@ -97,15 +93,6 @@ export default function Sidebar() {
           spellcheck={false}
           aria-label="Search chats"
         />
-      </div>
-
-      <div class="pill-group">
-        <button class="pill" classList={{ active: filter() === 'all' }} onClick={() => setFilter('all')}>
-          All chats
-        </button>
-        <button class="pill" classList={{ active: filter() === 'deleted' }} onClick={() => setFilter('deleted')}>
-          Deleted
-        </button>
       </div>
 
       <div class="status-strip">
