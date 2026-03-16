@@ -1,4 +1,4 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import { access, writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -363,25 +363,28 @@ export function createMonitor(db, broadcast) {
 
   async function sendDeletionNotification(msg, chatName) {
     try {
-      const time = new Date(msg.timestamp * 1000).toLocaleString();
-      const now = new Date().toLocaleString();
-      const mediaTag = msg.has_media ? `\n*Type:* ${msg.type}` : '';
+      const conciseText = `🗑️ *${msg.sender_name || 'Unknown'}* in *${chatName}*: ${msg.body || (msg.has_media ? `[${msg.type}]` : '_No text content_')}`;
 
-      const text = [
-        `🗑️ *Deleted Message Detected*`,
-        ``,
-        `*From:* ${msg.sender_name || 'Unknown'}`,
-        `*Chat:* ${chatName}`,
-        `*Sent:* ${time}`,
-        `*Deleted at:* ${now}`,
-        mediaTag,
-        ``,
-        msg.body ? `*Original message:*\n${msg.body}` : '_No text content_',
-        ``,
-        msg.has_media ? '_Media was saved. View it on your dashboard._' : '',
-      ].filter(Boolean).join('\n');
+      if (msg.has_media && msg.media_path) {
+        const filepath = join(MEDIA_DIR, msg.media_path);
+        try {
+          await access(filepath);
+          const media = MessageMedia.fromFilePath(filepath);
 
-      await client.sendMessage(myId, text);
+          if (['image', 'video'].includes(msg.type)) {
+            await client.sendMessage(myId, media, { caption: conciseText });
+          } else {
+            const isVoice = msg.type === 'ptt' || msg.type === 'audio';
+            await client.sendMessage(myId, media, { sendAudioAsVoice: isVoice });
+            await client.sendMessage(myId, conciseText);
+          }
+        } catch (err) {
+          log('WA', `Failed to forward media: ${err.message}`);
+          await client.sendMessage(myId, conciseText + '\n\n_(Media could not be forwarded)_');
+        }
+      } else {
+        await client.sendMessage(myId, conciseText);
+      }
       log('WA', `Deletion notification sent to self`);
     } catch (err) {
       log('WA', `Failed to send deletion notification: ${err.message}`);

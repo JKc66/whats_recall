@@ -16,12 +16,17 @@ log('BOOT', 'Database initialized');
 
 let broadcastFn = () => {};
 
+const enableWeb = process.env.ENABLE_WEB !== 'false';
 const monitor = createMonitor(db, (event, data) => broadcastFn(event, data));
-const { start, broadcast } = createServer(db, monitor);
 
-broadcastFn = broadcast;
+if (enableWeb) {
+  const { start, broadcast } = createServer(db, monitor);
+  broadcastFn = broadcast;
+  start();
+} else {
+  log('BOOT', 'Web server disabled via ENABLE_WEB');
+}
 
-start();
 monitor.start();
 
 process.on('SIGINT', () => {
