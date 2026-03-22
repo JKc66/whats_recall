@@ -255,6 +255,22 @@ export function createServer(db, monitor) {
     });
   });
 
+  // --- Settings routes ---
+
+  app.get('/api/settings', (c) => {
+    return c.json(db.getSettings());
+  });
+
+  app.post('/api/settings/update', async (c) => {
+    const body = await c.req.json();
+    const { key, value } = body;
+    if (!key) return c.json({ error: 'Missing key' }, 400);
+
+    db.updateSetting(key, value);
+    log('API', `Setting updated: ${key} = ${value}`);
+    return c.json({ ok: true });
+  });
+
   // --- Auth middleware for protected API ---
 
   app.use('/api/*', async (c, next) => {
@@ -303,6 +319,15 @@ export function createServer(db, monitor) {
       ...s,
     };
     return c.json(status);
+  });
+
+  app.post('/api/whatsapp/reset', async (c) => {
+    await monitor.resetWhatsAppSession();
+    return c.json({ ok: true });
+  });
+
+  app.get('/api/whatsapp/pairing', (c) => {
+    return c.json(monitor.getPairingStatus());
   });
 
   app.get('/api/settings/notify', (c) => {
@@ -462,7 +487,7 @@ export function createServer(db, monitor) {
           wsClients.delete(ws);
           log('WS', `Client disconnected (total: ${wsClients.size})`);
         },
-        message() {},
+        message() { },
       },
     });
 

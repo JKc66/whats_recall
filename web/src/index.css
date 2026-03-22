@@ -1284,8 +1284,274 @@ body,
 
 .toggle-sublabel {
   font-size: 11px;
+  color: var(--text-4);
+  margin-top: -2px;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 6px;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-item label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.config-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.config-item input[type="text"] {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: all var(--t-normal);
+}
+
+.config-item input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+.config-hint {
+  font-size: 12px;
+  color: var(--text-4);
+  line-height: 1.4;
+}
+
+.toggle-row.no-pad {
+  padding: 0;
+  border-bottom: none;
+}
+
+.spinner.sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Pairing status UI */
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-4);
+  margin-top: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.pairing-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pairing-card.connected {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.pairing-status-pill {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pairing-card.connected .indicator {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.pairing-card.disconnected .indicator {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pairing-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.qr-container {
+  background: white;
+  padding: 15px;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.qr-container img {
+  display: block;
+}
+
+.pairing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.config-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius);
+}
+
+.config-alert svg {
+  color: #f59e0b;
+}
+
+.btn-primary-lite {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px var(--accent-muted);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--text-4);
+  color: var(--text);
+}
+
+.btn-outline.sm {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pairing-code {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: var(--bg-card);
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--accent);
+}
+
+.pairing-box p {
+  font-size: 12px;
   color: var(--text-3);
-  margin-top: 2px;
+  max-width: 250px;
+}
+
+.config-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.tag {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.tag.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.pairing-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.7;
 }
 
 .toggle {

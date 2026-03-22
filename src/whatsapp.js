@@ -24,12 +24,49 @@ function log(category, message, ...args) {
   console.log('[' + ts + '] [' + category + '] ' + message, ...args);
 }
 
+const deleteDirRecursive = async (path) => {
+  const { rm } = await import('fs/promises');
+  await rm(path, { recursive: true, force: true });
+};
+
 export function createMonitor(db, broadcast) {
   let sock = null;
   let clientReady = false;
   let clientAuthenticated = false;
   let myId = null;
-  let notifyWhatsApp = process.env.NOTIFY_WHATSAPP === 'true';
+  let pairingData = { type: null, data: null };
+
+  const getSettings = () => {
+    const s = db.getSettings();
+    return {
+      phone: s.whatsapp_phone || '',
+      notify: s.whatsapp_notify === 'true',
+      method: s.whatsapp_pairing_method || 'code' // 'code' or 'qr'
+    };
+  };
+
+  let { notify: notifyWhatsApp } = getSettings();
+
+  const resetWhatsAppSession = async () => {
+    log('WA', 'Manual reset requested. Clearing auth and restarting...');
+    if (sock) {
+      try { await sock.logout(); } catch (e) { }
+      sock.end();
+    }
+    await deleteDirRecursive(BAILEYS_DATA_DIR);
+    mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
+    pairingData = { type: null, data: null };
+    chats.clear();
+    contacts.clear();
+    // Start fresh: will re-read settings internally
+    setTimeout(start, 2000);
+  };
+
+  // Only update simple preferences live, NO auto-restarts for phone/method
+  setInterval(() => {
+    const s = getSettings();
+    notifyWhatsApp = s.notify;
+  }, 10000);
 
   const contacts = new Map();
   const chats = new Map();
@@ -88,17 +125,16 @@ export function createMonitor(db, broadcast) {
 
     sock.ev.on('creds.update', saveCreds);
 
-    const phoneNumber = process.env.WHATSAPP_PHONE;
-    if (phoneNumber && !sock.authState.creds.registered) {
+    const { phone: phoneNumber, method: pairingMethod } = getSettings();
+
+    if (phoneNumber && pairingMethod === 'code' && !sock.authState.creds.registered) {
       setTimeout(async () => {
         try {
           const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
           const code = await sock.requestPairingCode(formattedPhone);
           const readableCode = code?.match(/.{1,4}/g)?.join('-') || code;
-          log('WA', `📱 Phone pairing requested for ${formattedPhone}. Follow instructions:`);
-          console.log('\n========================================');
-          console.log(` ENTER THIS PAIRING CODE IN WHATSAPP: ${readableCode} `);
-          console.log('========================================\n');
+          pairingData = { type: 'code', data: readableCode };
+          log('WA', `📱 Pairing code generated: ${readableCode}`);
         } catch (err) {
           log('WA', 'Failed to request pairing code: ' + err.message);
         }
@@ -208,10 +244,14 @@ export function createMonitor(db, broadcast) {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        log('WA', 'QR code generated scan to authenticate');
-        console.log('\n========================================');
-        qrcode.generate(qr, { small: true });
-        console.log('========================================\n');
+        const { method } = getSettings();
+        if (method === 'qr') {
+          pairingData = { type: 'qr', data: qr };
+          log('WA', 'QR Code generated');
+          console.log('\n========================================');
+          qrcode.generate(qr, { small: true });
+          console.log('========================================\n');
+        }
       }
 
       if (connection === 'close') {
@@ -708,6 +748,12 @@ export function createMonitor(db, broadcast) {
     getMyId: () => myId,
     getWhatsAppChats,
     getNotifyEnabled: () => notifyWhatsApp,
+    getPairingStatus: () => ({
+      ...pairingData,
+      connected: clientReady,
+      authenticated: !!(sock?.authState?.creds?.registered || clientAuthenticated)
+    }),
+    resetWhatsAppSession,
     setNotifyEnabled: (enabled) => {
       notifyWhatsApp = !!enabled;
       log('WA', `Notification forwarding ${notifyWhatsApp ? 'enabled' : 'disabled'}`);
