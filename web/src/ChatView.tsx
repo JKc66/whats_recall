@@ -159,22 +159,30 @@ function MsgList(props: {
       const showDate = dateStr !== lastDate;
       if (showDate) lastDate = dateStr;
 
-      // Check if this is an image that can be grouped
+      // Check if this is an image or an empty "album marker" message
       const isImage = msg.has_media && msg.media_path && (msg.type === 'image' || (msg.media_type || '').startsWith('image/'));
-      if (isImage) {
+      const isEmpty = !msg.body && !msg.has_media;
+
+      // If first is an image OR an empty marker (which might be the head of an album)
+      if (isImage || (isEmpty && i + 1 < msgs.length && msgs[i + 1].has_media)) {
         const imageGroup: Message[] = [msg];
         let j = i + 1;
         while (j < msgs.length) {
           const next = msgs[j];
           const nextIsImage = next.has_media && next.media_path && (next.type === 'image' || (next.media_type || '').startsWith('image/'));
+          const nextIsEmpty = !next.body && !next.has_media;
           const sameSender = next.is_from_me === msg.is_from_me && next.sender_id === msg.sender_id;
-          const within60s = Math.abs(next.timestamp - msg.timestamp) < 60;
-          if (nextIsImage && sameSender && within60s) {
+          const withinBurst = Math.abs(next.timestamp - msg.timestamp) <= 2; // Increased to 2s to catch album markers
+
+          if ((nextIsImage || nextIsEmpty) && sameSender && withinBurst) {
             imageGroup.push(next);
             j++;
           } else break;
         }
-        if (imageGroup.length > 1) {
+
+        // Only treat as a group if there are at least TWO images or one image + an empty album marker
+        const images = imageGroup.filter(m => m.has_media && m.media_path);
+        if (images.length > 1 || (images.length === 1 && imageGroup.length > 1)) {
           groups.push({ type: 'image-group', messages: imageGroup, dateStr, showDate });
           i = j;
           continue;
@@ -238,6 +246,15 @@ function ImageGroup(props: {
     return `${BASE}/api/media/${encodeURIComponent(path)}`;
   }
 
+  const imageCount = () => props.messages.filter(m => m.has_media && m.media_path).length;
+  const gridClass = () => {
+    const n = imageCount();
+    if (n === 1) return 'grid-single';
+    if (n === 2) return 'grid-2';
+    if (n === 3) return 'grid-3';
+    return 'grid-4'; // multiple rows of 2
+  };
+
   return (
     <div class={`msg ${dir()} image-group-bubble`} data-msg-id={first().message_id}>
       <Show when={props.isGroup && !first().is_from_me}>
@@ -245,10 +262,10 @@ function ImageGroup(props: {
           {first().sender_name || phone() || 'Unknown'}
         </div>
       </Show>
-      <div class="image-grid grid-2">
-        <For each={props.messages}>
+      <div class={`image-grid ${gridClass()}`}>
+        <For each={props.messages.filter(m => m.has_media && m.media_path)}>
           {(msg) => (
-            <div class="image-grid-item" data-msg-id={msg.message_id}>
+            <div class="image-grid-item" data-msg-id={msg.message_id} classList={{ deleted: !!msg.is_deleted }}>
               <img
                 src={mediaUrl(msg.media_path!)}
                 alt="Image"
@@ -256,6 +273,11 @@ function ImageGroup(props: {
                 onClick={() => props.onImageClick(mediaUrl(msg.media_path!))}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
+              <Show when={!!msg.is_deleted}>
+                <div class="image-grid-deleted-tag">
+                  <span class="icon" aria-hidden="true">🗑️</span> Deleted
+                </div>
+              </Show>
             </div>
           )}
         </For>
@@ -264,7 +286,21 @@ function ImageGroup(props: {
         <div class="msg-body">{first().body}</div>
       </Show>
       <div class="msg-meta">
-        <span class="image-count">{props.messages.length} photos</span>
+        <Show when={props.messages.some(m => m.reactions && m.reactions.length > 0)}>
+          <div class="msg-reactions">
+            <For each={groupReactions(props.messages.flatMap(m => m.reactions || []))}>
+              {(group) => (
+                <span class="reaction-pill" title={group.senders.join(', ')}>
+                  <span class="reaction-emoji">{group.emoji}</span>
+                  <Show when={group.count > 1}>
+                    <span class="reaction-count">{group.count}</span>
+                  </Show>
+                </span>
+              )}
+            </For>
+          </div>
+        </Show>
+        <span class="image-count">{props.messages.filter(m => m.has_media).length} photos</span>
         <span class="time">{time()}</span>
       </div>
     </div>
