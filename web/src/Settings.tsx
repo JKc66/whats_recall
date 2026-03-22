@@ -1,6 +1,6 @@
 import { createSignal, createResource, Show, For } from 'solid-js';
 import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled, clearData } from './api';
-import { stats, setStats, setView, setChats, setMessages, setCurrentChatId } from './store';
+import { stats, setStats, setView, setChats, setMessages, setCurrentChatId, showOnlyDeleted, setShowOnlyDeleted } from './store';
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
@@ -91,7 +91,7 @@ export default function Settings() {
       <header class="settings-top">
         <div class="settings-title-row">
           <button class="icon-btn settings-back" onClick={() => setView('chats')} title="Back" aria-label="Back to chats">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <h2>Settings</h2>
         </div>
@@ -105,6 +105,17 @@ export default function Settings() {
         </div>
         <label class="toggle">
           <input type="checkbox" checked={stats().notifyEnabled} onChange={toggleNotify} aria-label="Forward deletions toggle" />
+          <span class="toggle-track" />
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Show only deleted messages</div>
+          <div class="toggle-sublabel">Only list messages that have been explicitly deleted in Chat</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-label="Show only deleted toggle" />
           <span class="toggle-track" />
         </label>
       </div>

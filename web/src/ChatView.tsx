@@ -1,5 +1,5 @@
 import { createSignal, createEffect, Show, For, onCleanup } from 'solid-js';
-import { currentChatId, setCurrentChatId, messages, chats } from './store';
+import { currentChatId, setCurrentChatId, messages, chats, showOnlyDeleted } from './store';
 import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message } from './types';
 
@@ -13,7 +13,8 @@ export default function ChatView() {
 
   const displayMessages = () => {
     const msgs = messages();
-    return msgs.filter((m) => m.is_deleted);
+    if (showOnlyDeleted()) return msgs.filter((m) => m.is_deleted);
+    return msgs;
   };
 
   createEffect(() => {
@@ -61,7 +62,7 @@ export default function ChatView() {
       <Show when={currentChatId()}>
         <header class="chat-header">
           <button class="icon-btn back-btn" onClick={back} aria-label="Back to chat list">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <div class="chat-header-info">
             <Show when={profilePicUrl(chat()?.profile_pic)} fallback={
@@ -77,7 +78,7 @@ export default function ChatView() {
             <div>
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
-                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.deleted_count ?? 0} deleted messages
+                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_deleted_count ?? 0} deleted messages
                 <Show when={!chat()?.is_group && currentChatId()}>
                   {' · '}{extractPhone(currentChatId()!)}
                 </Show>
@@ -91,7 +92,7 @@ export default function ChatView() {
         <div class="messages-container" ref={(el) => (containerRef = el)}>
           <Show when={displayMessages().length > 0} fallback={
             <div class="list-empty">
-              No deleted messages in this chat
+              No {showOnlyDeleted() ? 'deleted ' : ''}messages in this chat
             </div>
           }>
             <MsgList messages={displayMessages()} isGroup={!!chat()?.is_group} onImageClick={setLightboxSrc} />
@@ -194,7 +195,7 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
     );
   }
 
-  const phone = () => m().sender_id ? extractPhone(m().sender_id) : '';
+  const phone = () => m().sender_id ? extractPhone(m().sender_id!) : '';
   const isViewOnce = () => !!m().is_view_once;
 
   return (
@@ -221,7 +222,28 @@ function MsgBubble(props: { msg: Message; isGroup: boolean; onImageClick: (src: 
       {renderMedia()}
 
       <Show when={m().body}>
-        <div class="msg-body">{m().body}</div>
+        {(() => {
+          let text = m().body!;
+          let replyPreview = '';
+          if (text.startsWith('[Replying to: ')) {
+            const newlineIndex = text.indexOf(']\n\n');
+            if (newlineIndex > -1) {
+              replyPreview = text.slice(14, newlineIndex);
+              text = text.slice(newlineIndex + 3);
+            }
+          }
+          return (
+            <div class={`msg-text-container ${replyPreview ? 'has-reply' : ''}`}>
+              <Show when={replyPreview}>
+                <div class="msg-quote">
+                  <div class="msg-quote-title">Replying to</div>
+                  <div class="msg-quote-text">{replyPreview}</div>
+                </div>
+              </Show>
+              <div class="msg-body">{text}</div>
+            </div>
+          );
+        })()}
       </Show>
 
       <Show when={isViewOnce() && !m().body && !m().has_media}>

@@ -4,6 +4,7 @@ export interface Chat {
   is_group: number;
   last_message_at: string | null;
   deleted_count: number;
+  total_deleted_count: number;
   total_messages: number;
   last_message_preview: string | null;
   last_message_sender: string | null;
