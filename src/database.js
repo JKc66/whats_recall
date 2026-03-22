@@ -64,6 +64,16 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
     CREATE INDEX IF NOT EXISTS idx_messages_is_deleted ON messages(is_deleted);
     CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
+
+    CREATE TABLE IF NOT EXISTS reactions (
+      message_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      sender_name TEXT,
+      emoji TEXT NOT NULL DEFAULT '',
+      timestamp TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (message_id, sender_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_reactions_message_id ON reactions(message_id);
   `);
 
   try {
@@ -86,6 +96,18 @@ export function initDatabase() {
     db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER');
   } catch { /* already exists */ }
 
+  try {
+    db.exec('ALTER TABLE messages ADD COLUMN quoted_stanza_id TEXT');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('ALTER TABLE messages ADD COLUMN quoted_sender TEXT');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('ALTER TABLE messages ADD COLUMN quoted_preview TEXT');
+  } catch { /* already exists */ }
+
   return {
     upsertChat(chatId, name, isGroup) {
       db.query(`
@@ -103,13 +125,15 @@ export function initDatabase() {
       db.query(`
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
-         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once, original_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once, original_id,
+         quoted_stanza_id, quoted_sender, quoted_preview)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         msg.messageId, msg.chatId, msg.senderId, msg.senderName,
         msg.body, msg.type, msg.hasMedia ? 1 : 0,
         msg.mediaType, msg.mediaFilename, msg.mediaPath,
-        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0, msg.originalId || null
+        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0, msg.originalId || null,
+        msg.quotedStanzaId || null, msg.quotedSender || null, msg.quotedPreview || null
       );
     },
 
@@ -147,7 +171,15 @@ export function initDatabase() {
           (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.chat_id) as total_messages,
           (SELECT body FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_preview,
           (SELECT sender_name FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_sender
-        FROM chats c
+        FROM (
+          SELECT * FROM chats
+          UNION
+          SELECT mc.chat_id, mc.name, mc.is_group, NULL as last_message_at,
+                 mc.added_at as created_at, mc.added_at as updated_at,
+                 NULL as profile_pic, NULL as last_seen_deleted_at
+          FROM monitored_chats mc
+          WHERE mc.chat_id NOT IN (SELECT chat_id FROM chats)
+        ) c
         ORDER BY c.last_message_at DESC
       `).all();
     },
@@ -159,16 +191,33 @@ export function initDatabase() {
     },
 
     getMessages(chatId, limit = 100, before = null) {
+      let msgs;
       if (before) {
-        return db.query(`
+        msgs = db.query(`
           SELECT * FROM messages WHERE chat_id = ? AND timestamp < ?
           ORDER BY timestamp DESC LIMIT ?
         `).all(chatId, before, limit).reverse();
+      } else {
+        msgs = db.query(`
+          SELECT * FROM messages WHERE chat_id = ?
+          ORDER BY timestamp DESC LIMIT ?
+        `).all(chatId, limit).reverse();
       }
-      return db.query(`
-        SELECT * FROM messages WHERE chat_id = ?
-        ORDER BY timestamp DESC LIMIT ?
-      `).all(chatId, limit).reverse();
+      // Attach reactions to each message
+      if (msgs.length > 0) {
+        const ids = msgs.map(m => m.message_id);
+        const placeholders = ids.map(() => '?').join(',');
+        const reactions = db.query(`SELECT * FROM reactions WHERE message_id IN (${placeholders}) AND emoji != ''`).all(...ids);
+        const reactionMap = {};
+        for (const r of reactions) {
+          if (!reactionMap[r.message_id]) reactionMap[r.message_id] = [];
+          reactionMap[r.message_id].push({ sender_id: r.sender_id, sender_name: r.sender_name, emoji: r.emoji });
+        }
+        for (const m of msgs) {
+          m.reactions = reactionMap[m.message_id] || [];
+        }
+      }
+      return msgs;
     },
 
     getDeletedMessages(limit = 50) {
@@ -243,6 +292,18 @@ export function initDatabase() {
     isMonitored(chatId) {
       const row = db.query('SELECT 1 FROM monitored_chats WHERE chat_id = ?').get(chatId);
       return !!row;
+    },
+
+    addReaction(messageId, senderId, senderName, emoji) {
+      if (emoji) {
+        db.query(`
+          INSERT OR REPLACE INTO reactions (message_id, sender_id, sender_name, emoji)
+          VALUES (?, ?, ?, ?)
+        `).run(messageId, senderId, senderName, emoji);
+      } else {
+        // Empty emoji = reaction removed
+        db.query('DELETE FROM reactions WHERE message_id = ? AND sender_id = ?').run(messageId, senderId);
+      }
     },
 
     getChatProfilePics(chatIds) {

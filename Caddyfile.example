@@ -1,4 +1,7 @@
-# Replace with your domain. Caddy auto-provisions HTTPS via Let's Encrypt.
-monitor.example.com {
-    reverse_proxy localhost:3000
+xxxx.xx {
+    @whats_exact path /whats
+    redir @whats_exact /whats/ 301
+    handle_path /whats/* {
+        reverse_proxy 127.0.0.1:3001
+    }
 }
