@@ -1,19 +1,29 @@
-import { createSignal, createResource, Show, For } from 'solid-js';
-import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled, clearData } from './api';
+import { fetchWhatsAppChats, fetchMonitored, addMonitored, removeMonitored, setNotifyEnabled, clearData, fetchSettings, updateSetting, fetchPairingStatus, resetWhatsApp } from './api';
 import { stats, setStats, setView, setChats, setMessages, setCurrentChatId, showOnlyDeleted, setShowOnlyDeleted } from './store';
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
+import { createSignal, createResource, Show, For, onCleanup } from 'solid-js';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
-  const [tab, setTab] = createSignal<'monitored' | 'available'>('monitored');
+  const [tab, setTab] = createSignal<'monitored' | 'available' | 'config'>('config');
   const [monitored, { refetch: refetchMonitored }] = createResource(fetchMonitored);
   const [available, { refetch: refetchAvailable }] = createResource(fetchWhatsAppChats);
   const [busy, setBusy] = createSignal<string | null>(null);
   const [confirmClear, setConfirmClear] = createSignal(false);
   const [clearing, setClearing] = createSignal(false);
   const [clearPassword, setClearPassword] = createSignal('');
+
+  const [config, { refetch: refetchConfig }] = createResource(fetchSettings);
+  const [savingConfig, setSavingConfig] = createSignal<string | null>(null);
+  const [pairing, { refetch: refetchPairing }] = createResource(fetchPairingStatus);
+  const [showResetNotice, setShowResetNotice] = createSignal(false);
+
+  onCleanup(() => clearInterval(pairingInterval));
+  const pairingInterval = setInterval(() => {
+    if (tab() === 'config' && !stats().connected) refetchPairing();
+  }, 5000);
 
   const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
 
@@ -80,9 +90,48 @@ export default function Settings() {
     const next = !stats().notifyEnabled;
     setStats((s) => ({ ...s, notifyEnabled: next }));
     try {
-      await setNotifyEnabled(next);
+      if (config()) {
+        await handleConfigUpdate('whatsapp_notify', next.toString());
+      } else {
+        await setNotifyEnabled(next);
+      }
     } catch {
       setStats((s) => ({ ...s, notifyEnabled: !next }));
+    }
+  }
+
+  async function handleConfigUpdate(key: string, value: string) {
+    if (config() && config()![key] === value) return; // Ignore if no change
+    setSavingConfig(key);
+    try {
+      await updateSetting(key, value);
+      await refetchConfig();
+      if (key === 'whatsapp_notify') {
+        setStats(s => ({ ...s, notifyEnabled: value === 'true' }));
+      }
+      if (key === 'whatsapp_phone' || key === 'whatsapp_pairing_method') {
+        setShowResetNotice(true);
+      }
+      notify.success('Setting saved', `${key.replace(/_/g, ' ')} updated successfully.`);
+    } catch {
+      notify.warning('Save failed', 'Something went wrong.');
+    } finally {
+      setSavingConfig(null);
+    }
+  }
+
+  async function handleReset() {
+    if (!confirm('Are you sure? This will log you out of the current WhatsApp session and clear its cache.')) return;
+    setBusy('reset_wa');
+    try {
+      await resetWhatsApp();
+      await refetchPairing();
+      setShowResetNotice(false);
+      notify.success('Session reset', 'Waiting for new pairing...');
+    } catch {
+      notify.warning('Reset failed', 'Could not reset session.');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -98,28 +147,6 @@ export default function Settings() {
         <p>Manage monitored chats and notification preferences.</p>
       </header>
 
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">Forward deletions to WhatsApp</div>
-          <div class="toggle-sublabel">Send yourself a message when someone deletes a message</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" checked={stats().notifyEnabled} onChange={toggleNotify} aria-label="Forward deletions toggle" />
-          <span class="toggle-track" />
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">Show only deleted messages</div>
-          <div class="toggle-sublabel">Only list messages that have been explicitly deleted in Chat</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-label="Show only deleted toggle" />
-          <span class="toggle-track" />
-        </label>
-      </div>
-
       <div class="settings-search">
         <input
           type="text"
@@ -132,6 +159,9 @@ export default function Settings() {
       </div>
 
       <div class="settings-tabs">
+        <button class="pill" classList={{ active: tab() === 'config' }} onClick={() => setTab('config')}>
+          Configuration
+        </button>
         <button class="pill" classList={{ active: tab() === 'monitored' }} onClick={() => setTab('monitored')}>
           Monitored ({(monitored() || []).length})
         </button>
@@ -139,6 +169,135 @@ export default function Settings() {
           Available
         </button>
       </div>
+
+      <Show when={tab() === 'config'}>
+        <div class="settings-list">
+          <div class="config-section">
+            <h3 class="section-title">Connectivity</h3>
+
+            <div class={`pairing-card ${pairing()?.authenticated ? 'connected' : 'disconnected'}`}>
+              <div class="pairing-status-pill">
+                <span class="indicator" />
+                {pairing()?.authenticated ? 'Authenticated & Connected' : 'Waiting for pairing...'}
+              </div>
+
+              <Show when={!pairing()?.authenticated}>
+                <div class="pairing-box">
+                  <Show when={pairing()?.type === 'qr'}>
+                    <div class="qr-container">
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(pairing()?.data || '')}&size=200x200`} alt="Scan to pair" />
+                      <p>Scan this QR code with WhatsApp on your phone</p>
+                    </div>
+                  </Show>
+                  <Show when={pairing()?.type === 'code'}>
+                    <div class="code-container">
+                      <div class="pairing-code">{pairing()?.data || 'Generating...'}</div>
+                      <p>Enter this code in WhatsApp (Link a device → Link with phone number)</p>
+                    </div>
+                  </Show>
+                  <Show when={!pairing()?.data}>
+                    <div class="pairing-loading">
+                      <div class="spinner" />
+                      <span>The monitor will generate a pairing code/QR shortly if a phone number is set.</span>
+                    </div>
+                  </Show>
+                </div>
+              </Show>
+
+              <Show when={pairing()?.authenticated}>
+                <div class="pairing-actions">
+                  <Show when={showResetNotice()}>
+                    <div class="config-alert">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                      Settings changed. Click below to apply.
+                    </div>
+                  </Show>
+                  <button class="btn-outline sm" classList={{ 'btn-primary-lite': showResetNotice() }} onClick={handleReset} disabled={!!busy()}>
+                    {showResetNotice() ? 'Apply Changes & Reset Session' : 'Link New Device / Reset Session'}
+                  </button>
+                </div>
+              </Show>
+            </div>
+
+            <div class="config-item">
+              <label>Pairing Mechanism</label>
+              <div class="config-tags">
+                <button
+                  class="tag"
+                  classList={{ active: (config()?.whatsapp_pairing_method || 'code') === 'qr' }}
+                  onClick={() => handleConfigUpdate('whatsapp_pairing_method', 'qr')}
+                >QR Code</button>
+                <button
+                  class="tag"
+                  classList={{ active: (config()?.whatsapp_pairing_method || 'code') === 'code' }}
+                  onClick={() => handleConfigUpdate('whatsapp_pairing_method', 'code')}
+                >Phone Pairing Code</button>
+              </div>
+            </div>
+
+            <div class="config-item">
+              <label>WhatsApp Phone Number</label>
+              <div class="config-input-row">
+                <input
+                  type="text"
+                  placeholder="+123456789 (With country code)"
+                  value={config()?.whatsapp_phone || ''}
+                  onBlur={(e) => handleConfigUpdate('whatsapp_phone', e.currentTarget.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleConfigUpdate('whatsapp_phone', e.currentTarget.value)}
+                  disabled={!!savingConfig()}
+                  aria-label="WhatsApp phone setting"
+                />
+                <Show when={savingConfig() === 'whatsapp_phone'}>
+                  <div class="spinner sm" />
+                </Show>
+              </div>
+              <p class="config-hint">Changing this will clear the current session and restart the pair process.</p>
+            </div>
+
+            <h3 class="section-title">Preferences</h3>
+            <div class="config-item">
+              <div class="toggle-row no-pad">
+                <div>
+                  <div class="toggle-label">Forward deletions to WhatsApp</div>
+                  <div class="toggle-sublabel">Send yourself a message when someone deletes a message</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked={config() ? config()?.whatsapp_notify === 'true' : stats().notifyEnabled} onChange={toggleNotify} aria-label="WhatsApp notifications toggle" />
+                  <span class="toggle-track" />
+                </label>
+              </div>
+            </div>
+
+            <div class="config-item">
+              <div class="toggle-row no-pad">
+                <div>
+                  <div class="toggle-label">Show only deleted messages</div>
+                  <div class="toggle-sublabel">Only list messages that have been explicitly deleted in Chat</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-label="Show only deleted toggle" />
+                  <span class="toggle-track" />
+                </label>
+              </div>
+            </div>
+
+            <div class="config-item">
+              <label>Application Name</label>
+              <div class="config-input-row">
+                <input
+                  type="text"
+                  placeholder="WhatsApp Monitor"
+                  value={config()?.app_name || ''}
+                  onBlur={(e) => handleConfigUpdate('app_name', e.currentTarget.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleConfigUpdate('app_name', e.currentTarget.value)}
+                  disabled={!!savingConfig()}
+                  aria-label="Application name setting"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Show>
 
       <Show when={tab() === 'monitored'}>
         <div class="settings-list">

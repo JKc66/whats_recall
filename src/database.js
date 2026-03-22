@@ -74,6 +74,12 @@ export function initDatabase() {
       PRIMARY KEY (message_id, sender_id)
     );
     CREATE INDEX IF NOT EXISTS idx_reactions_message_id ON reactions(message_id);
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   try {
@@ -107,6 +113,14 @@ export function initDatabase() {
   try {
     db.exec('ALTER TABLE messages ADD COLUMN quoted_preview TEXT');
   } catch { /* already exists */ }
+
+  // Initial Seed from .env
+  const seed = (key, val) => {
+    db.query('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run(key, val);
+  };
+  seed('whatsapp_phone', process.env.WHATSAPP_PHONE || '');
+  seed('whatsapp_notify', process.env.NOTIFY_WHATSAPP || 'false');
+  seed('app_name', 'WhatsApp Monitor');
 
   return {
     upsertChat(chatId, name, isGroup) {
@@ -325,8 +339,9 @@ export function initDatabase() {
     },
 
     async clearAllData() {
-      db.exec('DELETE FROM messages');
-      db.exec('DELETE FROM chats');
+      db.query("DELETE FROM messages").run();
+      db.query("DELETE FROM chats").run();
+      db.query("DELETE FROM reactions").run();
       try {
         const { rm, mkdir } = await import('fs/promises');
         await rm(MEDIA_DIR, { recursive: true, force: true });
@@ -334,6 +349,23 @@ export function initDatabase() {
       } catch (err) {
         console.error('Error clearing media directory:', err);
       }
+    },
+
+    getSettings() {
+      const rows = db.query("SELECT key, value FROM settings").all();
+      const settings = {};
+      rows.forEach(r => settings[r.key] = r.value);
+      return settings;
+    },
+
+    updateSetting(key, value) {
+      db.query(`
+        INSERT INTO settings (key, value, updated_at) 
+        VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET 
+          value = excluded.value, 
+          updated_at = datetime('now')
+      `).run(key, value);
     },
 
     close() {

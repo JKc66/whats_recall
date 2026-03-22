@@ -130,12 +130,20 @@ export async function fetchWhatsAppChats(): Promise<WhatsAppChat[]> {
   return data.chats;
 }
 
-export async function setNotifyEnabled(enabled: boolean): Promise<void> {
-  await request(`${BASE}/api/settings/notify`, {
+export async function fetchSettings(): Promise<Record<string, string>> {
+  return request<Record<string, string>>(`${BASE}/api/settings`);
+}
+
+export async function updateSetting(key: string, value: string): Promise<void> {
+  await request(`${BASE}/api/settings/update`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled }),
+    body: JSON.stringify({ key, value }),
   });
+}
+
+export async function setNotifyEnabled(enabled: boolean): Promise<void> {
+  await updateSetting('whatsapp_notify', enabled.toString());
 }
 
 export async function clearData(password: string): Promise<void> {
@@ -144,6 +152,14 @@ export async function clearData(password: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
+}
+
+export async function fetchPairingStatus(): Promise<{ type: 'qr' | 'code' | null; data: string | null; connected: boolean; authenticated: boolean }> {
+  return request(`${BASE}/api/whatsapp/pairing`);
+}
+
+export async function resetWhatsApp(): Promise<void> {
+  await request(`${BASE}/api/whatsapp/reset`, { method: 'POST' });
 }
 
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {
