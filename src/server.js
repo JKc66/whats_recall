@@ -58,6 +58,7 @@ export function createServer(db, monitor) {
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
+  const apiRateLimits = new Map(); // ip:path -> { count, firstAttempt }
 
   function getClientIp(c) {
     const forwarded = c.req.header('x-forwarded-for');
@@ -100,6 +101,27 @@ export function createServer(db, monitor) {
     loginAttempts.delete(ip);
   }
 
+  function checkApiRateLimit(ip, path, limit = 60, windowMs = 60_000) {
+    const key = `${ip}:${path}`;
+    const entry = apiRateLimits.get(key);
+    const now = Date.now();
+    if (!entry || now - entry.firstAttempt > windowMs) {
+      apiRateLimits.set(key, { count: 1, firstAttempt: now });
+      return true;
+    }
+    if (entry.count >= limit) return false;
+    entry.count++;
+    return true;
+  }
+
+  const pruneApiRateLimits = () => {
+    const now = Date.now();
+    for (const [key, entry] of apiRateLimits) {
+      if (now - entry.firstAttempt > 600_000) apiRateLimits.delete(key);
+    }
+  };
+  setInterval(pruneApiRateLimits, 600_000);
+
   function broadcast(event, data) {
     const payload = JSON.stringify({ event, data });
     const clientCount = wsClients.size;
@@ -128,8 +150,10 @@ export function createServer(db, monitor) {
 
   function safePath(baseDir, userPath) {
     const decodedPath = decodeURIComponent(userPath);
-    const resolved = resolve(baseDir, decodedPath.replace(/^\/+/, ''));
-    if (!resolved.startsWith(resolve(baseDir))) return null;
+    const base = resolve(baseDir);
+    const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
+    // Ensure resolved path is within base and handle directory prefix bypass
+    if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
     return resolved;
   }
 
@@ -156,6 +180,7 @@ export function createServer(db, monitor) {
     c.header('X-Frame-Options', 'DENY');
     c.header('X-XSS-Protection', '1; mode=block');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    c.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https://api.qrserver.com https://pps.whatsapp.net; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:;");
   });
 
   // --- Request logging ---
@@ -255,21 +280,7 @@ export function createServer(db, monitor) {
     });
   });
 
-  // --- Settings routes ---
-
-  app.get('/api/settings', (c) => {
-    return c.json(db.getSettings());
-  });
-
-  app.post('/api/settings/update', async (c) => {
-    const body = await c.req.json();
-    const { key, value } = body;
-    if (!key) return c.json({ error: 'Missing key' }, 400);
-
-    db.updateSetting(key, value);
-    log('API', `Setting updated: ${key} = ${value}`);
-    return c.json({ ok: true });
-  });
+  // --- Auth routes (Public) ---
 
   // --- Auth middleware for protected API ---
 
@@ -305,6 +316,27 @@ export function createServer(db, monitor) {
     }
 
     return next();
+  });
+
+  // --- Protected Settings routes ---
+
+  const ALLOWED_SETTING_KEYS = ['whatsapp_phone', 'whatsapp_notify', 'app_name', 'whatsapp_pairing_method'];
+
+  app.get('/api/settings', (c) => {
+    return c.json(db.getSettings());
+  });
+
+  app.post('/api/settings/update', async (c) => {
+    const body = await c.req.json();
+    const { key, value } = body;
+    if (!key || !ALLOWED_SETTING_KEYS.includes(key)) {
+      log('API', `Unauthorized setting update attempt: ${key}`);
+      return c.json({ error: 'Invalid or unauthorized setting key' }, 400);
+    }
+
+    db.updateSetting(key, String(value));
+    log('API', `Setting updated: ${key} = ${value}`);
+    return c.json({ ok: true });
   });
 
   // --- API routes ---
@@ -367,6 +399,11 @@ export function createServer(db, monitor) {
   });
 
   app.get('/api/search', (c) => {
+    const ip = getClientIp(c);
+    if (!checkApiRateLimit(ip, 'search', 30, 60_000)) {
+      log('API', `Search rate-limited for ${ip}`);
+      return c.json({ error: 'Too many search requests. Please wait a minute.' }, 429);
+    }
     const query = c.req.query('q') || '';
     if (query.length < 2) return c.json({ messages: [] });
     const messages = db.searchMessages(query);
