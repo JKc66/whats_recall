@@ -27,6 +27,17 @@ export interface Message {
   is_deleted: number;
   deleted_at: string | null;
   is_view_once: number;
+  original_id: string | null;
+  quoted_stanza_id: string | null;
+  quoted_sender: string | null;
+  quoted_preview: string | null;
+  reactions: Reaction[];
+}
+
+export interface Reaction {
+  sender_id: string;
+  sender_name: string;
+  emoji: string;
 }
 
 export interface MonitoredChat {
@@ -42,6 +53,7 @@ export interface WhatsAppChat {
   isGroup: boolean;
   timestamp: number;
   isMonitored: boolean;
+  profilePic?: string | null;
 }
 
 export interface Stats {

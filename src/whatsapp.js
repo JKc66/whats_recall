@@ -5,6 +5,15 @@ import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 import pino from 'pino';
+import WS from 'ws';
+
+// Patch ws to suppress Bun warnings for unimplemented events
+const originalOn = WS.prototype.on;
+WS.prototype.on = function (event, listener) {
+  if (event === 'upgrade' || event === 'unexpected-response') return this;
+  return originalOn.apply(this, arguments);
+};
+
 
 // Ensure data dirs
 const BAILEYS_DATA_DIR = './data/baileys_auth';
@@ -44,7 +53,7 @@ export function createMonitor(db, broadcast) {
       version,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      syncFullHistory: false,
+      syncFullHistory: true,
       browser: ['Ubuntu', 'Chrome', '20.0.0']
     });
 
@@ -67,18 +76,51 @@ export function createMonitor(db, broadcast) {
       }, 3000);
     }
 
-    sock.ev.on('messaging-history.set', ({ chats: historyChats, contacts: historyContacts }) => {
-      for (const contact of historyContacts) {
-        if (contact.id) contacts.set(contact.id, contact);
+    sock.ev.on('messaging-history.set', ({ chats: historyChats, contacts: historyContacts, isLatest }) => {
+      log('WA', `History sync: ${historyChats?.length || 0} chats, ${historyContacts?.length || 0} contacts (isLatest: ${isLatest})`);
+      for (const contact of (historyContacts || [])) {
+        if (contact.id) {
+          const old = contacts.get(contact.id) || {};
+          contacts.set(contact.id, { ...old, ...contact });
+        }
       }
-      for (const chat of historyChats) {
-        if (chat.id) chats.set(chat.id, chat);
+      for (const chat of (historyChats || [])) {
+        if (chat.id) {
+          const old = chats.get(chat.id) || {};
+          chats.set(chat.id, { ...old, ...chat });
+        }
       }
     });
 
     sock.ev.on('contacts.upsert', (newContacts) => {
+      log('WA', `Contacts upsert: ${newContacts.length} contacts`);
       for (const contact of newContacts) {
-        if (contact.id) contacts.set(contact.id, contact);
+        if (contact.id) {
+          const old = contacts.get(contact.id) || {};
+          contacts.set(contact.id, { ...old, ...contact });
+        }
+      }
+    });
+
+    sock.ev.on('contacts.set', ({ contacts: newContacts }) => {
+      if (!newContacts) return;
+      log('WA', `Contacts set: ${newContacts.length} contacts`);
+      for (const contact of newContacts) {
+        if (contact.id) {
+          const old = contacts.get(contact.id) || {};
+          contacts.set(contact.id, { ...old, ...contact });
+        }
+      }
+    });
+
+    sock.ev.on('chats.set', ({ chats: newChats }) => {
+      if (!newChats) return;
+      log('WA', `Chats set: ${newChats.length} chats`);
+      for (const chat of newChats) {
+        if (chat.id) {
+          const old = chats.get(chat.id) || {};
+          chats.set(chat.id, { ...old, ...chat });
+        }
       }
     });
 
@@ -124,7 +166,7 @@ export function createMonitor(db, broadcast) {
       }
     });
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -135,16 +177,30 @@ export function createMonitor(db, broadcast) {
       }
 
       if (connection === 'close') {
-        const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-        log('WA', 'Connection closed: ' + lastDisconnect?.error + ', reconnecting: ' + shouldReconnect);
-        console.error('Connection close details:', lastDisconnect?.error);
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const reason = lastDisconnect?.error?.message || 'Unknown';
+        log('WA', `Connection closed: ${reason} (code: ${statusCode})`);
         clientReady = false;
         clientAuthenticated = false;
-        broadcast('status', { connected: false, authenticated: false, reason: lastDisconnect?.error?.message });
-        if (shouldReconnect) {
-          setTimeout(start, 3000);
+        broadcast('status', { connected: false, authenticated: false, reason });
+
+        // Terminal errors — clear auth and start fresh
+        const terminalCodes = [DisconnectReason.loggedOut, 401, 403, 411];
+        if (terminalCodes.includes(statusCode)) {
+          log('WA', `Terminal disconnect (code ${statusCode}). Clearing auth state and restarting...`);
+          try {
+            const { rm } = await import('fs/promises');
+            await rm(BAILEYS_DATA_DIR, { recursive: true, force: true });
+            mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
+            log('WA', 'Auth state cleared. Will show QR/pairing code on reconnect.');
+          } catch (e) {
+            log('WA', 'Failed to clear auth state: ' + e.message);
+          }
+          setTimeout(start, 5000);
         } else {
-          broadcast('status', { connected: false, authenticated: false, reason: 'Logged out' });
+          // Temporary errors — reconnect with existing auth
+          log('WA', 'Temporary disconnect. Reconnecting in 3s...');
+          setTimeout(start, 3000);
         }
       } else if (connection === 'open') {
         clientReady = true;
@@ -156,7 +212,7 @@ export function createMonitor(db, broadcast) {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return;
+      if (type !== 'notify' && type !== 'append') return;
       for (const msg of messages) {
         await handleMessage(msg);
       }
@@ -212,14 +268,23 @@ export function createMonitor(db, broadcast) {
 
   async function getChatName(jid, pushName = null) {
     if (!jid) return 'Unknown';
-    if (pushName) return pushName;
-    const chatInfo = chats.get(jid);
-    if (chatInfo?.name) return chatInfo.name;
+
+    // 1. Phone-saved contact name (highest priority — user's own addressbook)
     const contactInfo = contacts.get(jid);
     if (contactInfo?.name) return contactInfo.name;
-    if (contactInfo?.notify) return contactInfo.notify;
 
-    // Dynamic fallback for unidentified groups
+    // 2. Push name from message (real-time name from WhatsApp)
+    if (pushName) return pushName;
+
+    // 3. Chat name (group subject or synced name)
+    const chatInfo = chats.get(jid);
+    if (chatInfo?.name) return chatInfo.name;
+
+    // 4. WhatsApp push/notify names from sync
+    if (contactInfo?.notify) return contactInfo.notify;
+    if (chatInfo?.notify) return chatInfo.notify;
+
+    // 5. Dynamic fallback for groups
     if (sock && isJidGroup(jid)) {
       try {
         const metadata = await sock.groupMetadata(jid);
@@ -230,7 +295,7 @@ export function createMonitor(db, broadcast) {
       } catch (e) { }
     }
 
-    // Fallback to fetch real phone number for LIDs
+    // 6. Fallback to fetch real phone number for LIDs
     if (sock?.signalRepository?.lidMapping && jid.includes('@lid')) {
       try {
         const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
@@ -275,11 +340,20 @@ export function createMonitor(db, broadcast) {
     let messageType = getContentType(msg.message);
     const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
 
+    let tempMsg = msg.message;
     while (messageType && wrappers.includes(messageType)) {
       if (messageType.includes('viewOnce')) isViewOnce = true;
-      msg.message = extractMessageContent(msg.message);
-      messageType = getContentType(msg.message);
+      tempMsg = extractMessageContent(tempMsg);
+      messageType = getContentType(tempMsg);
     }
+
+    // Fallback detection on the unwrapped message payload
+    if (tempMsg && messageType && tempMsg[messageType]?.viewOnce) {
+      isViewOnce = true;
+    }
+
+    // Assign the unwrapped message back for correct processing below
+    msg.message = tempMsg;
 
     if (!messageType) return;
 
@@ -289,6 +363,35 @@ export function createMonitor(db, broadcast) {
       if (content.type === 0 || content.type === 'REVOKE') {
         await handleRevoke(msg.key, content.key);
       }
+      return;
+    }
+
+    // Handle reaction messages — update the original message with the reaction
+    if (messageType === 'reactionMessage') {
+      const reaction = content;
+      const targetKey = reaction.key; // the message being reacted to
+      if (!targetKey?.id) return;
+
+      const targetId = targetKey.id;
+      const emoji = reaction.text || ''; // empty string = reaction removed
+
+      const isGroup = isJidGroup(chatId);
+      let senderId = isGroup ? (msg.key.participant || chatId) : chatId;
+      if (isGroup && msg.key.participantAlt && senderId.includes('@lid')) {
+        senderId = msg.key.participantAlt;
+      } else if (!isGroup && msg.key.remoteJidAlt && senderId.includes('@lid')) {
+        senderId = msg.key.remoteJidAlt;
+      }
+      const senderName = await getChatName(senderId, msg.pushName);
+
+      db.addReaction(targetId, senderId, senderName, emoji);
+      broadcast('message_reaction', {
+        chatId,
+        targetMessageId: targetId,
+        senderId,
+        senderName,
+        emoji,
+      });
       return;
     }
 
@@ -313,28 +416,65 @@ export function createMonitor(db, broadcast) {
     else if (content && content.caption) body = content.caption;
 
     const contextInfo = content?.contextInfo || msg.message?.extendedTextMessage?.contextInfo || msg.message?.imageMessage?.contextInfo || msg.message?.videoMessage?.contextInfo;
+    let quotedStanzaId = null;
+    let quotedSender = null;
+    let quotedPreview = null;
+    let quotedViewOnceMedia = null;
+
     if (contextInfo && contextInfo.quotedMessage) {
-      const qMsgType = getContentType(contextInfo.quotedMessage);
-      const qContent = contextInfo.quotedMessage[qMsgType];
+      quotedStanzaId = contextInfo.stanzaId || null;
+      // Resolve quoted sender JID to a readable name
+      const rawQuotedSender = contextInfo.participant || null;
+      if (rawQuotedSender) {
+        quotedSender = await getChatName(rawQuotedSender);
+      }
+
+      // Check if the quoted message contains view-once media
+      const quotedStr = JSON.stringify(contextInfo.quotedMessage);
+      const quotedIsViewOnce = quotedStr.includes('viewOnce') || quotedStr.includes('viewOnceMessage');
+
+      // Try to extract the actual quoted content (unwrap viewOnce wrappers)
+      let qMsg = extractMessageContent(contextInfo.quotedMessage);
+      const qMsgType = getContentType(qMsg);
+      const qContent = qMsg ? qMsg[qMsgType] : null;
 
       let preview = '';
-      if (qMsgType === 'conversation') preview = contextInfo.quotedMessage.conversation;
+      if (qMsgType === 'conversation') preview = qMsg.conversation;
       else if (qMsgType === 'extendedTextMessage') preview = qContent?.text;
       else if (qContent?.caption) preview = qContent.caption;
       else preview = '[' + (qMsgType || 'message').replace('Message', '') + ']';
 
-      if (JSON.stringify(contextInfo.quotedMessage).includes('viewOnce') || qContent?.viewOnce) {
+      if (quotedIsViewOnce || qContent?.viewOnce) {
         preview = '👁️ (View Once) ' + preview;
+
+        // Try to download the quoted view-once media
+        const quotedMediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
+        if (qMsgType && quotedMediaTypes.includes(qMsgType) && qContent) {
+          log('WA', `Attempting to download quoted view-once ${qMsgType}...`);
+          try {
+            quotedViewOnceMedia = await downloadAndSaveMedia(qMsg);
+            if (quotedViewOnceMedia) {
+              log('WA', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.mediaPath}`);
+            }
+          } catch (e) {
+            log('WA', `Failed to download quoted view-once media: ${e.message}`);
+          }
+        }
       }
 
-      // append preview to body
-      body = `[Replying to: ${preview.slice(0, 60)}${preview.length > 60 ? '...' : ''}]\n\n${body}`;
+      quotedPreview = preview.slice(0, 100);
     }
 
     let mediaData = null;
     let hasMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(messageType);
     if (hasMedia) {
       mediaData = await downloadAndSaveMedia(msg.message);
+    }
+
+    // If this is a reply to a view-once message and we downloaded the quoted media, use it
+    if (!mediaData && quotedViewOnceMedia) {
+      mediaData = quotedViewOnceMedia;
+      hasMedia = true;
     }
 
     const originalId = msg.key.id;
@@ -354,6 +494,9 @@ export function createMonitor(db, broadcast) {
       isFromMe: msg.key.fromMe || false,
       isViewOnce,
       originalId,
+      quotedStanzaId,
+      quotedSender,
+      quotedPreview,
     };
 
     db.saveMessage(msgData);
@@ -438,26 +581,58 @@ export function createMonitor(db, broadcast) {
   async function getWhatsAppChats() {
     if (!clientReady) return [];
     try {
+      if (clientReady && sock) {
+        try {
+          const allGroups = await sock.groupFetchAllParticipating();
+          for (const [id, group] of Object.entries(allGroups)) {
+            if (!chats.has(id)) {
+              chats.set(id, { id, name: group.subject });
+            }
+          }
+        } catch (e) {
+          log('WA', 'Failed to fetch all participating groups: ' + e.message);
+        }
+      }
+
+      // Merge contacts into chats map so private contacts show up too
+      for (const [id, contact] of contacts.entries()) {
+        if (!id || id.endsWith('@g.us') || id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
+        if (!chats.has(id)) {
+          chats.set(id, { id, name: contact.name || contact.notify || '' });
+        } else {
+          // Ensure name is populated from contact if the chat entry has no name
+          const c = chats.get(id);
+          if (!c.name && (contact.name || contact.notify)) {
+            chats.set(id, { ...c, name: contact.name || contact.notify });
+          }
+        }
+      }
+
       const allChats = Array.from(chats.values());
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
+
+      log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
 
       const results = await Promise.all(allChats
         .filter(c => c.id !== 'status@broadcast')
         .map(async c => {
           const isGroup = isJidGroup(c.id);
-          let name = await getChatName(c.id);
+          let name = c.name || c.notify || '';
+          if (!name) name = await getChatName(c.id);
+          const ts = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
           return {
             id: c.id,
             name: name,
             isGroup: isGroup,
-            timestamp: c.conversationTimestamp || 0,
-            isMonitored: monitored.has(c.id)
+            timestamp: ts,
+            isMonitored: monitored.has(c.id),
+            profilePic: db.getChatProfilePic(c.id) || null
           };
         }));
 
-      for (const chat of results.slice(0, 30)) {
-        getProfilePic(chat.id);
-      }
+      // Fire and forget profiles ONLY for monitored chats to save disk space
+      const monitoredChatsToFetch = results.filter(c => c.isMonitored).slice(0, 30);
+      Promise.all(monitoredChatsToFetch.map(c => getProfilePic(c.id))).catch(() => { });
 
       return results.sort((a, b) => b.timestamp - a.timestamp);
     } catch (e) {

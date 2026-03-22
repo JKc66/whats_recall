@@ -124,6 +124,11 @@ export default function App() {
             is_deleted: 0,
             deleted_at: null,
             is_view_once: (msg.isViewOnce as boolean) ? 1 : 0,
+            original_id: (msg.originalId as string) || null,
+            quoted_stanza_id: (msg.quotedStanzaId as string) || null,
+            quoted_sender: (msg.quotedSender as string) || null,
+            quoted_preview: (msg.quotedPreview as string) || null,
+            reactions: [],
           };
           setMessages((m) => [...m, normalized]);
         }
@@ -176,6 +181,22 @@ export default function App() {
           ...s,
           deletedMessages: s.deletedMessages + 1,
         }));
+      }
+
+      if (event === 'message_reaction') {
+        const r = data as { chatId: string; targetMessageId: string; senderId: string; senderName: string; emoji: string };
+        if (currentChatId() === r.chatId) {
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.message_id !== r.targetMessageId) return m;
+              const existing = (m.reactions || []).filter(rx => rx.sender_id !== r.senderId);
+              if (r.emoji) {
+                existing.push({ sender_id: r.senderId, sender_name: r.senderName, emoji: r.emoji });
+              }
+              return { ...m, reactions: existing };
+            })
+          );
+        }
       }
     });
   }

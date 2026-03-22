@@ -194,9 +194,16 @@ export default function Settings() {
                 const phone = () => !chat.isGroup ? extractPhone(chat.id) : '';
                 return (
                   <div class="settings-item">
-                    <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
-                      {getInitials(chat.name)}
-                    </div>
+                    <Show when={profilePicUrl(chat.profilePic)} fallback={
+                      <div class="avatar sm" style={{ background: avatarColor(chat.name) }}>
+                        {getInitials(chat.name)}
+                      </div>
+                    }>
+                      <div class="avatar sm avatar-dp" style={{ background: avatarColor(chat.name) }}>
+                        <span class="avatar-initials">{getInitials(chat.name)}</span>
+                        <img class="avatar-img" src={profilePicUrl(chat.profilePic)!} alt="" width="34" height="34" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    </Show>
                     <div class="settings-item-info">
                       <div class="name">{chat.name}</div>
                       <Show when={phone() && chat.name !== phone()}>
