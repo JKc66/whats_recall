@@ -1,7 +1,7 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadContentFromMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import { writeFile, mkdir } from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 import pino from 'pino';
@@ -33,6 +33,35 @@ export function createMonitor(db, broadcast) {
 
   const contacts = new Map();
   const chats = new Map();
+
+  const CACHE_FILE = join(BAILEYS_DATA_DIR, 'store_cache.json');
+  try {
+    if (existsSync(CACHE_FILE)) {
+      const cache = JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
+      if (cache.contacts) cache.contacts.forEach(c => contacts.set(c.id, c));
+      if (cache.chats) cache.chats.forEach(c => chats.set(c.id, c));
+      log('WA', `Restored ${contacts.size} contacts and ${chats.size} chats from cache`);
+    }
+  } catch (e) {
+    log('WA', 'Failed to restore store cache: ' + e.message);
+  }
+
+  let saveTimer = null;
+  function saveCache() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+      try {
+        const data = {
+          contacts: Array.from(contacts.values()),
+          chats: Array.from(chats.values())
+        };
+        writeFileSync(CACHE_FILE, JSON.stringify(data));
+      } catch (e) {
+        log('WA', 'Failed to save store cache: ' + e.message);
+      }
+      saveTimer = null;
+    }, 10000);
+  }
 
   const start = async () => {
     log('WA', 'Initializing Baileys Socket...');
@@ -90,6 +119,7 @@ export function createMonitor(db, broadcast) {
           chats.set(chat.id, { ...old, ...chat });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('contacts.upsert', (newContacts) => {
@@ -100,6 +130,7 @@ export function createMonitor(db, broadcast) {
           contacts.set(contact.id, { ...old, ...contact });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('contacts.set', ({ contacts: newContacts }) => {
@@ -111,6 +142,7 @@ export function createMonitor(db, broadcast) {
           contacts.set(contact.id, { ...old, ...contact });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('chats.set', ({ chats: newChats }) => {
@@ -122,6 +154,7 @@ export function createMonitor(db, broadcast) {
           chats.set(chat.id, { ...old, ...chat });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('groups.upsert', (newGroups) => {
@@ -131,6 +164,7 @@ export function createMonitor(db, broadcast) {
           chats.set(group.id, { ...existing, id: group.id, name: group.subject || existing.name });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('groups.update', (updates) => {
@@ -140,6 +174,7 @@ export function createMonitor(db, broadcast) {
           chats.set(update.id, { ...existing, id: update.id, name: update.subject });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('contacts.update', (updates) => {
@@ -149,12 +184,14 @@ export function createMonitor(db, broadcast) {
           contacts.set(update.id, { ...old, ...update });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('chats.upsert', (newChats) => {
       for (const chat of newChats) {
         if (chat.id) chats.set(chat.id, chat);
       }
+      saveCache();
     });
 
     sock.ev.on('chats.update', (updates) => {
@@ -164,6 +201,7 @@ export function createMonitor(db, broadcast) {
           chats.set(update.id, { ...old, ...update });
         }
       }
+      saveCache();
     });
 
     sock.ev.on('connection.update', async (update) => {
@@ -192,7 +230,9 @@ export function createMonitor(db, broadcast) {
             const { rm } = await import('fs/promises');
             await rm(BAILEYS_DATA_DIR, { recursive: true, force: true });
             mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
-            log('WA', 'Auth state cleared. Will show QR/pairing code on reconnect.');
+            chats.clear();
+            contacts.clear();
+            log('WA', 'Auth state and cache cleared. Will show QR/pairing code on reconnect.');
           } catch (e) {
             log('WA', 'Failed to clear auth state: ' + e.message);
           }
@@ -214,7 +254,11 @@ export function createMonitor(db, broadcast) {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
       if (type !== 'notify' && type !== 'append') return;
       for (const msg of messages) {
-        await handleMessage(msg);
+        try {
+          await handleMessage(msg);
+        } catch (e) {
+          log('WA', 'Unhandled error in handleMessage: ' + e.message + '\n' + e.stack);
+        }
       }
     });
 
@@ -331,13 +375,25 @@ export function createMonitor(db, broadcast) {
     // Automatically track new chats based on incoming messages
     if (!chats.has(chatId) && chatId) {
       chats.set(chatId, { id: chatId });
+      saveCache();
     }
 
     if (!db.isMonitored(chatId)) return;
 
-    let isViewOnce = JSON.stringify(msg.message).includes('viewOnce');
+    let asStr = JSON.stringify(msg.message);
+    let isViewOnce = asStr.includes('viewOnce');
 
+    if (isViewOnce) {
+      log('WA', `Detected view-once structure from ${chatId}`);
+    }
+
+    // Check for message text, if empty and viewOnce, we should explicitly show it
     let messageType = getContentType(msg.message);
+    if (!messageType) {
+      if (isViewOnce) log('WA', `Message aborted: no messageType detected for view-once payload: ${asStr}`);
+      return;
+    }
+
     const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
 
     let tempMsg = msg.message;
@@ -355,7 +411,10 @@ export function createMonitor(db, broadcast) {
     // Assign the unwrapped message back for correct processing below
     msg.message = tempMsg;
 
-    if (!messageType) return;
+    if (!messageType) {
+      if (isViewOnce) log('WA', `Message aborted: no unwrapped messageType for view-once payload`);
+      return;
+    }
 
     let content = msg.message[messageType];
 
