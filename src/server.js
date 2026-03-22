@@ -159,10 +159,16 @@ export function createServer(db, monitor) {
 
   function serveFile(filePath) {
     if (!existsSync(filePath)) return null;
+    const content = readFileSync(filePath);
     const ext = extname(filePath);
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
-    const content = readFileSync(filePath);
-    return new Response(content, { headers: { 'Content-Type': mime } });
+    return new Response(content, {
+      headers: {
+        'Content-Type': mime,
+        'Content-Length': content.length.toString(),
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
   }
 
   function isAuthenticated(c) {
@@ -472,7 +478,12 @@ export function createServer(db, monitor) {
     const urlPath = c.req.path;
 
     if (urlPath !== '/' && urlPath.includes('.')) {
-      const filePath = safePath(PUBLIC_DIR, urlPath);
+      let p = urlPath;
+      if (p.startsWith(COOKIE_PATH)) {
+        p = p.slice(COOKIE_PATH.length - 1);
+      }
+
+      const filePath = safePath(PUBLIC_DIR, p);
       if (filePath) {
         const file = serveFile(filePath);
         if (file) return file;
