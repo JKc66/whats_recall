@@ -59,6 +59,10 @@
   --text-2: #8a8a9a;
   --text-3: #52525b;
 
+  --glass-bg: rgba(17, 17, 20, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(24px);
+
   --radius: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
@@ -129,49 +133,96 @@ body,
 .login-card {
   position: relative;
   z-index: 1;
-  background: rgba(17, 17, 20, 0.85);
-  border: 1px solid var(--border-strong);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  padding: 48px 40px;
+  padding: 64px 48px 48px;
   width: 100%;
-  max-width: 380px;
-  box-shadow: var(--shadow-lg), 0 0 60px rgba(52, 211, 153, 0.04);
+  max-width: 400px;
+  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 80px rgba(52, 211, 153, 0.03);
   text-align: center;
-  backdrop-filter: blur(24px);
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.05));
-  border: 1px solid rgba(52, 211, 153, 0.15);
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.02));
+  border: 1px solid rgba(52, 211, 153, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
-  box-shadow: 0 0 30px rgba(52, 211, 153, 0.08);
+  margin: 0 auto 32px;
+  box-shadow: 0 0 40px rgba(52, 211, 153, 0.05);
+  position: relative;
+}
+
+.logo-pulse {
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  animation: logo-pulse-anim 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes logo-pulse-anim {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  70% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
 }
 
 .login-logo svg {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   stroke: var(--accent);
+  stroke-width: 1.5;
 }
 
 .login-card h1 {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  margin-bottom: 6px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  margin-bottom: 2px;
   color: var(--text);
+  background: linear-gradient(to bottom, #fff, #a1a1aa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+  opacity: 0.8;
 }
 
 .login-card>p {
   color: var(--text-3);
-  font-size: 13px;
-  margin-bottom: 32px;
+  font-size: 14px;
+  margin-bottom: 40px;
   line-height: 1.6;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .login-field {
@@ -213,18 +264,20 @@ body,
 
 .login-btn {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background: var(--accent);
   color: var(--bg);
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: opacity var(--t-normal), transform var(--t-fast), box-shadow var(--t-normal);
-  letter-spacing: -0.01em;
-  margin-top: 4px;
+  transition: all var(--t-normal);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 12px;
+  box-shadow: 0 4px 20px var(--accent-muted);
 }
 
 .login-btn:hover {
@@ -291,8 +344,10 @@ body,
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   z-index: 10;
   overflow: hidden;
@@ -314,7 +369,7 @@ body,
   justify-content: space-between;
   padding: 14px 16px;
   min-height: 56px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .sidebar-brand {
@@ -488,8 +543,21 @@ body,
   gap: 12px;
   cursor: pointer;
   transition: background var(--t-fast);
+  border: none;
   border-bottom: 1px solid var(--border);
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
   position: relative;
+  outline: none;
+}
+
+.chat-row:focus-visible {
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  z-index: 1;
 }
 
 .chat-row:hover {
@@ -606,6 +674,7 @@ body,
   font-size: 10px;
   color: var(--text-3);
   font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -659,8 +728,10 @@ body,
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   min-width: 0;
   height: calc(100dvh - 24px);
@@ -719,8 +790,8 @@ body,
   align-items: center;
   gap: 14px;
   padding: 14px 20px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
   min-height: 64px;
   z-index: 10;
 }
@@ -748,9 +819,11 @@ body,
 }
 
 .subtitle {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-3);
-  font-weight: 400;
+  font-weight: 450;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.01em;
 }
 
 .chat-header-actions {
@@ -1199,14 +1272,16 @@ body,
   align-items: center;
   gap: 6px;
   margin-top: 2px;
+  position: relative;
 }
 
 .msg-meta .time {
   font-size: 10px;
   color: var(--text-3);
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 400;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 .msg.out .msg-meta .time {
@@ -1350,26 +1425,38 @@ body,
 
 /* Pairing status UI */
 .section-title {
-  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-4);
-  margin-top: 10px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 32px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, var(--glass-border), transparent);
 }
 
 .pairing-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .pairing-card.connected {
@@ -1381,12 +1468,15 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .pairing-card.connected .indicator {
@@ -1502,19 +1592,29 @@ body,
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.code-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
+  opacity: 0.5;
 }
 
 .pairing-code {
-  font-family: var(--font-mono);
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
   color: var(--accent);
-  background: var(--bg-card);
-  padding: 12px 24px;
-  border-radius: var(--radius);
-  border: 1px dashed var(--accent);
+  background: rgba(52, 211, 153, 0.05);
+  padding: 16px 32px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--accent-dim);
+  box-shadow: 0 0 40px var(--accent-muted);
 }
 
 .pairing-box p {
@@ -1529,21 +1629,22 @@ body,
 }
 
 .tag {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   color: var(--text-2);
-  padding: 6px 12px;
-  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--t-fast);
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .tag.active {
-  background: var(--accent);
+  background: var(--accent-muted);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-bright);
 }
 
 .pairing-loading {
@@ -1727,21 +1828,11 @@ body,
 /* ── Danger zone ──────────────────────────────── */
 
 .settings-danger-zone {
-  margin: 14px 22px;
-  padding: 14px;
-  border: 1px solid rgba(248, 113, 113, 0.1);
-  border-radius: var(--radius-lg);
-  background: rgba(248, 113, 113, 0.03);
+  margin: 40px 22px 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
 }
 
-.settings-danger-zone h3 {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--red);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 10px;
-}
 
 .danger-item {
   display: flex;

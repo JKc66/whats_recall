@@ -129,7 +129,12 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
   const dpUrl = () => profilePicUrl(props.chat.profile_pic);
 
   return (
-    <div class="chat-row" classList={{ active: props.active }} onClick={props.onClick}>
+    <button
+      class="chat-row"
+      classList={{ active: props.active }}
+      onClick={props.onClick}
+      aria-current={props.active ? 'true' : 'false'}
+    >
       <Show when={dpUrl()} fallback={
         <div class="avatar" style={{ background: color() }}>{initials()}</div>
       }>
@@ -159,6 +164,6 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
           <span class="badge-group">Group</span>
         </Show>
       </div>
-    </div>
+    </button>
   );
 }
