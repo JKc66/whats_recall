@@ -15,3 +15,8 @@ export const [stats, setStats] = createSignal<Stats>({
   totalChats: 0,
 });
 export const [view, setView] = createSignal<'chats' | 'settings'>('chats');
+export const [showOnlyDeleted, _setShowOnlyDeleted] = createSignal<boolean>(localStorage.getItem('showOnlyDeleted') === 'true');
+export const setShowOnlyDeleted = (val: boolean) => {
+  localStorage.setItem('showOnlyDeleted', String(val));
+  _setShowOnlyDeleted(val);
+};

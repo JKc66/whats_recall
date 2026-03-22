@@ -101,6 +101,7 @@ export default function App() {
             last_message_preview: (msg.body as string) || `[${msg.type}]`,
             last_message_sender: senderName,
             deleted_count: 0,
+            total_deleted_count: 0,
             total_messages: 1,
             profile_pic: profilePic,
           } as Chat, ...prev];
@@ -153,6 +154,7 @@ export default function App() {
             updated[idx] = {
               ...updated[idx],
               deleted_count: updated[idx].deleted_count + 1,
+              total_deleted_count: (updated[idx].total_deleted_count || 0) + 1,
             };
             return updated;
           }
@@ -164,6 +166,7 @@ export default function App() {
             last_message_preview: msg.body || '[Deleted message]',
             last_message_sender: msg.sender_name || null,
             deleted_count: 1,
+            total_deleted_count: 1,
             total_messages: 1,
             profile_pic: null,
           } as Chat, ...prev];

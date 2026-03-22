@@ -764,6 +764,38 @@ html, body, #root {
 .msg.out .msg-body { color: var(--text); }
 .msg.deleted .msg-body { color: var(--text-2); }
 
+/* Quotes / Replies */
+.msg-text-container.has-reply .msg-body {
+  margin-top: 4px;
+}
+.msg-quote {
+  background: rgba(0,0,0,0.1);
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.msg.out .msg-quote {
+  background: rgba(0,0,0,0.06);
+  border-left-color: rgba(52, 211, 153, 0.4);
+  color: var(--text);
+}
+.msg-quote-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.msg.out .msg-quote-title {
+  color: rgba(52, 211, 153, 0.8);
+}
+.msg-quote-text {
+  opacity: 0.9;
+  white-space: pre-wrap;
+}
+
 .msg-media { margin: 4px 0; border-radius: var(--radius); overflow: hidden; max-width: 320px; }
 .msg-media img { width: 100%; display: block; cursor: pointer; transition: opacity var(--t-fast); border-radius: var(--radius); }
 .msg-media img:hover { opacity: 0.88; }

@@ -138,6 +138,12 @@ export function initDatabase() {
               AND m.is_deleted = 1
               AND (c.last_seen_deleted_at IS NULL OR m.timestamp > c.last_seen_deleted_at)
           ) as deleted_count,
+          (
+            SELECT COUNT(*)
+            FROM messages m
+            WHERE m.chat_id = c.chat_id
+              AND m.is_deleted = 1
+          ) as total_deleted_count,
           (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.chat_id) as total_messages,
           (SELECT body FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_preview,
           (SELECT sender_name FROM messages m WHERE m.chat_id = c.chat_id ORDER BY m.timestamp DESC LIMIT 1) as last_message_sender
@@ -155,12 +161,12 @@ export function initDatabase() {
     getMessages(chatId, limit = 100, before = null) {
       if (before) {
         return db.query(`
-          SELECT * FROM messages WHERE chat_id = ? AND timestamp < ? AND is_deleted = 1
+          SELECT * FROM messages WHERE chat_id = ? AND timestamp < ?
           ORDER BY timestamp DESC LIMIT ?
         `).all(chatId, before, limit).reverse();
       }
       return db.query(`
-        SELECT * FROM messages WHERE chat_id = ? AND is_deleted = 1
+        SELECT * FROM messages WHERE chat_id = ?
         ORDER BY timestamp DESC LIMIT ?
       `).all(chatId, limit).reverse();
     },
@@ -239,7 +245,7 @@ export function initDatabase() {
       return !!row;
     },
 
-        getChatProfilePics(chatIds) {
+    getChatProfilePics(chatIds) {
       if (!chatIds || chatIds.length === 0) return {};
       const placeholders = chatIds.map(() => '?').join(',');
       const rows = db.query(`SELECT chat_id, profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...chatIds);
