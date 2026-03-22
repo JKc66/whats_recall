@@ -8,21 +8,24 @@ Monitors your WhatsApp for deleted messages, saves them, and shows them through 
 - Caches every message (text + media) from monitored chats as it arrives
 - Detects "delete for everyone" and preserves the original content
 - Sends you a WhatsApp notification with the deleted message details
-- Web dashboard with a WhatsApp-like messaging interface
-- Deleted messages highlighted with red tags
+- Web dashboard with a **Sleek, Technical, Glassmorphic interface**
+- **Technical Precision** — metadata (timestamps, IDs) in monospaced typography
+- Deleted messages highlighted with distinctive status tags
 - Media files (images, videos, audio, documents) saved to disk
 - Device fingerprinting ([ThumbmarkJS](https://github.com/thumbmarkjs/thumbmarkjs)) + password auth
 - Real-time updates via WebSocket
-- Dark theme, responsive design
+- **Impeccable Design** — dark theme with blur effects and a refined layout
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | **SolidJS** + TypeScript + Vite |
+| Styling | **Vanilla CSS** (Impeccable Technical Theme) |
+| Fonts | **Geist** (Sans) + **JetBrains Mono** (Technical) |
 | Backend | **Hono** on Bun |
 | Database | SQLite (bun:sqlite) |
-| WhatsApp | whatsapp-web.js |
+| WhatsApp | @whiskeysockets/baileys |
 | Auth | ThumbmarkJS fingerprinting + session cookies |
 
 ## Requirements

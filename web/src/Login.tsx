@@ -55,11 +55,13 @@ export default function Login() {
       <div class="login-card">
         <div class="login-logo" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
+          <div class="logo-pulse"></div>
         </div>
         <h1>Message Monitor</h1>
-        <p>Enter your password to access the dashboard</p>
+        <div class="login-version">SECURE_AUTH_V1.02</div>
+        <p>Enter your password to unlock the encrypted dashboard.</p>
         <form onSubmit={handleSubmit} name="whatsapp-monitor-login">
           <input
             type="text"
@@ -93,7 +95,7 @@ export default function Login() {
         <div class="login-error" aria-live="polite">{error()}</div>
         <div class="login-footer">
           <span class="lock-icon" aria-hidden="true">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
           </span>
           End-to-end encrypted session
         </div>

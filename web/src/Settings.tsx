@@ -173,12 +173,15 @@ export default function Settings() {
       <Show when={tab() === 'config'}>
         <div class="settings-list">
           <div class="config-section">
-            <h3 class="section-title">Connectivity</h3>
+            <h3 class="section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.58 16.11a7 7 0 0 1 6.84 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></svg>
+              Connectivity
+            </h3>
 
             <div class={`pairing-card ${pairing()?.authenticated ? 'connected' : 'disconnected'}`}>
               <div class="pairing-status-pill">
                 <span class="indicator" />
-                {pairing()?.authenticated ? 'Authenticated & Connected' : 'Waiting for pairing...'}
+                <span class="pairing-status-text">{pairing()?.authenticated ? 'Authenticated & Connected' : 'Waiting for pairing...'}</span>
               </div>
 
               <Show when={!pairing()?.authenticated}>
@@ -191,7 +194,8 @@ export default function Settings() {
                   </Show>
                   <Show when={pairing()?.type === 'code'}>
                     <div class="code-container">
-                      <div class="pairing-code">{pairing()?.data || 'Generating...'}</div>
+                      <div class="code-label">AUTH_CODE</div>
+                      <div class="pairing-code">{pairing()?.data || 'GENERATING'}</div>
                       <p>Enter this code in WhatsApp (Link a device → Link with phone number)</p>
                     </div>
                   </Show>
@@ -254,7 +258,10 @@ export default function Settings() {
               <p class="config-hint">Changing this will clear the current session and restart the pair process.</p>
             </div>
 
-            <h3 class="section-title">Preferences</h3>
+            <h3 class="section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
+              Preferences
+            </h3>
             <div class="config-item">
               <div class="toggle-row no-pad">
                 <div>
@@ -391,7 +398,10 @@ export default function Settings() {
       </Show>
 
       <div class="settings-danger-zone">
-        <h3>Danger zone</h3>
+        <h3 class="section-title" style="margin-top: 0; color: var(--red);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          Danger zone
+        </h3>
         <div class="danger-item">
           <div>
             <div class="toggle-label">Clear all data</div>
