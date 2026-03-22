@@ -485,11 +485,11 @@ export function createMonitor(db, broadcast) {
 
       db.addReaction(targetId, senderId, senderName, emoji);
       broadcast('message_reaction', {
-        chatId,
-        targetMessageId: targetId,
-        senderId,
-        senderName,
-        emoji,
+        chat_id: chatId,
+        message_id: targetId,
+        sender_id: senderId,
+        sender_name: senderName,
+        emoji: emoji,
       });
       return;
     }
@@ -579,23 +579,24 @@ export function createMonitor(db, broadcast) {
     const originalId = msg.key.id;
 
     const msgData = {
-      messageId: msg.key.id,
-      chatId,
-      senderId,
-      senderName,
+      message_id: msg.key.id,
+      chat_id: chatId,
+      sender_id: senderId,
+      sender_name: senderName,
       body,
       type: mediaData ? mediaData.type : 'chat',
-      hasMedia: !!mediaData,
-      mediaType: mediaData ? mediaData.mediaType : null,
-      mediaFilename: mediaData ? mediaData.mediaFilename : null,
-      mediaPath: mediaData ? mediaData.mediaPath : null,
+      has_media: !!mediaData,
+      media_type: mediaData ? mediaData.mediaType : null,
+      media_filename: mediaData ? mediaData.mediaFilename : null,
+      media_path: mediaData ? mediaData.mediaPath : null,
       timestamp: msg.messageTimestamp,
-      isFromMe: msg.key.fromMe || false,
-      isViewOnce,
-      originalId,
-      quotedStanzaId,
-      quotedSender,
-      quotedPreview,
+      is_from_me: msg.key.fromMe ? 1 : 0,
+      is_deleted: 0,
+      is_view_once: isViewOnce ? 1 : 0,
+      original_id: originalId,
+      quoted_stanza_id: quotedStanzaId,
+      quoted_sender: quotedSender,
+      quoted_preview: quotedPreview,
     };
 
     db.saveMessage(msgData);
@@ -603,9 +604,9 @@ export function createMonitor(db, broadcast) {
 
     broadcast('new_message', {
       ...msgData,
-      chatName,
-      isGroup: isGroup,
-      profilePic: db.getChatProfilePic(chatId), // Could be populated sync since prefetch
+      chat_name: chatName,
+      is_group: isGroup ? 1 : 0,
+      profile_pic: db.getChatProfilePic(chatId), // Could be populated sync since prefetch
     });
   }
 

@@ -70,13 +70,12 @@ export default function App() {
       }
 
       if (event === 'new_message') {
-        const msg = data as Record<string, unknown>;
-
-        const chatId = msg.chatId as string;
-        const chatName = msg.chatName as string;
-        const isGroup = msg.isGroup as boolean;
-        const senderName = msg.senderName as string;
-        const profilePic = (msg.profilePic as string) || null;
+        const msg = data as any;
+        const chatId = msg.chat_id;
+        const chatName = msg.chat_name;
+        const isGroup = msg.is_group === 1;
+        const senderName = msg.sender_name;
+        const profilePic = msg.profile_pic || null;
 
         setChats((prev) => {
           const idx = prev.findIndex((c) => c.chat_id === chatId);
@@ -109,25 +108,11 @@ export default function App() {
 
         if (currentChatId() === chatId) {
           const normalized: Message = {
-            message_id: msg.messageId as string,
-            chat_id: chatId,
-            sender_id: (msg.senderId as string) || null,
-            sender_name: senderName || null,
-            body: (msg.body as string) || null,
-            type: (msg.type as string) || 'chat',
-            has_media: (msg.hasMedia as boolean) ? 1 : 0,
-            media_type: (msg.mediaType as string) || null,
-            media_filename: (msg.mediaFilename as string) || null,
-            media_path: (msg.mediaPath as string) || null,
-            timestamp: msg.timestamp as number,
-            is_from_me: (msg.isFromMe as boolean) ? 1 : 0,
+            ...msg,
+            is_from_me: msg.is_from_me ? 1 : 0,
             is_deleted: 0,
             deleted_at: null,
-            is_view_once: (msg.isViewOnce as boolean) ? 1 : 0,
-            original_id: (msg.originalId as string) || null,
-            quoted_stanza_id: (msg.quotedStanzaId as string) || null,
-            quoted_sender: (msg.quotedSender as string) || null,
-            quoted_preview: (msg.quotedPreview as string) || null,
+            is_view_once: msg.is_view_once ? 1 : 0,
             reactions: [],
           };
           setMessages((m) => [...m, normalized]);
@@ -184,14 +169,14 @@ export default function App() {
       }
 
       if (event === 'message_reaction') {
-        const r = data as { chatId: string; targetMessageId: string; senderId: string; senderName: string; emoji: string };
-        if (currentChatId() === r.chatId) {
+        const r = data as { chat_id: string; message_id: string; sender_id: string; sender_name: string; emoji: string };
+        if (currentChatId() === r.chat_id) {
           setMessages((prev) =>
             prev.map((m) => {
-              if (m.message_id !== r.targetMessageId) return m;
-              const existing = (m.reactions || []).filter(rx => rx.sender_id !== r.senderId);
+              if (m.message_id !== r.message_id) return m;
+              const existing = (m.reactions || []).filter(rx => rx.sender_id !== r.sender_id);
               if (r.emoji) {
-                existing.push({ sender_id: r.senderId, sender_name: r.senderName, emoji: r.emoji });
+                existing.push({ sender_id: r.sender_id, sender_name: r.sender_name, emoji: r.emoji });
               }
               return { ...m, reactions: existing };
             })
