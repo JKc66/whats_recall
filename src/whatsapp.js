@@ -1,4 +1,4 @@
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadContentFromMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadContentFromMessage, jidNormalizedUser, isJidGroup } from '@whiskeysockets/baileys';
 import { unwrapMessage } from './utils.js';
 import qrcode from 'qrcode-terminal';
 import { writeFile, mkdir } from 'fs/promises';
