@@ -51,6 +51,20 @@ function log(category, message, ...args) {
   console.log(`[${ts}] [${category}] ${message}`, ...args);
 }
 
+export function getClientIp(c) {
+  if (process.env.TRUST_PROXY === 'true') {
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0].trim();
+    const realIp = c.req.header('x-real-ip');
+    if (realIp) return realIp.trim();
+  }
+  try {
+    return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
+  } catch {
+    return '127.0.0.1';
+  }
+}
+
 export function createServer(db, monitor) {
   const app = new Hono();
   const wsClients = new Set();
@@ -59,14 +73,6 @@ export function createServer(db, monitor) {
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
   const apiRateLimits = new Map(); // ip:path -> { count, firstAttempt }
-
-  function getClientIp(c) {
-    const forwarded = c.req.header('x-forwarded-for');
-    if (forwarded) return forwarded.split(',')[0].trim();
-    const realIp = c.req.header('x-real-ip');
-    if (realIp) return realIp.trim();
-    try { return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1'; } catch { return '127.0.0.1'; }
-  }
 
   function pruneLoginAttempts() {
     const now = Date.now();
