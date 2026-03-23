@@ -6,7 +6,7 @@ import { getContentType, extractMessageContent } from '@whiskeysockets/baileys';
  * @param {any} [baileysUtils] - optional dependency injection for tests
  */
 export function unwrapMessage(message, baileysUtils) {
-  if (!message) return { content: null, type: null, isViewOnce: false };
+  if (!message) return { message: null, content: null, type: null, isViewOnce: false };
 
   const _getContentType = baileysUtils?.getContentType || getContentType;
   const _extractMessageContent = baileysUtils?.extractMessageContent || extractMessageContent;
