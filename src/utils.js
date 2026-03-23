@@ -1,7 +1,7 @@
 import { getContentType, extractMessageContent } from '@whiskeysockets/baileys';
 
 /**
- * Robustly unwraps a WhatsApp message from any possible wrappers (ephemeral, view-once, etc.)
+ * Robustly unwraps a WhatsApp message from common wrappers (ephemeral, view-once, etc.)
  * @param {import('@whiskeysockets/baileys').proto.IMessage|null|undefined} message
  * @param {any} [baileysUtils] - optional dependency injection for tests
  */
