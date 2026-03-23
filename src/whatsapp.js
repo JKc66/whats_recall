@@ -1,4 +1,5 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadContentFromMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
+import { unwrapMessage } from './utils.js';
 import qrcode from 'qrcode-terminal';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
@@ -313,20 +314,13 @@ export function createMonitor(db, broadcast) {
     try {
       let mediaType = '';
       let fileExt = 'bin';
-      let mType = getContentType(messageContent);
-      const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
+      const { content: mediaData, type: mType } = unwrapMessage(messageContent);
 
-      while (mType && wrappers.includes(mType)) {
-        messageContent = extractMessageContent(messageContent);
-        mType = getContentType(messageContent);
-      }
-
-      let mediaData = null;
-      if (mType === 'imageMessage') { mediaType = 'image'; fileExt = 'jpeg'; mediaData = messageContent.imageMessage; }
-      else if (mType === 'videoMessage') { mediaType = 'video'; fileExt = 'mp4'; mediaData = messageContent.videoMessage; }
-      else if (mType === 'audioMessage') { mediaType = 'audio'; fileExt = 'ogg'; mediaData = messageContent.audioMessage; }
-      else if (mType === 'stickerMessage') { mediaType = 'sticker'; fileExt = 'webp'; mediaData = messageContent.stickerMessage; }
-      else if (mType === 'documentMessage') { mediaType = 'document'; fileExt = messageContent.documentMessage.mimetype?.split('/')[1]?.split(';')[0] || 'bin'; mediaData = messageContent.documentMessage; }
+      if (mType === 'imageMessage') { mediaType = 'image'; fileExt = 'jpeg'; }
+      else if (mType === 'videoMessage') { mediaType = 'video'; fileExt = 'mp4'; }
+      else if (mType === 'audioMessage') { mediaType = 'audio'; fileExt = 'ogg'; }
+      else if (mType === 'stickerMessage') { mediaType = 'sticker'; fileExt = 'webp'; }
+      else if (mType === 'documentMessage') { mediaType = 'document'; fileExt = mediaData.mimetype?.split('/')[1]?.split(';')[0] || 'bin'; }
 
       if (!mediaType || !mediaData) return null;
 
@@ -420,43 +414,20 @@ export function createMonitor(db, broadcast) {
 
     if (!db.isMonitored(chatId)) return;
 
-    let asStr = JSON.stringify(msg.message);
-    let isViewOnce = asStr.includes('viewOnce');
+    const { message: unwrappedMessage, content, type: messageType, isViewOnce } = unwrapMessage(msg.message);
 
     if (isViewOnce) {
       log('WA', `Detected view-once structure from ${chatId}`);
     }
 
     // Check for message text, if empty and viewOnce, we should explicitly show it
-    let messageType = getContentType(msg.message);
     if (!messageType) {
-      if (isViewOnce) log('WA', `Message aborted: no messageType detected for view-once payload: ${asStr}`);
+      if (isViewOnce) log('WA', `Message aborted: no messageType detected for view-once payload`);
       return;
-    }
-
-    const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
-
-    let tempMsg = msg.message;
-    while (messageType && wrappers.includes(messageType)) {
-      if (messageType.includes('viewOnce')) isViewOnce = true;
-      tempMsg = extractMessageContent(tempMsg);
-      messageType = getContentType(tempMsg);
-    }
-
-    // Fallback detection on the unwrapped message payload
-    if (tempMsg && messageType && tempMsg[messageType]?.viewOnce) {
-      isViewOnce = true;
     }
 
     // Assign the unwrapped message back for correct processing below
-    msg.message = tempMsg;
-
-    if (!messageType) {
-      if (isViewOnce) log('WA', `Message aborted: no unwrapped messageType for view-once payload`);
-      return;
-    }
-
-    let content = msg.message[messageType];
+    msg.message = unwrappedMessage;
 
     if (messageType === 'protocolMessage') {
       if (content.type === 0 || content.type === 'REVOKE') {
@@ -528,14 +499,8 @@ export function createMonitor(db, broadcast) {
         quotedSender = await getChatName(rawQuotedSender);
       }
 
-      // Check if the quoted message contains view-once media
-      const quotedStr = JSON.stringify(contextInfo.quotedMessage);
-      const quotedIsViewOnce = quotedStr.includes('viewOnce') || quotedStr.includes('viewOnceMessage');
-
-      // Try to extract the actual quoted content (unwrap viewOnce wrappers)
-      let qMsg = extractMessageContent(contextInfo.quotedMessage);
-      const qMsgType = getContentType(qMsg);
-      const qContent = qMsg ? qMsg[qMsgType] : null;
+      // Use unwrapMessage for quoted content too
+      const { message: qMsg, content: qContent, type: qMsgType, isViewOnce: quotedIsViewOnce } = unwrapMessage(contextInfo.quotedMessage);
 
       let preview = '';
       if (qMsgType === 'conversation') preview = qMsg.conversation;
@@ -543,7 +508,7 @@ export function createMonitor(db, broadcast) {
       else if (qContent?.caption) preview = qContent.caption;
       else preview = '[' + (qMsgType || 'message').replace('Message', '') + ']';
 
-      if (quotedIsViewOnce || qContent?.viewOnce) {
+      if (quotedIsViewOnce) {
         preview = '👁️ (View Once) ' + preview;
 
         // Try to download the quoted view-once media
@@ -551,7 +516,7 @@ export function createMonitor(db, broadcast) {
         if (qMsgType && quotedMediaTypes.includes(qMsgType) && qContent) {
           log('WA', `Attempting to download quoted view-once ${qMsgType}...`);
           try {
-            quotedViewOnceMedia = await downloadAndSaveMedia(qMsg);
+            quotedViewOnceMedia = await downloadAndSaveMedia(contextInfo.quotedMessage);
             if (quotedViewOnceMedia) {
               log('WA', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.mediaPath}`);
             }
