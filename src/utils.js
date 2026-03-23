@@ -31,7 +31,7 @@ export function unwrapMessage(message, baileysUtils) {
     type = _getContentType(currentMessage);
   }
 
-  const content = currentMessage ? currentMessage[type] : null;
+  const content = currentMessage && type ? currentMessage[type] : null;
 
   // Final check for viewOnce in the unwrapped content itself
   // Some messages have the viewOnce property inside the media message itself
