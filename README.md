@@ -31,7 +31,6 @@ Monitors your WhatsApp for deleted messages, saves them, and shows them through 
 ## Requirements
 
 - [Bun](https://bun.sh) runtime
-- Chromium / Chromium-based browser (for whatsapp-web.js)
 - (Optional) [PM2](https://pm2.io) for process management
 - (Optional) [Caddy](https://caddyserver.com) for HTTPS reverse proxy
 
@@ -52,9 +51,9 @@ cp .env.example .env
 bun start
 ```
 
-On first run a QR code appears in the terminal. Scan it with WhatsApp to link the session. After that the session is saved locally.
+On first run, follow the pairing instructions in the terminal (QR code or Pairing Code). After that, the session is saved locally.
 
-Open `http://localhost:3000`, log in with your password, go to **Settings** (gear icon), and add the chats you want to monitor.
+Open `http://localhost:3001`, log in with your password, go to **Settings** (gear icon), and add the chats you want to monitor.
 
 ## Development
 
@@ -97,7 +96,7 @@ Caddy auto-provisions HTTPS. Set `NODE_ENV=production` in `.env` so session cook
 | `WEB_PORT` | `3000` | Web server port |
 | `AUTH_PASSWORD` | `changeme` | Dashboard login password |
 | `NOTIFY_WHATSAPP` | `false` | Send deletion alerts to your own WhatsApp |
-| `CHROMIUM_PATH` | `/usr/bin/chromium-browser` | Path to Chromium binary |
+| `WHATSAPP_PHONE` | — | Your phone number for pairing code (optional) |
 | `NODE_ENV` | — | Set to `production` for secure cookies |
 | `TRUST_PROXY` | `false` | Set to `true` when running behind a proxy (Caddy/Nginx) |
 
