@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { existsSync } from 'fs';
+import { log } from './logger.js';
 import { join, dirname, extname, resolve, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { MEDIA_DIR } from './database.js';
@@ -45,12 +46,6 @@ const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
 const MAX_TRACKED_IPS = 10000;
-
-function log(category, message, ...args) {
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-  console.log(`[${ts}] [${category}] ${message}`, ...args);
-}
 
 export function getClientIp(c) {
   if (process.env.TRUST_PROXY === 'true') {
