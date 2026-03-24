@@ -1,4 +1,4 @@
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadContentFromMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
@@ -20,8 +20,9 @@ const BAILEYS_DATA_DIR = './data/baileys_auth';
 if (!existsSync(BAILEYS_DATA_DIR)) mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
 
 function log(category, message, ...args) {
-  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  console.log('[' + ts + '] [' + category + '] ' + message, ...args);
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  console.log(`[${ts}] [${category}] ${message}`, ...args);
 }
 
 const deleteDirRecursive = async (path) => {
@@ -309,7 +310,7 @@ export function createMonitor(db, broadcast) {
     });
   };
 
-  async function downloadAndSaveMedia(messageContent) {
+  async function downloadAndSaveMedia(messageContent, msg = null) {
     try {
       let mediaType = '';
       let fileExt = 'bin';
@@ -328,7 +329,10 @@ export function createMonitor(db, broadcast) {
       else if (mType === 'stickerMessage') { mediaType = 'sticker'; fileExt = 'webp'; mediaData = messageContent.stickerMessage; }
       else if (mType === 'documentMessage') { mediaType = 'document'; fileExt = messageContent.documentMessage.mimetype?.split('/')[1]?.split(';')[0] || 'bin'; mediaData = messageContent.documentMessage; }
 
-      if (!mediaType || !mediaData) return null;
+      if (!mediaType || !mediaData) {
+        log('WA', `Download failed: Could not determine data container for type ${mType}`);
+        return null;
+      }
 
       // Handle deduplication by SHA256
       let sha256hex = null;
@@ -347,9 +351,21 @@ export function createMonitor(db, broadcast) {
         }
       }
 
-      const stream = await downloadContentFromMessage(mediaData, mediaType);
-      let buffer = Buffer.from([]);
-      for await (const chunk of stream) { buffer = Buffer.concat([buffer, chunk]); }
+      // We use the entire message info for downloadMediaMessage if possible
+      const buffer = await downloadMediaMessage(
+        { message: messageContent, key: msg?.key },
+        'buffer',
+        {},
+        { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+      ).catch(err => {
+        log('WA', `Download error: ${err.message}`);
+        return null;
+      });
+
+      if (!buffer) {
+        log('WA', `Download failed: returned empty for ${mediaType}`);
+        return null;
+      }
 
       const filename = Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + fileExt;
       const filepath = join(MEDIA_DIR, filename);
@@ -460,9 +476,62 @@ export function createMonitor(db, broadcast) {
   }
 
   async function handleMessage(msg) {
-    if (!msg.message) return;
-    const chatId = msg.key.remoteJid;
+    const chatId = msg.key?.remoteJid;
     if (!chatId || chatId === 'status@broadcast') return;
+
+    // Baileys sometimes delivers view-once messages as stubs with no .message
+    // but with msg.key.isViewOnce = true. We catch and record those.
+    if (!msg.message) {
+      if (msg.key?.isViewOnce && chatId) {
+        if (!db.isMonitored(chatId)) return;
+        log('WA', `📸 View-Once STUB detected from ${chatId} (no message body — Baileys limitation)`);
+
+        const isGroup = isJidGroup(chatId);
+        let senderId = isGroup ? (msg.key.participant || chatId) : chatId;
+        if (isGroup && msg.key.participantAlt && senderId.includes('@lid')) {
+          senderId = msg.key.participantAlt;
+        } else if (!isGroup && msg.key.remoteJidAlt && senderId.includes('@lid')) {
+          senderId = msg.key.remoteJidAlt;
+        }
+        const senderName = await getChatName(senderId, msg.pushName);
+        const chatName = await getChatName(chatId);
+
+        db.upsertChat(chatId, chatName, isGroup);
+
+        const msgData = {
+          message_id: msg.key.id,
+          chat_id: chatId,
+          sender_id: senderId,
+          sender_name: senderName,
+          body: '👁️ View-Once media',
+          type: 'chat',
+          has_media: false,
+          media_type: null,
+          media_filename: null,
+          media_path: null,
+          media_sha256: null,
+          timestamp: msg.messageTimestamp,
+          is_from_me: msg.key.fromMe ? 1 : 0,
+          is_deleted: 0,
+          is_view_once: 1,
+          original_id: msg.key.id,
+          quoted_stanza_id: null,
+          quoted_sender: null,
+          quoted_preview: null,
+        };
+
+        db.saveMessage(msgData);
+        log('WA', `View-Once stub saved: ${chatName} from ${senderName}`);
+
+        broadcast('new_message', {
+          ...msgData,
+          chat_name: chatName,
+          is_group: isGroup ? 1 : 0,
+          profile_pic: db.getChatProfilePic(chatId),
+        });
+      }
+      return;
+    }
 
     // Automatically track new chats based on incoming messages
     if (!chats.has(chatId) && chatId) {
@@ -472,39 +541,49 @@ export function createMonitor(db, broadcast) {
 
     if (!db.isMonitored(chatId)) return;
 
-    let asStr = JSON.stringify(msg.message);
-    let isViewOnce = asStr.includes('viewOnce');
+    // Debug: log raw message keys for monitored chats to help diagnose view-once issues
+    const rawKeys = Object.keys(msg.message);
+    const rawType = getContentType(msg.message);
+    log('WA', `Incoming [${rawType}] keys=[${rawKeys.join(',')}] from ${chatId}`);
 
-    if (isViewOnce) {
-      log('WA', `Detected view-once structure from ${chatId}`);
-    }
-
-    // Check for message text, if empty and viewOnce, we should explicitly show it
-    let messageType = getContentType(msg.message);
-    if (!messageType) {
-      if (isViewOnce) log('WA', `Message aborted: no messageType detected for view-once payload: ${asStr}`);
-      return;
-    }
-
-    const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
-
+    // Aggressive unwrapping for view-once/ephemeral/etc.
     let tempMsg = msg.message;
+    let wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
+    let messageType = getContentType(tempMsg);
+    let isViewOnce = false;
+
+    // Handle senderKeyDistributionMessage + viewOnce combo (group messages)
+    if (messageType === 'senderKeyDistributionMessage' && rawKeys.length > 1) {
+      // The real content is in another key alongside the senderKeyDistributionMessage
+      const realKey = rawKeys.find(k => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo');
+      if (realKey) {
+        log('WA', `Skipping senderKeyDistribution, real content: ${realKey}`);
+        tempMsg = { [realKey]: tempMsg[realKey] };
+        messageType = realKey;
+      }
+    }
+
     while (messageType && wrappers.includes(messageType)) {
       if (messageType.includes('viewOnce')) isViewOnce = true;
+      log('WA', `Unwrapping ${messageType} from ${chatId}...`);
       tempMsg = extractMessageContent(tempMsg);
       messageType = getContentType(tempMsg);
     }
 
-    // Fallback detection on the unwrapped message payload
+    // Secondary view-once detection on the inner content
     if (tempMsg && messageType && tempMsg[messageType]?.viewOnce) {
       isViewOnce = true;
     }
 
-    // Assign the unwrapped message back for correct processing below
+    if (isViewOnce) {
+      log('WA', `Confirmed View-Once message (${messageType}) from ${chatId}`);
+    }
+
+    // Assign back the unwrapped message
     msg.message = tempMsg;
 
     if (!messageType) {
-      if (isViewOnce) log('WA', `Message aborted: no unwrapped messageType for view-once payload`);
+      if (isViewOnce) log('WA', `Abort: No unwrapped messageType for View-Once`);
       return;
     }
 
@@ -603,7 +682,7 @@ export function createMonitor(db, broadcast) {
         if (qMsgType && quotedMediaTypes.includes(qMsgType) && qContent) {
           log('WA', `Attempting to download quoted view-once ${qMsgType}...`);
           try {
-            quotedViewOnceMedia = await downloadAndSaveMedia(qMsg);
+            quotedViewOnceMedia = await downloadAndSaveMedia(qMsg, { key: { remoteJid: chatId, id: quotedStanzaId, participant: rawQuotedSender } });
             if (quotedViewOnceMedia) {
               log('WA', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.mediaPath}`);
             }
@@ -619,7 +698,7 @@ export function createMonitor(db, broadcast) {
     let mediaData = null;
     let hasMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(messageType);
     if (hasMedia) {
-      mediaData = await downloadAndSaveMedia(msg.message);
+      mediaData = await downloadAndSaveMedia(msg.message, msg);
     }
 
     // If this is a reply to a view-once message and we downloaded the quoted media, use it

@@ -3,7 +3,8 @@ import { createMonitor } from './whatsapp.js';
 import { createServer } from './server.js';
 
 function log(category, message) {
-  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
   console.log(`[${ts}] [${category}] ${message}`);
 }
 
@@ -14,7 +15,7 @@ log('BOOT', `Port: ${process.env.WEB_PORT || '3000'}`);
 const db = initDatabase();
 log('BOOT', 'Database initialized');
 
-let broadcastFn = () => {};
+let broadcastFn = () => { };
 
 const monitor = createMonitor(db, (event, data) => broadcastFn(event, data));
 const { start, broadcast } = createServer(db, monitor);

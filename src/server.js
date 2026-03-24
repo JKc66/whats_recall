@@ -47,7 +47,8 @@ const MAX_LOGIN_ATTEMPTS = 3;
 const MAX_TRACKED_IPS = 10000;
 
 function log(category, message, ...args) {
-  const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
   console.log(`[${ts}] [${category}] ${message}`, ...args);
 }
 
