@@ -47,6 +47,28 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 3;
 const MAX_TRACKED_IPS = 10000;
 
+export const apiRateLimits = new Map(); // ip:path -> { count, firstAttempt }
+
+export function checkApiRateLimit(ip, path, limit = 60, windowMs = 60_000) {
+  const key = `${ip}:${path}`;
+  const entry = apiRateLimits.get(key);
+  const now = Date.now();
+  if (!entry || now - entry.firstAttempt > windowMs) {
+    apiRateLimits.set(key, { count: 1, firstAttempt: now });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count++;
+  return true;
+}
+
+export const pruneApiRateLimits = () => {
+  const now = Date.now();
+  for (const [key, entry] of apiRateLimits) {
+    if (now - entry.firstAttempt > 600_000) apiRateLimits.delete(key);
+  }
+};
+
 export function getClientIp(c) {
   if (process.env.TRUST_PROXY === 'true') {
     const forwarded = c.req.header('x-forwarded-for');
@@ -89,7 +111,6 @@ export function createServer(db, monitor) {
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
-  const apiRateLimits = new Map(); // ip:path -> { count, firstAttempt }
 
   function pruneLoginAttempts() {
     const now = Date.now();
@@ -124,26 +145,7 @@ export function createServer(db, monitor) {
     loginAttempts.delete(ip);
   }
 
-  function checkApiRateLimit(ip, path, limit = 60, windowMs = 60_000) {
-    const key = `${ip}:${path}`;
-    const entry = apiRateLimits.get(key);
-    const now = Date.now();
-    if (!entry || now - entry.firstAttempt > windowMs) {
-      apiRateLimits.set(key, { count: 1, firstAttempt: now });
-      return true;
-    }
-    if (entry.count >= limit) return false;
-    entry.count++;
-    return true;
-  }
-
-  const pruneApiRateLimits = () => {
-    const now = Date.now();
-    for (const [key, entry] of apiRateLimits) {
-      if (now - entry.firstAttempt > 600_000) apiRateLimits.delete(key);
-    }
-  };
-  setInterval(pruneApiRateLimits, 600_000);
+  const pruneApiRateLimitsInterval = setInterval(pruneApiRateLimits, 600_000);
 
   function broadcast(event, data) {
     const payload = JSON.stringify({ event, data });
@@ -571,6 +573,7 @@ export function createServer(db, monitor) {
   function stop() {
     clearInterval(pingInterval);
     clearInterval(pruneInterval);
+    clearInterval(pruneApiRateLimitsInterval);
   }
 
   return { start, broadcast, stop };
