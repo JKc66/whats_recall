@@ -173,6 +173,16 @@ export function initDatabase() {
       return db.query('SELECT * FROM messages WHERE original_id = ?').get(originalId);
     },
 
+    getChat(chatId) {
+      return db.query(`
+        SELECT * FROM (
+          SELECT chat_id, name, is_group FROM chats WHERE chat_id = ?
+          UNION
+          SELECT chat_id, name, is_group FROM monitored_chats WHERE chat_id = ?
+        ) LIMIT 1
+      `).get(chatId, chatId);
+    },
+
     getMediaBySha256(sha256) {
       return db.query('SELECT media_path, media_type, media_filename FROM messages WHERE media_sha256 = ? AND media_path IS NOT NULL LIMIT 1').get(sha256);
     },

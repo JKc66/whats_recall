@@ -765,7 +765,7 @@ export function createMonitor(db, broadcast) {
 
     const deleted = db.getMessage(messageId);
     if (deleted) {
-      const chat = db.getChats().find(c => c.chat_id === deleted.chat_id);
+      const chat = db.getChat(deleted.chat_id);
       const chatName = chat?.name || deleted.chat_id;
 
       log('WA', `Message deleted in ${chatName} by ${deleted.sender_name || 'unknown'}`);
