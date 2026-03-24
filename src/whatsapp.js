@@ -330,6 +330,23 @@ export function createMonitor(db, broadcast) {
 
       if (!mediaType || !mediaData) return null;
 
+      // Handle deduplication by SHA256
+      let sha256hex = null;
+      if (mediaData.fileSha256) {
+        sha256hex = Buffer.from(mediaData.fileSha256).toString('hex');
+        const existing = db.getMediaBySha256(sha256hex);
+        if (existing) {
+          log('WA', `Reusing existing media for SHA256: ${sha256hex.slice(0, 8)}…`);
+          return {
+            mediaPath: existing.media_path,
+            mediaType: existing.media_type,
+            mediaFilename: existing.media_filename,
+            mediaSha256: sha256hex,
+            type: mediaType
+          };
+        }
+      }
+
       const stream = await downloadContentFromMessage(mediaData, mediaType);
       let buffer = Buffer.from([]);
       for await (const chunk of stream) { buffer = Buffer.concat([buffer, chunk]); }
@@ -342,6 +359,7 @@ export function createMonitor(db, broadcast) {
         mediaPath: filename,
         mediaType: mediaData.mimetype || mediaType + '/' + fileExt,
         mediaFilename: mediaData.fileName || filename,
+        mediaSha256: sha256hex,
         type: mediaType
       };
     } catch (e) {
@@ -357,15 +375,29 @@ export function createMonitor(db, broadcast) {
     const contactInfo = contacts.get(jid);
     if (contactInfo?.name) return contactInfo.name;
 
-    // 2. Push name from message (real-time name from WhatsApp)
-    if (pushName) return pushName;
+    // 2. Verified Business Name
+    if (contactInfo?.verifiedName) return contactInfo.verifiedName;
 
-    // 3. Chat name (group subject or synced name)
-    const chatInfo = chats.get(jid);
-    if (chatInfo?.name) return chatInfo.name;
+    // 3. Push name from message (real-time name from WhatsApp)
+    if (pushName) return pushName;
 
     // 4. WhatsApp push/notify names from sync
     if (contactInfo?.notify) return contactInfo.notify;
+    if (contactInfo?.pushname) return contactInfo.pushname;
+
+    // 4.5. Recursive lookup for LID to PN (Phone Number) mapping
+    if (jid.includes('@lid') && contactInfo?.phoneNumber && contactInfo.phoneNumber !== jid) {
+      const mappedName = await getChatName(contactInfo.phoneNumber, pushName);
+      if (mappedName && mappedName !== contactInfo.phoneNumber.split('@')[0]) {
+        return mappedName;
+      }
+    }
+
+    // 5. Chat name (group subject or synced name)
+    const chatInfo = chats.get(jid);
+    if (chatInfo?.name && !chatInfo.name.includes(jid.split('@')[0])) {
+      return chatInfo.name;
+    }
     if (chatInfo?.notify) return chatInfo.notify;
 
     // 5. Dynamic fallback for groups
@@ -589,6 +621,7 @@ export function createMonitor(db, broadcast) {
       media_type: mediaData ? mediaData.mediaType : null,
       media_filename: mediaData ? mediaData.mediaFilename : null,
       media_path: mediaData ? mediaData.mediaPath : null,
+      media_sha256: mediaData ? mediaData.mediaSha256 : null,
       timestamp: msg.messageTimestamp,
       is_from_me: msg.key.fromMe ? 1 : 0,
       is_deleted: 0,
@@ -697,13 +730,26 @@ export function createMonitor(db, broadcast) {
       // Merge contacts into chats map so private contacts show up too
       for (const [id, contact] of contacts.entries()) {
         if (!id || id.endsWith('@g.us') || id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
+
+        let preferredName = contact.name || contact.verifiedName || contact.notify || contact.pushname || '';
+
+        // Try mapping LID to its phone contact name
+        if (!preferredName && id.includes('@lid') && contact.phoneNumber) {
+          const pnInfo = contacts.get(contact.phoneNumber);
+          if (pnInfo) {
+            preferredName = pnInfo.name || pnInfo.verifiedName || pnInfo.notify || pnInfo.pushname || '';
+          }
+        }
         if (!chats.has(id)) {
-          chats.set(id, { id, name: contact.name || contact.notify || '' });
+          chats.set(id, { id, name: preferredName });
         } else {
-          // Ensure name is populated from contact if the chat entry has no name
           const c = chats.get(id);
-          if (!c.name && (contact.name || contact.notify)) {
-            chats.set(id, { ...c, name: contact.name || contact.notify });
+          // Overwrite raw ID chat names with the meaningful contact name or pushname
+          if (preferredName && (!c.name || c.name === id.split('@')[0] || c.name.includes(id.split('@')[0]))) {
+            chats.set(id, { ...c, name: preferredName });
+          } else if (preferredName && c.name && !contact.name) {
+            // If they are unsaved, but we have a notify, use the notify instead of potential raw IDs
+            chats.set(id, { ...c, name: preferredName });
           }
         }
       }

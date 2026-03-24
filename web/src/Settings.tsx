@@ -181,7 +181,13 @@ export default function Settings() {
             <div class={`pairing-card ${pairing()?.authenticated ? 'connected' : 'disconnected'}`}>
               <div class="pairing-status-pill">
                 <span class="indicator" />
-                <span class="pairing-status-text">{pairing()?.authenticated ? 'Authenticated & Connected' : 'Waiting for pairing...'}</span>
+                <span class="pairing-status-text">
+                  {pairing()?.authenticated
+                    ? 'Authenticated & Connected'
+                    : ((config()?.whatsapp_pairing_method || 'code') === 'code' && !config()?.whatsapp_phone && !pairing()?.data
+                      ? 'Not Initialized'
+                      : 'Waiting for pairing...')}
+                </span>
               </div>
 
               <Show when={!pairing()?.authenticated}>
@@ -200,27 +206,32 @@ export default function Settings() {
                     </div>
                   </Show>
                   <Show when={!pairing()?.data}>
-                    <div class="pairing-loading">
-                      <div class="spinner" />
-                      <span>The monitor will generate a pairing code/QR shortly if a phone number is set.</span>
-                    </div>
+                    <Show when={(config()?.whatsapp_pairing_method || 'code') === 'code' && !config()?.whatsapp_phone} fallback={
+                      <div class="pairing-loading">
+                        <div class="spinner" />
+                        <span>Generating pairing code/QR. Please hold on...</span>
+                      </div>
+                    }>
+                      <div class="pairing-loading" style="opacity: 0.8; flex-direction: column; gap: 4px;">
+                        <div>Not started</div>
+                        <span style="font-size: 0.9em; text-align: center;">Please set your WhatsApp phone number below first, then click "Link New Device" to start pairing.</span>
+                      </div>
+                    </Show>
                   </Show>
                 </div>
               </Show>
 
-              <Show when={pairing()?.authenticated}>
-                <div class="pairing-actions">
-                  <Show when={showResetNotice()}>
-                    <div class="config-alert">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                      Settings changed. Click below to apply.
-                    </div>
-                  </Show>
-                  <button class="btn-outline sm" classList={{ 'btn-primary-lite': showResetNotice() }} onClick={handleReset} disabled={!!busy()}>
-                    {showResetNotice() ? 'Apply Changes & Reset Session' : 'Link New Device / Reset Session'}
-                  </button>
-                </div>
-              </Show>
+              <div class="pairing-actions">
+                <Show when={showResetNotice()}>
+                  <div class="config-alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    Settings changed. Click below to apply.
+                  </div>
+                </Show>
+                <button class="btn-outline sm" classList={{ 'btn-primary-lite': showResetNotice() }} onClick={handleReset} disabled={!!busy()}>
+                  {showResetNotice() ? 'Apply Changes & Reset Session' : 'Link New Device / Reset Session'}
+                </button>
+              </div>
             </div>
 
             <div class="config-item">

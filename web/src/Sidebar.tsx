@@ -25,7 +25,7 @@ export default function Sidebar() {
   };
 
   const filteredChats = createMemo(() => {
-    let list = chats().filter((c) => c.total_deleted_count > 0);
+    let list = chats();
     const q = search().toLowerCase().trim();
     if (q) {
       list = list.filter(

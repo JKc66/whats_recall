@@ -114,6 +114,14 @@ export function initDatabase() {
     db.exec('ALTER TABLE messages ADD COLUMN quoted_preview TEXT');
   } catch { /* already exists */ }
 
+  try {
+    db.exec('ALTER TABLE messages ADD COLUMN media_sha256 TEXT');
+  } catch { /* already exists */ }
+
+  try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)');
+  } catch { /* already exists */ }
+
   // Initial Seed from .env
   const seed = (key, val) => {
     db.query('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run(key, val);
@@ -139,15 +147,15 @@ export function initDatabase() {
       db.query(`
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
-         media_type, media_filename, media_path, timestamp, is_from_me, is_view_once, original_id,
+         media_type, media_filename, media_path, media_sha256, timestamp, is_from_me, is_view_once, original_id,
          quoted_stanza_id, quoted_sender, quoted_preview)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        msg.messageId, msg.chatId, msg.senderId, msg.senderName,
-        msg.body, msg.type, msg.hasMedia ? 1 : 0,
-        msg.mediaType, msg.mediaFilename, msg.mediaPath,
-        msg.timestamp, msg.isFromMe ? 1 : 0, msg.isViewOnce ? 1 : 0, msg.originalId || null,
-        msg.quotedStanzaId || null, msg.quotedSender || null, msg.quotedPreview || null
+        msg.message_id, msg.chat_id, msg.sender_id, msg.sender_name,
+        msg.body, msg.type, msg.has_media ? 1 : 0,
+        msg.media_type, msg.media_filename, msg.media_path, msg.media_sha256 || null,
+        msg.timestamp, msg.is_from_me ? 1 : 0, msg.is_view_once ? 1 : 0, msg.original_id || null,
+        msg.quoted_stanza_id || null, msg.quoted_sender || null, msg.quoted_preview || null
       );
     },
 
@@ -164,6 +172,10 @@ export function initDatabase() {
 
     getMessageByOriginalId(originalId) {
       return db.query('SELECT * FROM messages WHERE original_id = ?').get(originalId);
+    },
+
+    getMediaBySha256(sha256) {
+      return db.query('SELECT media_path, media_type, media_filename FROM messages WHERE media_sha256 = ? AND media_path IS NOT NULL LIMIT 1').get(sha256);
     },
 
     getChats() {
