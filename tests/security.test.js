@@ -15,7 +15,11 @@ describe("getClientIp", () => {
   });
 
   afterEach(() => {
-    process.env.TRUST_PROXY = originalEnv;
+    if (originalEnv === undefined) {
+      delete process.env.TRUST_PROXY;
+    } else {
+      process.env.TRUST_PROXY = originalEnv;
+    }
   });
 
   const mockContext = (headers = {}, remoteAddress = "127.0.0.1") => ({
