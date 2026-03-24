@@ -386,10 +386,26 @@ export function createMonitor(db, broadcast) {
     if (contactInfo?.pushname) return contactInfo.pushname;
 
     // 4.5. Recursive lookup for LID to PN (Phone Number) mapping
-    if (jid.includes('@lid') && contactInfo?.phoneNumber && contactInfo.phoneNumber !== jid) {
-      const mappedName = await getChatName(contactInfo.phoneNumber, pushName);
-      if (mappedName && mappedName !== contactInfo.phoneNumber.split('@')[0]) {
-        return mappedName;
+    if (jid.includes('@lid')) {
+      // First, check if any contact in our map has this LID linked to its phone number
+      for (const contact of contacts.values()) {
+        if (contact.lid === jid || contact.id === jid) {
+          const name = contact.name || contact.verifiedName || contact.notify || contact.pushname;
+          if (name && name !== jid.split('@')[0]) return name;
+          // If the contact ID is a phone number, it's better than the LID
+          if (contact.id.includes('@s.whatsapp.net')) return contact.id.split('@')[0];
+        }
+      }
+
+      // Also check contactInfo in case it has its own PN linked
+      if (contactInfo?.phoneNumber && contactInfo.phoneNumber !== jid) {
+        const mappedName = await getChatName(contactInfo.phoneNumber, pushName);
+        if (mappedName && !mappedName.includes('@')) {
+          // We found a name or at least a phone number — use it!
+          return mappedName;
+        }
+        // Fallback to the phone number itself if the name search didn't yield a result
+        return contactInfo.phoneNumber.split('@')[0];
       }
     }
 
@@ -415,7 +431,11 @@ export function createMonitor(db, broadcast) {
     if (sock?.signalRepository?.lidMapping && jid.includes('@lid')) {
       try {
         const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
-        if (pn) return pn.split('@')[0];
+        if (pn) {
+          const mappedName = await getChatName(pn, pushName);
+          if (mappedName && mappedName !== pn.split('@')[0]) return mappedName;
+          return pn.split('@')[0];
+        }
       } catch (e) { }
     }
 
@@ -764,7 +784,12 @@ export function createMonitor(db, broadcast) {
         .map(async c => {
           const isGroup = isJidGroup(c.id);
           let name = c.name || c.notify || '';
-          if (!name) name = await getChatName(c.id);
+
+          // If the name is missing or is just a naked LID/ID, try a full resolution
+          if (!name || name === c.id.split('@')[0]) {
+            name = await getChatName(c.id);
+          }
+
           const ts = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
           return {
             id: c.id,

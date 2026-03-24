@@ -499,6 +499,27 @@ body,
   font-weight: 600;
 }
 
+.pill.xs {
+  padding: 3px 10px;
+  font-size: 10px;
+}
+
+.sort-bar {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 14px;
+  align-items: center;
+}
+
+.sort-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
 .pill:hover:not(.active) {
   background: var(--bg-hover);
   color: var(--text-2);

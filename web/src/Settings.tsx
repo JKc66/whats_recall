@@ -19,6 +19,7 @@ export default function Settings() {
   const [savingConfig, setSavingConfig] = createSignal<string | null>(null);
   const [pairing, { refetch: refetchPairing }] = createResource(fetchPairingStatus);
   const [showResetNotice, setShowResetNotice] = createSignal(false);
+  const [sortBy, setSortBy] = createSignal<'recent' | 'name'>('recent');
 
   onCleanup(() => clearInterval(pairingInterval));
   const pairingInterval = setInterval(() => {
@@ -29,8 +30,14 @@ export default function Settings() {
 
   const filteredAvailable = () => {
     const q = search().toLowerCase().trim();
-    let list = available() || [];
+    let list = [...(available() || [])];
     if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || extractPhone(c.id).includes(q));
+
+    if (sortBy() === 'name') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
     return list;
   };
 
@@ -166,7 +173,7 @@ export default function Settings() {
           Monitored ({(monitored() || []).length})
         </button>
         <button class="pill" classList={{ active: tab() === 'available' }} onClick={() => setTab('available')}>
-          Available
+          Available ({(available() || []).length})
         </button>
       </div>
 
@@ -348,6 +355,11 @@ export default function Settings() {
           </div>
         </Show>
         <Show when={stats().connected}>
+          <div class="sort-bar">
+            <span class="sort-label">Sort by:</span>
+            <button class="pill xs" classList={{ active: sortBy() === 'recent' }} onClick={() => setSortBy('recent')}>Recent</button>
+            <button class="pill xs" classList={{ active: sortBy() === 'name' }} onClick={() => setSortBy('name')}>A-Z</button>
+          </div>
           <div class="settings-list">
             <Show when={available.loading}>
               <div class="list-loading"><div class="spinner" /> Loading chats from WhatsApp…</div>
