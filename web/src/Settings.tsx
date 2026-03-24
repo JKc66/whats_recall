@@ -351,7 +351,7 @@ export default function Settings() {
         <Show when={!stats().connected}>
           <div class="list-empty">
             <p>WhatsApp is not connected.</p>
-            <p>Scan the QR code in the terminal first.</p>
+            <p>Go to the <strong>Configuration</strong> tab to pair your device.</p>
           </div>
         </Show>
         <Show when={stats().connected}>

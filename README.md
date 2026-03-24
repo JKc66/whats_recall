@@ -51,7 +51,7 @@ bun start
 
 On first run, follow the pairing instructions in the terminal. You can use your phone to scan the **QR Code** or enter the **Pairing Code** if a phone number is provided in `.env`.
 
-Open `http://localhost:3001`, log in with your password, and go to **Settings** (gear icon) to add the chats you want to monitor.
+Open `http://localhost:3001/whats/`, log in with your password, and go to **Settings** (gear icon) to add the chats you want to monitor.
 
 ## Development
 
