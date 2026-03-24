@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { join, dirname, extname, resolve, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { MEDIA_DIR } from './database.js';
@@ -175,13 +175,12 @@ export function createServer(db, monitor) {
 
   function serveFile(filePath) {
     if (!existsSync(filePath)) return null;
-    const content = readFileSync(filePath);
+    const file = Bun.file(filePath);
     const ext = extname(filePath);
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
-    return new Response(content, {
+    return new Response(file, {
       headers: {
         'Content-Type': mime,
-        'Content-Length': content.length.toString(),
         'Cache-Control': 'public, max-age=3600',
       },
     });
@@ -342,7 +341,7 @@ export function createServer(db, monitor) {
 
   // --- Protected Settings routes ---
 
-  const ALLOWED_SETTING_KEYS = ['whatsapp_phone', 'whatsapp_notify', 'app_name', 'whatsapp_pairing_method'];
+  const ALLOWED_SETTING_KEYS = ['whatsapp_phone', 'whatsapp_notify', 'whatsapp_pairing_method'];
 
   app.get('/api/settings', (c) => {
     return c.json(db.getSettings());
@@ -439,10 +438,10 @@ export function createServer(db, monitor) {
     if (!existsSync(filepath)) return c.json({ error: 'Not found' }, 404);
 
     const ext = extname(filepath);
-    let mime = MIME_TYPES[ext] || 'application/octet-stream';
+    const mime = MIME_TYPES[ext] || 'application/octet-stream';
 
-    const content = readFileSync(filepath);
-    return new Response(content, {
+    const file = Bun.file(filepath);
+    return new Response(file, {
       headers: {
         'Content-Type': mime,
         'Cache-Control': 'public, max-age=86400',

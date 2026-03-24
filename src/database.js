@@ -128,7 +128,6 @@ export function initDatabase() {
   };
   seed('whatsapp_phone', process.env.WHATSAPP_PHONE || '');
   seed('whatsapp_notify', process.env.NOTIFY_WHATSAPP || 'false');
-  seed('app_name', 'WhatsApp Monitor');
 
   return {
     upsertChat(chatId, name, isGroup) {

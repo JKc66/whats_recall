@@ -299,20 +299,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div class="config-item">
-              <label>Application Name</label>
-              <div class="config-input-row">
-                <input
-                  type="text"
-                  placeholder="WhatsApp Monitor"
-                  value={config()?.app_name || ''}
-                  onBlur={(e) => handleConfigUpdate('app_name', e.currentTarget.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleConfigUpdate('app_name', e.currentTarget.value)}
-                  disabled={!!savingConfig()}
-                  aria-label="Application name setting"
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </Show>
