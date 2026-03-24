@@ -79,7 +79,18 @@ export function getClientIp(c) {
 export function createServer(db, monitor) {
   const app = new Hono();
   const wsClients = new Set();
-  const password = process.env.AUTH_PASSWORD || 'changeme';
+
+  let password = process.env.AUTH_PASSWORD;
+  if (!password || password === 'changeme') {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    password = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    log('SECURITY', '=======================================================');
+    log('SECURITY', '⚠️  WARNING: Using default or empty AUTH_PASSWORD');
+    log('SECURITY', `⚠️  A random secure password has been generated: ${password}`);
+    log('SECURITY', '⚠️  Please set AUTH_PASSWORD in your .env file!');
+    log('SECURITY', '=======================================================');
+  }
+
   const port = parseInt(process.env.WEB_PORT || '3000', 10);
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
