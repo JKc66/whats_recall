@@ -246,7 +246,37 @@ function ImageGroup(props: {
     return `${BASE}/api/media/${encodeURIComponent(path)}`;
   }
 
+  const DownloadBtn = (props: { url: string; filename?: string }) => (
+    <a
+      href={props.url}
+      download={props.filename || 'download'}
+      class="download-btn"
+      onClick={(e) => e.stopPropagation()}
+      aria-label="Download media"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </a>
+  );
+
   const imageCount = () => props.messages.filter(m => m.has_media && m.media_path).length;
+
+  function downloadAll() {
+    props.messages.filter(m => m.has_media && m.media_path).forEach((msg, index) => {
+      setTimeout(() => {
+        const link = document.createElement('a');
+        link.href = mediaUrl(msg.media_path!);
+        link.download = msg.media_filename || `image_${index}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, index * 200); // 200ms delay to help browser manage multiple popups
+    });
+  }
+
   const gridClass = () => {
     const n = imageCount();
     if (n === 1) return 'grid-single';
@@ -273,6 +303,7 @@ function ImageGroup(props: {
                 onClick={() => props.onImageClick(mediaUrl(msg.media_path!))}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
+              <DownloadBtn url={mediaUrl(msg.media_path!)} filename={msg.media_filename || undefined} />
               <Show when={!!msg.is_deleted}>
                 <div class="image-grid-deleted-tag">
                   <span class="icon" aria-hidden="true">🗑️</span> Deleted
@@ -301,6 +332,20 @@ function ImageGroup(props: {
           </div>
         </Show>
         <span class="image-count">{props.messages.filter(m => m.has_media).length} photos</span>
+        <Show when={imageCount() > 1}>
+          <button
+            class="download-all-btn"
+            onClick={downloadAll}
+            title="Download all images in this album"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download Album
+          </button>
+        </Show>
         <span class="time">{time()}</span>
       </div>
     </div>
@@ -340,6 +385,22 @@ function MsgBubble(props: {
     const mt = (msg.media_type || '').toLowerCase();
     const type = msg.type;
 
+    const DownloadBtn = (props: { url: string; filename?: string }) => (
+      <a
+        href={props.url}
+        download={props.filename || 'download'}
+        class="download-btn"
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Download media"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </a>
+    );
+
     if (type === 'image' || type === 'sticker' || mt.startsWith('image/')) {
       return (
         <div class="msg-media" classList={{ sticker: type === 'sticker' }}>
@@ -350,6 +411,7 @@ function MsgBubble(props: {
             onClick={() => props.onImageClick(src)}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
+          <DownloadBtn url={src} filename={msg.media_filename || undefined} />
         </div>
       );
     }
@@ -357,6 +419,7 @@ function MsgBubble(props: {
       return (
         <div class="msg-media">
           <video src={src} controls preload="metadata" />
+          <DownloadBtn url={src} filename={msg.media_filename || undefined} />
         </div>
       );
     }
@@ -364,6 +427,7 @@ function MsgBubble(props: {
       return (
         <div class="msg-media">
           <audio src={src} controls preload="metadata" />
+          <DownloadBtn url={src} filename={msg.media_filename || undefined} />
         </div>
       );
     }
@@ -371,6 +435,7 @@ function MsgBubble(props: {
       <div class="msg-media-placeholder">
         <span class="icon" aria-hidden="true">📄</span>
         <a href={src} target="_blank" rel="noopener">{msg.media_filename || 'Download'}</a>
+        <DownloadBtn url={src} filename={msg.media_filename || undefined} />
       </div>
     );
   }

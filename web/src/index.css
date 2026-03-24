@@ -971,6 +971,12 @@ body,
   border-left: 2px solid var(--violet) !important;
 }
 
+.msg-media,
+.image-grid-item {
+  position: relative;
+  overflow: hidden;
+}
+
 .msg-media.sticker {
   background: none;
   max-width: 180px;
@@ -980,10 +986,96 @@ body,
   background: transparent;
 }
 
+.download-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all var(--t-fast) var(--ease);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.download-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(0) scale(1.1);
+  box-shadow: 0 0 15px var(--accent-muted);
+}
+
+.msg-media:hover .download-btn,
+.image-grid-item:hover .download-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .download-btn {
+    opacity: 1;
+    transform: translateY(0);
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.msg-media video+.download-btn {
+  top: 12px;
+  right: 12px;
+}
+
+.msg-media-placeholder .download-btn {
+  position: static;
+  opacity: 1;
+  transform: none;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+}
+
 .msg-body {
   font-size: 14px;
   color: var(--text);
   white-space: pre-wrap;
+}
+
+.download-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  margin-top: 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.download-all-btn:hover {
+  background: var(--accent-muted);
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.download-all-btn svg {
+  opacity: 0.9;
 }
 
 /* Reactions */
