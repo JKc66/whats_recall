@@ -54,9 +54,19 @@ function log(category, message, ...args) {
 export function getClientIp(c) {
   if (process.env.TRUST_PROXY === 'true') {
     const forwarded = c.req.header('x-forwarded-for');
-    if (forwarded) return forwarded.split(',')[0].trim();
+    if (forwarded) {
+      const firstForwarded = forwarded.split(',')[0].trim();
+      if (firstForwarded) {
+        return firstForwarded;
+      }
+    }
     const realIp = c.req.header('x-real-ip');
-    if (realIp) return realIp.trim();
+    if (realIp) {
+      const trimmedRealIp = realIp.trim();
+      if (trimmedRealIp) {
+        return trimmedRealIp;
+      }
+    }
   }
   try {
     return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
