@@ -99,6 +99,7 @@ Caddy auto-provisions HTTPS. Set `NODE_ENV=production` in `.env` so session cook
 | `NOTIFY_WHATSAPP` | `false` | Send deletion alerts to your own WhatsApp |
 | `CHROMIUM_PATH` | `/usr/bin/chromium-browser` | Path to Chromium binary |
 | `NODE_ENV` | — | Set to `production` for secure cookies |
+| `TRUST_PROXY` | `false` | Set to `true` when running behind a proxy (Caddy/Nginx) |
 
 ## Project Structure
 
