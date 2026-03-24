@@ -571,7 +571,18 @@ export function createServer(db, monitor) {
   function stop() {
     clearInterval(pingInterval);
     clearInterval(pruneInterval);
+    clearInterval(pruneApiRateLimits);
   }
 
-  return { start, broadcast, stop };
+  return {
+    start,
+    broadcast,
+    stop,
+    _test: {
+      isRateLimited,
+      recordLoginAttempt,
+      resetLoginAttempts,
+      loginAttempts
+    }
+  };
 }
