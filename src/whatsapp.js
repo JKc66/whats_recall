@@ -36,6 +36,8 @@ export function createMonitor(db, broadcast) {
   let clientAuthenticated = false;
   let myId = null;
   let pairingData = { type: null, data: null };
+  let reconnectAttempts = 0;
+  let lastPairingCodeRequest = 0;
 
   const getSettings = () => {
     const s = db.getSettings();
@@ -59,6 +61,8 @@ export function createMonitor(db, broadcast) {
     pairingData = { type: null, data: null };
     chats.clear();
     contacts.clear();
+    reconnectAttempts = 0;
+    lastPairingCodeRequest = 0;
     // Start fresh: will re-read settings internally
     setTimeout(start, 2000);
   };
@@ -129,17 +133,23 @@ export function createMonitor(db, broadcast) {
     const { phone: phoneNumber, method: pairingMethod } = getSettings();
 
     if (phoneNumber && pairingMethod === 'code' && !sock.authState.creds.registered) {
-      setTimeout(async () => {
-        try {
-          const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
-          const code = await sock.requestPairingCode(formattedPhone);
-          const readableCode = code?.match(/.{1,4}/g)?.join('-') || code;
-          pairingData = { type: 'code', data: readableCode };
-          log('WA', `📱 Pairing code generated: ${readableCode}`);
-        } catch (err) {
-          log('WA', 'Failed to request pairing code: ' + err.message);
-        }
-      }, 3000);
+      const now = Date.now();
+      if (now - lastPairingCodeRequest > 60000) {
+        setTimeout(async () => {
+          try {
+            const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+            const code = await sock.requestPairingCode(formattedPhone);
+            lastPairingCodeRequest = Date.now();
+            const readableCode = code?.match(/.{1,4}/g)?.join('-') || code;
+            pairingData = { type: 'code', data: readableCode };
+            log('WA', `📱 Pairing code generated: ${readableCode}`);
+          } catch (err) {
+            log('WA', 'Failed to request pairing code: ' + err.message);
+          }
+        }, 3000);
+      } else {
+        log('WA', 'Using existing pairing code (cooldown active)');
+      }
     }
 
     sock.ev.on('messaging-history.set', ({ chats: historyChats, contacts: historyContacts, isLatest }) => {
@@ -263,9 +273,13 @@ export function createMonitor(db, broadcast) {
         clientAuthenticated = false;
         broadcast('status', { connected: false, authenticated: false, reason });
 
-        // Terminal errors — clear auth and start fresh
-        const terminalCodes = [DisconnectReason.loggedOut, 401, 403, 411];
-        if (terminalCodes.includes(statusCode)) {
+        const isRegistered = sock?.authState?.creds?.registered;
+
+        // Only treat 401/403/411 as terminal if we were previously fully registered.
+        // If not registered, a 401 might just be a pairing timeout, so we back off instead of aggressive looping.
+        const isTerminal = isRegistered && [DisconnectReason.loggedOut, 401, 403, 411].includes(statusCode);
+
+        if (isTerminal) {
           log('WA', `Terminal disconnect (code ${statusCode}). Clearing auth state and restarting...`);
           try {
             const { rm } = await import('fs/promises');
@@ -277,13 +291,17 @@ export function createMonitor(db, broadcast) {
           } catch (e) {
             log('WA', 'Failed to clear auth state: ' + e.message);
           }
+          reconnectAttempts = 0;
+          lastPairingCodeRequest = 0;
           setTimeout(start, 5000);
         } else {
-          // Temporary errors — reconnect with existing auth
-          log('WA', 'Temporary disconnect. Reconnecting in 3s...');
-          setTimeout(start, 3000);
+          reconnectAttempts++;
+          const delay = Math.min(3000 * Math.pow(2, reconnectAttempts - 1), 60000);
+          log('WA', `Temporary disconnect. Reconnecting in ${delay/1000}s... (Attempt ${reconnectAttempts})`);
+          setTimeout(start, delay);
         }
       } else if (connection === 'open') {
+        reconnectAttempts = 0;
         clientReady = true;
         clientAuthenticated = true;
         myId = jidNormalizedUser(sock.user.id);
