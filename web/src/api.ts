@@ -158,8 +158,8 @@ export async function fetchPairingStatus(): Promise<{ type: 'qr' | 'code' | null
   return request(`${BASE}/api/whatsapp/pairing`);
 }
 
-export async function resetWhatsApp(): Promise<void> {
-  await request(`${BASE}/api/whatsapp/reset`, { method: 'POST' });
+export async function resetWhatsApp(requestPairing = true): Promise<void> {
+  await request(`${BASE}/api/whatsapp/reset`, { method: 'POST', body: JSON.stringify({ requestPairing }) });
 }
 
 export function createWs(onEvent: (event: string, data: unknown) => void): { close: () => void } {

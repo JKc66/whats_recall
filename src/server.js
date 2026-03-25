@@ -384,7 +384,9 @@ export function createServer(db, monitor) {
   });
 
   app.post('/api/whatsapp/reset', async (c) => {
-    await monitor.resetWhatsAppSession();
+    const body = await c.req.json().catch(() => ({}));
+    const requestPairing = body.requestPairing !== false;
+    await monitor.resetWhatsAppSession(requestPairing);
     return c.json({ ok: true });
   });
 
