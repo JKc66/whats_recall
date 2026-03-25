@@ -63,10 +63,13 @@ export function createMonitor(db, broadcast) {
     await deleteDirRecursive(BAILEYS_DATA_DIR);
     mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
     pairingData = { type: null, data: null };
+    clientReady = false;
+    clientAuthenticated = false;
     chats.clear();
     contacts.clear();
     reconnectAttempts = 0;
     lastPairingCodeRequest = 0;
+    broadcast('status', { connected: false, authenticated: false, reason: 'Manual reset' });
     // Start fresh: will re-read settings internally
     setTimeout(() => {
       if (!sock) start();
@@ -507,6 +510,15 @@ export function createMonitor(db, broadcast) {
     }
     if (chatInfo?.notify) return chatInfo.notify;
 
+    // 5.5. Check cached messages for a pushName
+    if (chatInfo?.messages && Array.isArray(chatInfo.messages)) {
+      for (let i = chatInfo.messages.length - 1; i >= 0; i--) {
+        const msg = chatInfo.messages[i];
+        const pName = msg?.pushName || msg?.message?.pushName || msg?.key?.pushName;
+        if (pName) return pName;
+      }
+    }
+
     // 5. Dynamic fallback for groups
     if (sock && isJidGroup(jid)) {
       try {
@@ -909,7 +921,7 @@ export function createMonitor(db, broadcast) {
 
         // Try mapping LID to its phone contact name
         if (!preferredName && id.includes('@lid') && contact.phoneNumber) {
-          const pnInfo = contacts.get(contact.phoneNumber);
+          const pnInfo = contacts.get(contact.phoneNumber + '@s.whatsapp.net') || contacts.get(contact.phoneNumber);
           if (pnInfo) {
             preferredName = pnInfo.name || pnInfo.verifiedName || pnInfo.notify || pnInfo.pushname || '';
           }

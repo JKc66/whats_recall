@@ -3,7 +3,7 @@ import { stats, setStats, setView, setChats, setMessages, setCurrentChatId, show
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
-import { createSignal, createResource, Show, For, onCleanup } from 'solid-js';
+import { createSignal, createResource, Show, For, onCleanup, createEffect } from 'solid-js';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
@@ -21,6 +21,15 @@ export default function Settings() {
   const [showResetNotice, setShowResetNotice] = createSignal(false);
   const [isWaitingForPairing, setIsWaitingForPairing] = createSignal(false);
   const [sortBy, setSortBy] = createSignal<'recent' | 'name'>('recent');
+  const [filterType, setFilterType] = createSignal<'all' | 'chats' | 'contacts'>('chats');
+
+  createEffect(() => {
+    // When the status changes to connected, dynamically refetch the lists
+    if (stats().connected) {
+      refetchAvailable();
+      refetchMonitored();
+    }
+  });
 
   onCleanup(() => clearInterval(pairingInterval));
   const pairingInterval = setInterval(() => {
@@ -36,6 +45,13 @@ export default function Settings() {
   const filteredAvailable = () => {
     const q = search().toLowerCase().trim();
     let list = [...(available() || [])];
+
+    if (filterType() === 'chats') {
+      list = list.filter(c => c.isGroup || (c.timestamp && c.timestamp > 0));
+    } else if (filterType() === 'contacts') {
+      list = list.filter(c => !c.isGroup && (!c.timestamp || c.timestamp === 0));
+    }
+
     if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || extractPhone(c.id).includes(q));
 
     if (sortBy() === 'name') {
@@ -377,9 +393,23 @@ export default function Settings() {
         </Show>
         <Show when={stats().connected}>
           <div class="sort-bar">
-            <span class="sort-label">Sort by:</span>
+            <span class="sort-label">Show:</span>
+            <button class="pill xs" classList={{ active: filterType() === 'all' }} onClick={() => setFilterType('all')}>All</button>
+            <button class="pill xs" classList={{ active: filterType() === 'chats' }} onClick={() => setFilterType('chats')}>Chats</button>
+            <button class="pill xs" classList={{ active: filterType() === 'contacts' }} onClick={() => setFilterType('contacts')}>Contacts</button>
+            
+            <span class="sort-label" style="margin-left: 10px;">Sort by:</span>
             <button class="pill xs" classList={{ active: sortBy() === 'recent' }} onClick={() => setSortBy('recent')}>Recent</button>
             <button class="pill xs" classList={{ active: sortBy() === 'name' }} onClick={() => setSortBy('name')}>A-Z</button>
+            
+            <div style={{ flex: 1 }}></div>
+            <button class="icon-btn xs" onClick={() => refetchAvailable()} title="Refresh chats" aria-label="Refresh chats list" style={{ "margin-left": "auto", padding: "4px" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={available.loading ? 'spin-icon' : ''}>
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
           </div>
           <div class="settings-list">
             <Show when={available.loading}>
