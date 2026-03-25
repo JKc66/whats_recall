@@ -1,6 +1,6 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
@@ -33,6 +33,8 @@ export function createMonitor(db, broadcast) {
   let pairingData = { type: null, data: null };
   let reconnectAttempts = 0;
   let lastPairingCodeRequest = 0;
+  let isInitializing = false;
+  let pairingRequested = false;
 
   const getSettings = () => {
     const s = db.getSettings();
@@ -45,11 +47,18 @@ export function createMonitor(db, broadcast) {
 
   let { notify: notifyWhatsApp } = getSettings();
 
-  const resetWhatsAppSession = async () => {
-    log('WA', 'Manual reset requested. Clearing auth and restarting...');
+  const resetWhatsAppSession = async (requestPairing = true) => {
+    log('WA', `Manual reset requested. (Request Pairing: ${requestPairing}) Clearing auth and restarting...`);
+    pairingRequested = requestPairing;
     if (sock) {
-      try { await sock.logout(); } catch (e) { }
-      sock.end();
+      try {
+        sock.ev.removeAllListeners('connection.update');
+        await sock.logout();
+        sock.end();
+      } catch (e) {
+        log('WA', 'Logout error: ' + e.message);
+      }
+      sock = null;
     }
     await deleteDirRecursive(BAILEYS_DATA_DIR);
     mkdirSync(BAILEYS_DATA_DIR, { recursive: true });
@@ -59,7 +68,9 @@ export function createMonitor(db, broadcast) {
     reconnectAttempts = 0;
     lastPairingCodeRequest = 0;
     // Start fresh: will re-read settings internally
-    setTimeout(start, 2000);
+    setTimeout(() => {
+      if (!sock) start();
+    }, 2000);
   };
 
   // Only update simple preferences live, NO auto-restarts for phone/method
@@ -101,51 +112,89 @@ export function createMonitor(db, broadcast) {
   }
 
   const start = async () => {
-    log('WA', 'Initializing Baileys Socket...');
-    const { state, saveCreds } = await useMultiFileAuthState(BAILEYS_DATA_DIR);
+    if (isInitializing) return;
+    isInitializing = true;
 
-    // We import locally within the function to not clutter the top
-    const { fetchLatestBaileysVersion } = await import('@whiskeysockets/baileys');
-    let version;
     try {
-      const result = await fetchLatestBaileysVersion();
-      version = result.version;
-    } catch {
-      version = [2, 3000, 1015901307];
-    }
-
-    sock = makeWASocket({
-      auth: state,
-      version,
-      printQRInTerminal: false,
-      logger: pino({ level: 'silent' }),
-      syncFullHistory: true,
-      browser: ['Ubuntu', 'Chrome', '20.0.0']
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-
-    const { phone: phoneNumber, method: pairingMethod } = getSettings();
-
-    if (phoneNumber && pairingMethod === 'code' && !sock.authState.creds.registered) {
-      const now = Date.now();
-      if (now - lastPairingCodeRequest > 60000) {
-        setTimeout(async () => {
-          try {
-            const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
-            const code = await sock.requestPairingCode(formattedPhone);
-            lastPairingCodeRequest = Date.now();
-            const readableCode = code?.match(/.{1,4}/g)?.join('-') || code;
-            pairingData = { type: 'code', data: readableCode };
-            log('WA', `📱 Pairing code generated: ${readableCode}`);
-          } catch (err) {
-            log('WA', 'Failed to request pairing code: ' + err.message);
-          }
-        }, 3000);
-      } else {
-        log('WA', 'Using existing pairing code (cooldown active)');
+      if (sock) {
+        log('WA', 'Closing existing socket before re-initializing...');
+        try {
+          sock.ev.removeAllListeners('connection.update');
+          sock.end();
+          sock = null;
+        } catch (e) {
+          log('WA', 'Error closing socket: ' + e.message);
+        }
       }
+
+      log('WA', 'Initializing Baileys Socket...');
+      const { state, saveCreds } = await useMultiFileAuthState(BAILEYS_DATA_DIR);
+
+      // We import locally within the function to not clutter the top
+      const { fetchLatestBaileysVersion } = await import('@whiskeysockets/baileys');
+      let version;
+      try {
+        const result = await fetchLatestBaileysVersion();
+        version = result.version;
+      } catch {
+        version = [2, 3000, 1015901307];
+      }
+
+      const { phone: phoneNumber, method: pairingMethod } = getSettings();
+      
+      // Before creating socket, decide if we even want a QR right now
+      const isRegistered = state?.creds?.registered;
+      const printQR = !isRegistered && pairingMethod === 'qr' && pairingRequested;
+
+      sock = makeWASocket({
+        auth: state,
+        version,
+        printQRInTerminal: printQR,
+        logger: pino({ level: 'silent' }),
+        syncFullHistory: true,
+        generateHighQualityLinkPreview: true,
+        browser: ['Ubuntu', 'Chrome', '20.0.0']
+      });
+
+      sock.ev.on('creds.update', saveCreds);
+
+      // Only attempt to get a code or QR if we are registered OR if pairing was explicitly requested
+      if (!isRegistered && !pairingRequested) {
+        log('WA', 'Auth not registered. Waiting for explicit pairing request from UI.');
+        
+        // Ensure no events try to do things
+        if (sock && sock.ev) {
+          sock.ev.removeAllListeners('connection.update');
+          // Disconnect completely to stop QR spinning behind scenes
+          sock.end();
+          sock = null;
+        }
+        
+      } else if (phoneNumber && pairingMethod === 'code' && !sock.authState.creds.registered) {
+        const now = Date.now();
+        if (now - lastPairingCodeRequest > 60000) {
+          setTimeout(async () => {
+            try {
+              if (!sock || sock.authState.creds.registered) return; 
+              const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+              const code = await sock.requestPairingCode(formattedPhone);
+              lastPairingCodeRequest = Date.now();
+              const readableCode = code?.match(/.{1,4}/g)?.join('-') || code;
+              pairingData = { type: 'code', data: readableCode };
+              log('WA', `📱 Pairing code generated: ${readableCode}`);
+            } catch (err) {
+              log('WA', 'Failed to request pairing code: ' + err.message);
+            }
+          }, 3000);
+        } else {
+          log('WA', 'Using existing pairing code (cooldown active)');
+        }
+      }
+    } finally {
+      isInitializing = false;
     }
+
+    if (!sock) return; // If we aborted initialization (e.g. waiting for request)
 
     sock.ev.on('messaging-history.set', ({ chats: historyChats, contacts: historyContacts, isLatest }) => {
       log('WA', `History sync: ${historyChats?.length || 0} chats, ${historyContacts?.length || 0} contacts (isLatest: ${isLatest})`);
@@ -250,6 +299,7 @@ export function createMonitor(db, broadcast) {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        if (!pairingRequested) return; // Ignore QR if not explicitly requested
         const { method } = getSettings();
         if (method === 'qr') {
           pairingData = { type: 'qr', data: qr };
@@ -263,12 +313,20 @@ export function createMonitor(db, broadcast) {
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || 'Unknown';
-        log('WA', `Connection closed: ${reason} (code: ${statusCode})`);
+        const errorStack = lastDisconnect?.error?.stack || '';
+        
+        log('WA', `Connection closed: ${reason} (code: ${statusCode}). ${errorStack}`);
         clientReady = false;
         clientAuthenticated = false;
         broadcast('status', { connected: false, authenticated: false, reason });
 
         const isRegistered = sock?.authState?.creds?.registered;
+
+        // If we were explicitly closed/reset, don't try to reconnect here - resetWhatsAppSession or start() handles it.
+        if (statusCode === 440 || !sock) {
+          log('WA', 'Ignoring connection close for conflict or null socket - replacement should already be active.');
+          return;
+        }
 
         // Only treat 401/403/411 as terminal if we were previously fully registered.
         // If not registered, a 401 might just be a pairing timeout, so we back off instead of aggressive looping.
@@ -288,12 +346,16 @@ export function createMonitor(db, broadcast) {
           }
           reconnectAttempts = 0;
           lastPairingCodeRequest = 0;
-          setTimeout(start, 5000);
+          setTimeout(() => {
+            start();
+          }, 5000);
         } else {
           reconnectAttempts++;
           const delay = Math.min(3000 * Math.pow(2, reconnectAttempts - 1), 60000);
           log('WA', `Temporary disconnect. Reconnecting in ${delay/1000}s... (Attempt ${reconnectAttempts})`);
-          setTimeout(start, delay);
+          setTimeout(() => {
+            start();
+          }, delay);
         }
       } else if (connection === 'open') {
         reconnectAttempts = 0;

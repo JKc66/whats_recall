@@ -17,13 +17,18 @@ export default function Settings() {
 
   const [config, { refetch: refetchConfig }] = createResource(fetchSettings);
   const [savingConfig, setSavingConfig] = createSignal<string | null>(null);
-  const [pairing, { refetch: refetchPairing }] = createResource(fetchPairingStatus);
+  const [pairing, { refetch: refetchPairing, mutate: mutatePairing }] = createResource(fetchPairingStatus);
   const [showResetNotice, setShowResetNotice] = createSignal(false);
+  const [isWaitingForPairing, setIsWaitingForPairing] = createSignal(false);
   const [sortBy, setSortBy] = createSignal<'recent' | 'name'>('recent');
 
   onCleanup(() => clearInterval(pairingInterval));
   const pairingInterval = setInterval(() => {
-    if (tab() === 'config' && !stats().connected) refetchPairing();
+    // Only poll for pairing info if we are actually waiting for data, NOT if we have an unapplied notice
+    // and ONLY if we are actively waiting for a code/QR to be generated or if it's already generated and we're waiting for scan
+    if (tab() === 'config' && !stats().connected && !showResetNotice() && (isWaitingForPairing() || pairing()?.data)) {
+      refetchPairing();
+    }
   }, 5000);
 
   const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
@@ -118,6 +123,9 @@ export default function Settings() {
       }
       if (key === 'whatsapp_phone' || key === 'whatsapp_pairing_method') {
         setShowResetNotice(true);
+        setIsWaitingForPairing(false);
+        // Wipe local pairing data state so it doesn't accidentally trigger the polling loop
+        mutatePairing({ type: null, data: null, connected: false, authenticated: false } as any);
       }
       notify.success('Setting saved', `${key.replace(/_/g, ' ')} updated successfully.`);
     } catch {
@@ -128,13 +136,23 @@ export default function Settings() {
   }
 
   async function handleReset() {
-    if (!confirm('Are you sure? This will log you out of the current WhatsApp session and clear its cache.')) return;
+    const isLogOutOnly = !!pairing()?.authenticated && !showResetNotice();
+
+    if (pairing()?.authenticated || pairing()?.data) {
+      if (!confirm('Are you sure? This will log you out of the current WhatsApp session and clear its cache.')) return;
+    }
     setBusy('reset_wa');
     try {
-      await resetWhatsApp();
+      await resetWhatsApp(!isLogOutOnly);
       await refetchPairing();
       setShowResetNotice(false);
-      notify.success('Session reset', 'Waiting for new pairing...');
+      setIsWaitingForPairing(!isLogOutOnly);
+      
+      if (isLogOutOnly) {
+        notify.success('Logged out', 'Session cleared successfully.');
+      } else {
+        notify.success('Session reset', 'Waiting for new pairing...');
+      }
     } catch {
       notify.warning('Reset failed', 'Could not reset session.');
     } finally {
@@ -213,15 +231,15 @@ export default function Settings() {
                     </div>
                   </Show>
                   <Show when={!pairing()?.data}>
-                    <Show when={(config()?.whatsapp_pairing_method || 'code') === 'code' && !config()?.whatsapp_phone} fallback={
-                      <div class="pairing-loading">
-                        <div class="spinner" />
-                        <span>Generating pairing code/QR. Please hold on...</span>
-                      </div>
-                    }>
+                    <Show when={busy() === 'reset_wa' || isWaitingForPairing()} fallback={
                       <div class="pairing-loading" style="opacity: 0.8; flex-direction: column; gap: 4px;">
                         <div>Not started</div>
-                        <span style="font-size: 0.9em; text-align: center;">Please set your WhatsApp phone number below first, then click "Link New Device" to start pairing.</span>
+                        <span style="font-size: 0.9em; text-align: center;">Click "Link New Device" to start pairing.</span>
+                      </div>
+                    }>
+                      <div class="pairing-loading">
+                        <div class="spinner" />
+                        <span>Generating {(config()?.whatsapp_pairing_method || 'code') === 'qr' ? 'QR code' : 'pairing code'}. Please hold on...</span>
                       </div>
                     </Show>
                   </Show>
@@ -236,7 +254,10 @@ export default function Settings() {
                   </div>
                 </Show>
                 <button class="btn-outline sm" classList={{ 'btn-primary-lite': showResetNotice() }} onClick={handleReset} disabled={!!busy()}>
-                  {showResetNotice() ? 'Apply Changes & Reset Session' : 'Link New Device / Reset Session'}
+                  {pairing()?.authenticated
+                    ? (showResetNotice() ? 'Apply Changes & Reset' : 'Log Out')
+                    : 'Link New Device'
+                  }
                 </button>
               </div>
             </div>
