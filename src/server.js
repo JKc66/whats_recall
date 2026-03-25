@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { existsSync } from 'fs';
-import { join, dirname, extname, resolve, basename } from 'path';
+import { join, dirname, extname, resolve, basename, sep, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { MEDIA_DIR } from './database.js';
 
@@ -168,9 +168,31 @@ export function createServer(db, monitor) {
   function safePath(baseDir, userPath) {
     const decodedPath = decodeURIComponent(userPath);
     const base = resolve(baseDir);
-    const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
-    // Ensure resolved path is within base and handle directory prefix bypass
-    if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
+    const normalizedUserPath = decodedPath.replace(/^[\\\/]+/, '');
+    const resolved = resolve(base, normalizedUserPath);
+
+    // Ensure the resolved path is actually underneath the base directory
+    const relativePath = relative(base, resolved);
+
+    if (relativePath.startsWith('..') || (base !== sep && resolve(relativePath) === relativePath)) {
+      return null;
+    }
+
+    // Double-check by seeing if the resolved path starts with the base path
+    const baseWithSep = base.endsWith(sep) ? base : base + sep;
+    if (base !== sep && !resolved.startsWith(baseWithSep) && resolved !== base) {
+      return null;
+    }
+
+    // If base is root, we allow everything as long as it doesn't try to go above root
+    if (base === sep && (decodedPath.includes('..') || decodedPath.startsWith(sep))) {
+       // Re-evaluate for root: we should still be careful.
+       // If base is root, relativePath will never start with '..'
+       // But if userPath was '../../etc/passwd', it resolves to '/etc/passwd'
+       // To be safe, if base is root, we only allow paths that don't try to traverse up
+       if (normalizedUserPath !== relativePath) return null;
+    }
+
     return resolved;
   }
 
