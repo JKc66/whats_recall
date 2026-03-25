@@ -93,6 +93,16 @@ export function getClientIp(c) {
   }
 }
 
+export function safePath(baseDir, userPath) {
+  if (userPath.includes('\0')) return null;
+  const decodedPath = decodeURIComponent(userPath);
+  const base = resolve(baseDir);
+  const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
+  // Ensure resolved path is within base and handle directory prefix bypass
+  if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
+  return resolved;
+}
+
 export function createServer(db, monitor) {
   const app = new Hono();
   const wsClients = new Set();
@@ -171,15 +181,6 @@ export function createServer(db, monitor) {
   function generateToken() {
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function safePath(baseDir, userPath) {
-    const decodedPath = decodeURIComponent(userPath);
-    const base = resolve(baseDir);
-    const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
-    // Ensure resolved path is within base and handle directory prefix bypass
-    if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
-    return resolved;
   }
 
   function serveFile(filePath) {
