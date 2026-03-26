@@ -227,7 +227,8 @@ export function createServer(db, monitor) {
     const status = c.res.status;
 
     if (path.startsWith('/api/')) {
-      log('HTTP', `${method} ${path} → ${status} (${elapsed}ms)`);
+      const safePath = path.replace(/[\n\r]/g, '');
+      log('HTTP', `${method} ${safePath} → ${status} (${elapsed}ms)`);
     }
   });
 
