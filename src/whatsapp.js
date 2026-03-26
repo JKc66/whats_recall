@@ -1,6 +1,6 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
