@@ -130,13 +130,13 @@ export function createMonitor(db, broadcast) {
   let saveTimer = null;
   function saveCache() {
     if (saveTimer) return;
-    saveTimer = setTimeout(() => {
+    saveTimer = setTimeout(async () => {
       try {
         const data = {
           contacts: Array.from(contacts.values()),
           chats: Array.from(chats.values())
         };
-        writeFileSync(CACHE_FILE, JSON.stringify(data));
+        await writeFile(CACHE_FILE, JSON.stringify(data));
       } catch (e) {
         log('WA', 'Failed to save store cache: ' + e.message);
       }
