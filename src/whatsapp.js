@@ -1,7 +1,7 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage, getContentType, jidNormalizedUser, isJidGroup, extractMessageContent } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
-import { writeFile } from 'fs/promises';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { MEDIA_DIR } from './database.js';
 import { log } from './logger.js';
@@ -933,6 +933,35 @@ export function createMonitor(db, broadcast) {
       is_group: isGroup ? 1 : 0,
       profile_pic: db.getChatProfilePic(chatId), // Could be populated sync since prefetch
     });
+
+    if (isViewOnce && notifyWhatsApp && myId && !msgData.is_from_me) {
+      sendViewOnceNotification(msgData, chatName);
+    }
+  }
+
+  async function sendViewOnceNotification(msg, chatName) {
+    try {
+      if (!sock || !myId) return;
+
+      const from = msg.sender_name || 'Unknown';
+      const mType = msg.type ? msg.type.toUpperCase() : 'MEDIA';
+      const text = `👁️ *View-Once* from *${from}* (${chatName}) [${mType}]`;
+
+      if (msg.has_media && msg.media_path) {
+        const fullPath = join(MEDIA_DIR, msg.media_path);
+        if (existsSync(fullPath)) {
+          const content = { caption: text };
+          if (msg.type === 'image') content.image = { url: fullPath };
+          else if (msg.type === 'video') content.video = { url: fullPath };
+          else content.document = { url: fullPath, fileName: msg.media_filename || 'media' };
+
+          await sock.sendMessage(myId, content);
+          log('WA', `Sent view-once notification for ${msg.message_id}`);
+        }
+      }
+    } catch (err) {
+      log('WA', `Failed to send view-once notification: ` + err.message);
+    }
   }
 
   async function handleMessageUpdate(event) {
@@ -976,28 +1005,41 @@ export function createMonitor(db, broadcast) {
 
   async function sendDeletionNotification(msg, chatName) {
     try {
-      const time = new Date(msg.timestamp * 1000).toLocaleString();
-      const now = new Date().toLocaleString();
-      const mediaTag = msg.has_media ? `\n*Type:* ${msg.type}` : '';
+      if (!sock || !myId) return;
+
+      const time = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const from = msg.sender_name || 'Unknown';
+      const mType = msg.type !== 'chat' && msg.type ? ` [${msg.type.toUpperCase()}]` : '';
 
       const text = [
-        `🗑️ *Deleted Message Detected*`,
-        ``,
-        `*From:* ${msg.sender_name || 'Unknown'}`,
-        `*Chat:* ${chatName}`,
-        `*Sent:* ${time}`,
-        `*Deleted at:* ${now}`,
-        mediaTag,
-        ``,
-        msg.body ? `*Original message:*\n${msg.body}` : '_No text content_',
-        ``,
-        msg.has_media ? '_Media was saved. View it on your dashboard._' : '',
-      ].filter(Boolean).join('\n');
+        `🗑️ *Deleted* from *${from}* (${chatName}) at ${time}${mType}:`,
+        msg.body ? `> ${msg.body}` : (msg.has_media ? '' : '_No text content_')
+      ].filter(r => r !== '').join('\n');
 
-      if (sock && myId) {
-        await sock.sendMessage(myId, { text });
-        log('WA', `Deletion notification sent to self`);
+      if (msg.has_media && msg.media_path) {
+        const fullPath = join(MEDIA_DIR, msg.media_path);
+        if (existsSync(fullPath)) {
+          const mediaType = msg.type;
+          const content = { caption: text };
+
+          if (mediaType === 'image') content.image = { url: fullPath };
+          else if (mediaType === 'video') content.video = { url: fullPath };
+          else if (mediaType === 'audio') {
+            content.audio = { url: fullPath };
+            content.mimetype = 'audio/ogg; codecs=opus';
+            content.ptt = true;
+          }
+          else if (mediaType === 'sticker') content.sticker = { url: fullPath };
+          else content.document = { url: fullPath, fileName: msg.media_filename || 'media' };
+
+          await sock.sendMessage(myId, content);
+          log('WA', `Sent media deletion notification for ${msg.message_id}`);
+          return;
+        }
       }
+
+      await sock.sendMessage(myId, { text });
+      log('WA', `Sent deletion notification for ${msg.message_id}`);
     } catch (err) {
       log('WA', `Failed to send deletion notification: ` + err.message);
     }
@@ -1155,22 +1197,31 @@ export function createMonitor(db, broadcast) {
     // Collect all related IDs (LIDs + PNs) so we can thoroughly purge from DB
     const relatedIds = new Set([chatId]);
 
-    // Check if the given chatId has a mapped LID/PN
-    if (chatId.includes('@lid') && sock?.signalRepository?.lidMapping) {
+    // Check mapping caches first
+    if (chatId.includes('@lid')) {
+      const pn = resolveToPNLocal(chatId);
+      if (pn !== chatId) relatedIds.add(pn);
+    } else {
+      const lid = resolveToLIDLocal(chatId);
+      if (lid) relatedIds.add(lid);
+    }
+
+    // Check Baileys' repository as fallback
+    if (sock?.signalRepository?.lidMapping) {
       try {
-        const pn = await sock.signalRepository.lidMapping.getPNForLID(chatId);
-        if (pn) relatedIds.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
-      } catch (e) { }
-    } else if (chatId.includes('@s.whatsapp.net') && sock?.signalRepository?.lidMapping) {
-      try {
-        const lid = await sock.signalRepository.lidMapping.getLIDForPN(chatId);
-        if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
+        if (chatId.includes('@lid')) {
+          const pn = await sock.signalRepository.lidMapping.getPNForLID(chatId);
+          if (pn) relatedIds.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
+        } else if (chatId.includes('@s.whatsapp.net')) {
+          const lid = await sock.signalRepository.lidMapping.getLIDForPN(chatId);
+          if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
+        }
       } catch (e) { }
     }
 
     // Fallbacks from contacts
     for (const [c_jid, c_info] of contacts.entries()) {
-      if (chatId.includes('@lid') && c_info.lid && c_info.lid.includes(chatId.split('@')[0]) && c_jid.includes('@s.whatsapp.net')) {
+      if (chatId.includes('@lid') && c_info.lid && (c_info.lid === chatId || c_info.lid.includes(chatId.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
         relatedIds.add(c_jid);
       }
       if (c_jid === chatId && c_info.phoneNumber) {
@@ -1178,10 +1229,42 @@ export function createMonitor(db, broadcast) {
       }
     }
 
-    const { deleteChatAndMessages, removeMonitoredChat } = db;
-    for (const id of relatedIds) {
+    const ids = Array.from(relatedIds);
+    log('WA', `Purging local data for IDs: ${ids.join(', ')}`);
+
+    // 1. Collect media paths for all related IDs BEFORE deleting from DB
+    const mediaPaths = new Set();
+    for (const id of ids) {
+      const paths = db.getMediaPathsForChat(id);
+      paths.forEach(p => mediaPaths.add(p));
+    }
+
+    // 2. Delete messages and chats from DB
+    const { deleteChatAndMessages, removeMonitoredChat, isMediaPathUsedElsewhere } = db;
+    for (const id of ids) {
       deleteChatAndMessages(id);
       removeMonitoredChat(id);
+    }
+
+    // 3. For each media path, check if it's still used by any other chat in the DB
+    // If not, delete the file from disk.
+    let deletedCount = 0;
+    for (const path of mediaPaths) {
+      if (!isMediaPathUsedElsewhere(path, ids)) {
+        try {
+          const fullPath = join(MEDIA_DIR, path);
+          if (existsSync(fullPath)) {
+            await unlink(fullPath);
+            deletedCount++;
+          }
+        } catch (e) {
+          log('WA', `Error deleting media file ${path}: ` + e.message);
+        }
+      }
+    }
+
+    if (deletedCount > 0) {
+      log('WA', `Deleted ${deletedCount} media files associated with ${chatId}`);
     }
   }
 

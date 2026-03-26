@@ -370,6 +370,16 @@ export function initDatabase() {
       db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
     },
 
+    getMediaPathsForChat(chatId) {
+      return db.query('SELECT DISTINCT media_path FROM messages WHERE chat_id = ? AND media_path IS NOT NULL').all(chatId).map(r => r.media_path);
+    },
+
+    isMediaPathUsedElsewhere(mediaPath, excludedChatIds) {
+      const placeholders = excludedChatIds.map(() => '?').join(',');
+      const row = db.query(`SELECT 1 FROM messages WHERE media_path = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`).get(mediaPath, ...excludedChatIds);
+      return !!row;
+    },
+
     deleteChatAndMessages(chatId) {
       db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
       db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
