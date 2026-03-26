@@ -122,10 +122,12 @@ export function createServer(db, monitor) {
 
   const loginAttempts = new Map(); // ip -> { count, firstAttempt }
 
+  const isExpired = (entry, now = Date.now()) => now - entry.firstAttempt > LOGIN_WINDOW_MS;
+
   function pruneLoginAttempts() {
     const now = Date.now();
     for (const [ip, entry] of loginAttempts) {
-      if (now - entry.firstAttempt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
+      if (isExpired(entry, now)) loginAttempts.delete(ip);
     }
   }
 
@@ -134,7 +136,7 @@ export function createServer(db, monitor) {
   function isRateLimited(ip) {
     const entry = loginAttempts.get(ip);
     if (!entry) return false;
-    if (Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
+    if (isExpired(entry)) {
       loginAttempts.delete(ip);
       return false;
     }
@@ -144,7 +146,7 @@ export function createServer(db, monitor) {
   function recordLoginAttempt(ip) {
     if (loginAttempts.size >= MAX_TRACKED_IPS) pruneLoginAttempts();
     const entry = loginAttempts.get(ip);
-    if (!entry || Date.now() - entry.firstAttempt > LOGIN_WINDOW_MS) {
+    if (!entry || isExpired(entry)) {
       loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
     } else {
       entry.count++;
