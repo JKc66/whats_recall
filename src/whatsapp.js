@@ -10,7 +10,7 @@ import WS from 'ws';
 
 // Patch ws to suppress Bun warnings for unimplemented events
 const originalOn = WS.prototype.on;
-WS.prototype.on = function (event, listener) {
+WS.prototype.on = function (event) {
   if (event === 'upgrade' || event === 'unexpected-response') return this;
   return originalOn.apply(this, arguments);
 };
@@ -24,6 +24,16 @@ const deleteDirRecursive = async (path) => {
   const { rm } = await import('fs/promises');
   await rm(path, { recursive: true, force: true });
 };
+
+function safeMerge(oldObj, newObj) {
+  const merged = { ...oldObj };
+  for (const key in newObj) {
+    if (newObj[key] !== undefined && newObj[key] !== null) {
+      merged[key] = newObj[key];
+    }
+  }
+  return merged;
+}
 
 export function createMonitor(db, broadcast) {
   let sock = null;
@@ -84,14 +94,34 @@ export function createMonitor(db, broadcast) {
 
   const contacts = new Map();
   const chats = new Map();
+  const lidToPn = new Map();
+  const pnToLid = new Map();
+
+  const updateMappings = (items) => {
+    for (const item of items) {
+      if (!item.id) continue;
+      if (item.id.includes('@lid') && item.phoneNumber) {
+        const pn = item.phoneNumber.includes('@s.whatsapp.net') ? item.phoneNumber : (item.phoneNumber + '@s.whatsapp.net');
+        lidToPn.set(item.id, pn);
+        pnToLid.set(pn, item.id);
+      } else if (item.id.includes('@s.whatsapp.net') && item.lid) {
+        const lid = item.lid.includes('@lid') ? item.lid : (item.lid + '@lid');
+        pnToLid.set(item.id, lid);
+        lidToPn.set(lid, item.id);
+      }
+    }
+  };
 
   const CACHE_FILE = join(BAILEYS_DATA_DIR, 'store_cache.json');
   try {
     if (existsSync(CACHE_FILE)) {
       const cache = JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
-      if (cache.contacts) cache.contacts.forEach(c => contacts.set(c.id, c));
+      if (cache.contacts) {
+        cache.contacts.forEach(c => contacts.set(c.id, c));
+        updateMappings(cache.contacts);
+      }
       if (cache.chats) cache.chats.forEach(c => chats.set(c.id, c));
-      log('WA', `Restored ${contacts.size} contacts and ${chats.size} chats from cache`);
+      log('WA', `Restored ${contacts.size} contacts and ${chats.size} chats from cache (mappings: ${lidToPn.size})`);
     }
   } catch (e) {
     log('WA', 'Failed to restore store cache: ' + e.message);
@@ -144,7 +174,7 @@ export function createMonitor(db, broadcast) {
       }
 
       const { phone: phoneNumber, method: pairingMethod } = getSettings();
-      
+
       // Before creating socket, decide if we even want a QR right now
       const isRegistered = state?.creds?.registered;
       const printQR = !isRegistered && pairingMethod === 'qr' && pairingRequested;
@@ -164,7 +194,7 @@ export function createMonitor(db, broadcast) {
       // Only attempt to get a code or QR if we are registered OR if pairing was explicitly requested
       if (!isRegistered && !pairingRequested) {
         log('WA', 'Auth not registered. Waiting for explicit pairing request from UI.');
-        
+
         // Ensure no events try to do things
         if (sock && sock.ev) {
           sock.ev.removeAllListeners('connection.update');
@@ -172,13 +202,13 @@ export function createMonitor(db, broadcast) {
           sock.end();
           sock = null;
         }
-        
+
       } else if (phoneNumber && pairingMethod === 'code' && !sock.authState.creds.registered) {
         const now = Date.now();
         if (now - lastPairingCodeRequest > 60000) {
           setTimeout(async () => {
             try {
-              if (!sock || sock.authState.creds.registered) return; 
+              if (!sock || sock.authState.creds.registered) return;
               const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
               const code = await sock.requestPairingCode(formattedPhone);
               lastPairingCodeRequest = Date.now();
@@ -200,17 +230,20 @@ export function createMonitor(db, broadcast) {
     if (!sock) return; // If we aborted initialization (e.g. waiting for request)
 
     sock.ev.on('messaging-history.set', ({ chats: historyChats, contacts: historyContacts, isLatest }) => {
-      log('WA', `History sync: ${historyChats?.length || 0} chats, ${historyContacts?.length || 0} contacts (isLatest: ${isLatest})`);
+      if (historyChats?.length || historyContacts?.length) {
+        log('WA', `History sync: ${historyChats?.length || 0} chats, ${historyContacts?.length || 0} contacts (isLatest: ${isLatest})`);
+      }
       for (const contact of (historyContacts || [])) {
         if (contact.id) {
           const old = contacts.get(contact.id) || {};
-          contacts.set(contact.id, { ...old, ...contact });
+          contacts.set(contact.id, safeMerge(old, contact));
         }
       }
+      updateMappings(historyContacts || []);
       for (const chat of (historyChats || [])) {
         if (chat.id) {
           const old = chats.get(chat.id) || {};
-          chats.set(chat.id, { ...old, ...chat });
+          chats.set(chat.id, safeMerge(old, chat));
         }
       }
       saveCache();
@@ -221,9 +254,10 @@ export function createMonitor(db, broadcast) {
       for (const contact of newContacts) {
         if (contact.id) {
           const old = contacts.get(contact.id) || {};
-          contacts.set(contact.id, { ...old, ...contact });
+          contacts.set(contact.id, safeMerge(old, contact));
         }
       }
+      updateMappings(newContacts);
       saveCache();
     });
 
@@ -233,9 +267,10 @@ export function createMonitor(db, broadcast) {
       for (const contact of newContacts) {
         if (contact.id) {
           const old = contacts.get(contact.id) || {};
-          contacts.set(contact.id, { ...old, ...contact });
+          contacts.set(contact.id, safeMerge(old, contact));
         }
       }
+      updateMappings(newContacts);
       saveCache();
     });
 
@@ -245,7 +280,7 @@ export function createMonitor(db, broadcast) {
       for (const chat of newChats) {
         if (chat.id) {
           const old = chats.get(chat.id) || {};
-          chats.set(chat.id, { ...old, ...chat });
+          chats.set(chat.id, safeMerge(old, chat));
         }
       }
       saveCache();
@@ -255,7 +290,7 @@ export function createMonitor(db, broadcast) {
       for (const group of newGroups) {
         if (group.id) {
           const existing = chats.get(group.id) || {};
-          chats.set(group.id, { ...existing, id: group.id, name: group.subject || existing.name });
+          chats.set(group.id, safeMerge(existing, { id: group.id, name: group.subject }));
         }
       }
       saveCache();
@@ -275,9 +310,10 @@ export function createMonitor(db, broadcast) {
       for (const update of updates) {
         if (update.id) {
           const old = contacts.get(update.id) || {};
-          contacts.set(update.id, { ...old, ...update });
+          contacts.set(update.id, safeMerge(old, update));
         }
       }
+      updateMappings(updates);
       saveCache();
     });
 
@@ -292,7 +328,7 @@ export function createMonitor(db, broadcast) {
       for (const update of updates) {
         if (update.id) {
           const old = chats.get(update.id) || {};
-          chats.set(update.id, { ...old, ...update });
+          chats.set(update.id, safeMerge(old, update));
         }
       }
       saveCache();
@@ -317,7 +353,7 @@ export function createMonitor(db, broadcast) {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || 'Unknown';
         const errorStack = lastDisconnect?.error?.stack || '';
-        
+
         log('WA', `Connection closed: ${reason} (code: ${statusCode}). ${errorStack}`);
         clientReady = false;
         clientAuthenticated = false;
@@ -355,7 +391,7 @@ export function createMonitor(db, broadcast) {
         } else {
           reconnectAttempts++;
           const delay = Math.min(3000 * Math.pow(2, reconnectAttempts - 1), 60000);
-          log('WA', `Temporary disconnect. Reconnecting in ${delay/1000}s... (Attempt ${reconnectAttempts})`);
+          log('WA', `Temporary disconnect. Reconnecting in ${delay / 1000}s... (Attempt ${reconnectAttempts})`);
           setTimeout(() => {
             start();
           }, delay);
@@ -465,79 +501,43 @@ export function createMonitor(db, broadcast) {
   async function getChatName(jid, pushName = null) {
     if (!jid) return 'Unknown';
 
-    // 1. Phone-saved contact name (highest priority — user's own addressbook)
-    const contactInfo = contacts.get(jid);
-    if (contactInfo?.name) return contactInfo.name;
-
-    // 2. Verified Business Name
-    if (contactInfo?.verifiedName) return contactInfo.verifiedName;
-
-    // 3. Push name from message (real-time name from WhatsApp)
-    if (pushName) return pushName;
-
-    // 4. WhatsApp push/notify names from sync
-    if (contactInfo?.notify) return contactInfo.notify;
-    if (contactInfo?.pushname) return contactInfo.pushname;
-
-    // 4.5. Recursive lookup for LID to PN (Phone Number) mapping
+    let altJid = null;
     if (jid.includes('@lid')) {
-      // First, check if any contact in our map has this LID linked to its phone number
-      for (const contact of contacts.values()) {
-        if (contact.lid === jid || contact.id === jid) {
-          const name = contact.name || contact.verifiedName || contact.notify || contact.pushname;
-          if (name && name !== jid.split('@')[0]) return name;
-          // If the contact ID is a phone number, it's better than the LID
-          if (contact.id.includes('@s.whatsapp.net')) return contact.id.split('@')[0];
-        }
-      }
-
-      // Also check contactInfo in case it has its own PN linked
-      if (contactInfo?.phoneNumber && contactInfo.phoneNumber !== jid) {
-        const mappedName = await getChatName(contactInfo.phoneNumber, pushName);
-        if (mappedName && !mappedName.includes('@')) {
-          // We found a name or at least a phone number — use it!
-          return mappedName;
-        }
-        // Fallback to the phone number itself if the name search didn't yield a result
-        return contactInfo.phoneNumber.split('@')[0];
-      }
+      altJid = resolveToPNLocal(jid);
+      if (altJid === jid) altJid = null;
+    } else if (jid.includes('@s.whatsapp.net')) {
+      altJid = resolveToLIDLocal(jid);
     }
 
-    // 5. Chat name (group subject or synced name)
-    const chatInfo = chats.get(jid);
-    if (chatInfo?.name && !chatInfo.name.includes(jid.split('@')[0])) {
-      return chatInfo.name;
-    }
-    if (chatInfo?.notify) return chatInfo.notify;
+    const contact = contacts.get(jid) || {};
+    const chat = chats.get(jid) || {};
+    const altContact = altJid ? (contacts.get(altJid) || {}) : {};
+    const altChat = altJid ? (chats.get(altJid) || {}) : {};
 
-    // 5.5. Check cached messages for a pushName
-    if (chatInfo?.messages && Array.isArray(chatInfo.messages)) {
-      for (let i = chatInfo.messages.length - 1; i >= 0; i--) {
-        const msg = chatInfo.messages[i];
-        const pName = msg?.pushName || msg?.message?.pushName || msg?.key?.pushName;
-        if (pName) return pName;
-      }
-    }
+    // 1. Phone-saved contact name or verified business name (check both jid and altJid)
+    if (contact.name) return contact.name;
+    if (altContact.name) return altContact.name;
+    if (contact.verifiedName) return contact.verifiedName;
+    if (altContact.verifiedName) return altContact.verifiedName;
 
-    // 5. Dynamic fallback for groups
+    // 2. Chat name (group subject or synced name)
+    if (chat.name && !chat.name.includes(jid.split('@')[0])) return chat.name;
+    if (altJid && altChat.name && !altChat.name.includes(altJid.split('@')[0])) return altChat.name;
+
+    // 3. Push name (real-time or stored)
+    if (pushName) return pushName;
+    if (contact.notify || contact.pushname) return contact.notify || contact.pushname;
+    if (altContact.notify || altContact.pushname) return altContact.notify || altContact.pushname;
+    if (chat.notify) return chat.notify;
+    if (altChat.notify) return altChat.notify;
+
+    // 4. Dynamic fallback for groups
     if (sock && isJidGroup(jid)) {
       try {
         const metadata = await sock.groupMetadata(jid);
-        if (metadata && metadata.subject) {
-          chats.set(jid, { ...(chats.get(jid) || {}), id: jid, name: metadata.subject });
+        if (metadata?.subject) {
+          chats.set(jid, { ...chat, id: jid, name: metadata.subject });
           return metadata.subject;
-        }
-      } catch (e) { }
-    }
-
-    // 6. Fallback to fetch real phone number for LIDs
-    if (sock?.signalRepository?.lidMapping && jid.includes('@lid')) {
-      try {
-        const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
-        if (pn) {
-          const mappedName = await getChatName(pn, pushName);
-          if (mappedName && mappedName !== pn.split('@')[0]) return mappedName;
-          return pn.split('@')[0];
         }
       } catch (e) { }
     }
@@ -562,15 +562,115 @@ export function createMonitor(db, broadcast) {
     } catch (e) { return null; }
   }
 
+  function resolveToPNLocal(jid) {
+    if (!jid || !jid.includes('@lid')) return jid;
+    return lidToPn.get(jid) || jid;
+  }
+
+  async function resolveToPN(jid) {
+    if (!jid) return jid;
+    if (jid.includes('@g.us')) return jid;
+    if (jid.includes('@s.whatsapp.net')) return jid;
+
+    if (!jid.includes('@lid')) return jid;
+
+    // 1. Check our fast cache
+    const cached = lidToPn.get(jid);
+    if (cached) return cached;
+
+    // 2. Check Baileys' repository - BUT only if we are ready and not in a tight loop potentially
+    if (sock?.signalRepository?.lidMapping) {
+      try {
+        const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
+        if (pn) {
+          const fullPn = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
+          lidToPn.set(jid, fullPn);
+          pnToLid.set(fullPn, jid);
+          return fullPn;
+        }
+      } catch (e) { }
+    }
+
+    // 3. Fallback: search contacts for matching LID
+    for (const [c_jid, c_info] of contacts.entries()) {
+      if (c_info.lid && (c_info.lid === jid || c_info.lid.includes(jid.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
+        lidToPn.set(jid, c_jid);
+        pnToLid.set(c_jid, jid);
+        return c_jid;
+      }
+      if (c_jid === jid && c_info.phoneNumber) {
+        const fullPn = c_info.phoneNumber + '@s.whatsapp.net';
+        lidToPn.set(jid, fullPn);
+        pnToLid.set(fullPn, jid);
+        return fullPn;
+      }
+    }
+    return jid;
+  }
+
+  function resolveToLIDLocal(jid) {
+    if (!jid || !jid.includes('@s.whatsapp.net')) return null;
+    return pnToLid.get(jid) || null;
+  }
+
+  async function resolveToLID(jid) {
+    if (!jid || !jid.includes('@s.whatsapp.net')) return null;
+    if (pnToLid.has(jid)) return pnToLid.get(jid);
+
+    if (sock?.signalRepository?.lidMapping) {
+      try {
+        let lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
+        if (lid) {
+          if (!lid.includes('@lid')) lid += '@lid';
+          pnToLid.set(jid, lid);
+          lidToPn.set(lid, jid);
+          return lid;
+        }
+      } catch (e) { }
+    }
+
+    // Fallback from contacts
+    const contact = contacts.get(jid);
+    if (contact?.lid) {
+      let lid = contact.lid.includes('@lid') ? contact.lid : (contact.lid + '@lid');
+      pnToLid.set(jid, lid);
+      lidToPn.set(lid, jid);
+      return lid;
+    }
+
+    return null;
+  }
+
+  async function checkIsMonitored(jid) {
+    if (!jid) return false;
+    if (db.isMonitored(jid)) return true;
+
+    // If it's a LID, check its PN
+    if (jid.includes('@lid')) {
+      const pn = await resolveToPN(jid);
+      if (pn !== jid && db.isMonitored(pn)) return true;
+    }
+    // If it's a PN, check its LID
+    else if (jid.includes('@s.whatsapp.net')) {
+      const lid = await resolveToLID(jid);
+      if (lid && db.isMonitored(lid)) return true;
+    }
+
+    return false;
+  }
+
   async function handleMessage(msg) {
-    const chatId = msg.key?.remoteJid;
-    if (!chatId || chatId === 'status@broadcast') return;
+    const rawChatId = msg.key?.remoteJid;
+    if (!rawChatId || rawChatId === 'status@broadcast') return;
+
+    // Normalize to Phone Number for single unified chat view
+    const chatId = await resolveToPN(rawChatId);
 
     // Baileys sometimes delivers view-once messages as stubs with no .message
     // but with msg.key.isViewOnce = true. We catch and record those.
     if (!msg.message) {
       if (msg.key?.isViewOnce && chatId) {
-        if (!db.isMonitored(chatId)) return;
+        if (!(await checkIsMonitored(chatId))) return;
         log('WA', `📸 View-Once STUB detected from ${chatId} (no message body — Baileys limitation)`);
 
         const isGroup = isJidGroup(chatId);
@@ -580,10 +680,10 @@ export function createMonitor(db, broadcast) {
         } else if (!isGroup && msg.key.remoteJidAlt && senderId.includes('@lid')) {
           senderId = msg.key.remoteJidAlt;
         }
+        senderId = await resolveToPN(senderId);
         const senderName = await getChatName(senderId, msg.pushName);
-        const chatName = await getChatName(chatId);
-
-        db.upsertChat(chatId, chatName, isGroup);
+        const lid = rawChatId.includes('@lid') ? rawChatId : await resolveToLID(rawChatId);
+        db.upsertChat(chatId, chatName, isGroup, lid);
 
         const msgData = {
           message_id: msg.key.id,
@@ -620,18 +720,20 @@ export function createMonitor(db, broadcast) {
       return;
     }
 
+    const mType = getContentType(msg.message) || 'stub';
+    log('WA', `Received [${mType}] from ${rawChatId} (normalized: ${chatId})`);
+
     // Automatically track new chats based on incoming messages
     if (!chats.has(chatId) && chatId) {
       chats.set(chatId, { id: chatId });
       saveCache();
     }
 
-    if (!db.isMonitored(chatId)) return;
+    if (!(await checkIsMonitored(chatId))) return;
 
     // Debug: log raw message keys for monitored chats to help diagnose view-once issues
-    const rawKeys = Object.keys(msg.message);
-    const rawType = getContentType(msg.message);
-    log('WA', `Incoming [${rawType}] keys=[${rawKeys.join(',')}] from ${chatId}`);
+    const rawKeys = Object.keys(msg.message || {});
+    log('WA', `Processing monitored message [${mType}] from ${chatId}`);
 
     // Aggressive unwrapping for view-once/ephemeral/etc.
     let tempMsg = msg.message;
@@ -699,6 +801,7 @@ export function createMonitor(db, broadcast) {
       } else if (!isGroup && msg.key.remoteJidAlt && senderId.includes('@lid')) {
         senderId = msg.key.remoteJidAlt;
       }
+      senderId = await resolveToPN(senderId);
       const senderName = await getChatName(senderId, msg.pushName);
 
       db.addReaction(targetId, senderId, senderName, emoji);
@@ -721,10 +824,13 @@ export function createMonitor(db, broadcast) {
       senderId = msg.key.remoteJidAlt;
     }
 
+    senderId = await resolveToPN(senderId);
+
     let senderName = await getChatName(senderId, msg.pushName);
     let chatName = await getChatName(chatId);
+    const lid = rawChatId.includes('@lid') ? rawChatId : await resolveToLID(rawChatId);
 
-    db.upsertChat(chatId, chatName, isGroup);
+    db.upsertChat(chatId, chatName, isGroup, lid);
     getProfilePic(chatId); // prefetch
 
     let body = '';
@@ -837,7 +943,7 @@ export function createMonitor(db, broadcast) {
 
   async function handleRevoke(currentKey, revokedKey) {
     const chatId = currentKey.remoteJid;
-    if (!db.isMonitored(chatId)) return;
+    if (!(await checkIsMonitored(chatId))) return;
 
     const revokeId = currentKey.id;
     const origId = revokedKey?.id;
@@ -914,6 +1020,8 @@ export function createMonitor(db, broadcast) {
       }
 
       // Merge contacts into chats map so private contacts show up too
+      const resolvedIds = new Map(); // Cache LID to PN mapping for this loop
+
       for (const [id, contact] of contacts.entries()) {
         if (!id || id.endsWith('@g.us') || id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
 
@@ -926,32 +1034,96 @@ export function createMonitor(db, broadcast) {
             preferredName = pnInfo.name || pnInfo.verifiedName || pnInfo.notify || pnInfo.pushname || '';
           }
         }
-        if (!chats.has(id)) {
-          chats.set(id, { id, name: preferredName });
+
+        // Use the common mapping logic
+        let targetId = id;
+        if (id.includes('@lid') && sock?.signalRepository?.lidMapping) {
+          try {
+            const pn = await sock.signalRepository.lidMapping.getPNForLID(id);
+            if (pn) {
+              targetId = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
+              resolvedIds.set(id, targetId);
+            }
+          } catch (e) { }
+        }
+
+        if (!chats.has(targetId)) {
+          chats.set(targetId, { id: targetId, name: preferredName });
         } else {
-          const c = chats.get(id);
-          // Overwrite raw ID chat names with the meaningful contact name or pushname
-          if (preferredName && (!c.name || c.name === id.split('@')[0] || c.name.includes(id.split('@')[0]))) {
-            chats.set(id, { ...c, name: preferredName });
-          } else if (preferredName && c.name && !contact.name) {
-            // If they are unsaved, but we have a notify, use the notify instead of potential raw IDs
-            chats.set(id, { ...c, name: preferredName });
+          const c = chats.get(targetId);
+          if (preferredName && (!c.name || c.name === targetId.split('@')[0] || c.name.includes(targetId.split('@')[0]))) {
+            chats.set(targetId, { ...c, name: preferredName });
           }
         }
       }
 
-      const allChats = Array.from(chats.values());
+      const dedupedMap = new Map();
+
+      for (const [id, c] of chats.entries()) {
+        if (id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
+
+        let baseId = id;
+        if (id.includes('@lid')) {
+          baseId = resolveToPNLocal(id);
+        }
+
+        let existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
+
+        // Retain meaningful names
+        if (c.name && (!existing.name || existing.name === existing.id.split('@')[0])) {
+          existing.name = c.name;
+        }
+
+        // Track lids
+        if (id.includes('@lid') && !existing.lids.includes(id)) {
+          existing.lids.push(id.split('@')[0]);
+        }
+
+        // Also check if we have a mapped LID for this PN from our maps
+        if (baseId.includes('@s.whatsapp.net')) {
+          const m_lid = resolveToLIDLocal(baseId);
+          if (m_lid && !existing.lids.includes(m_lid)) {
+            existing.lids.push(m_lid.split('@')[0]);
+          }
+        }
+
+        // --- MERGE FIX: Ensure we move the LID to the PN entry permanently ---
+        if (id !== baseId) {
+          chats.delete(id);
+        }
+
+        // If c has conversationTimestamp and existing doesn't or existing's is older, update it
+        let cTs = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
+        let eTs = existing.conversationTimestamp?.low || existing.conversationTimestamp || 0;
+        if (cTs > eTs) existing.conversationTimestamp = cTs;
+
+        dedupedMap.set(baseId, existing);
+      }
+
+      const allChats = Array.from(dedupedMap.values());
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
 
+      // Expand monitored set with mapped LIDs and PNs so UI reflects status correctly for both formats
+      if (sock?.signalRepository?.lidMapping) {
+        for (const jid of Array.from(monitored)) {
+          try {
+            if (jid.includes('@lid')) {
+              const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
+              if (pn) monitored.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
+            } else if (jid.includes('@s.whatsapp.net')) {
+              const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
+              if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
+            }
+          } catch (e) { }
+        }
+      }
       log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
 
       const results = await Promise.all(allChats
-        .filter(c => c.id !== 'status@broadcast')
         .map(async c => {
           const isGroup = isJidGroup(c.id);
           let name = c.name || c.notify || '';
 
-          // If the name is missing or is just a naked LID/ID, try a full resolution
           if (!name || name === c.id.split('@')[0]) {
             name = await getChatName(c.id);
           }
@@ -963,7 +1135,8 @@ export function createMonitor(db, broadcast) {
             isGroup: isGroup,
             timestamp: ts,
             isMonitored: monitored.has(c.id),
-            profilePic: db.getChatProfilePic(c.id) || null
+            profilePic: db.getChatProfilePic(c.id) || null,
+            lid: c.lids && c.lids.length > 0 ? c.lids[0].split('@')[0] : (c.id.includes('@lid') ? c.id.split('@')[0] : null)
           };
         }));
 
@@ -978,6 +1151,40 @@ export function createMonitor(db, broadcast) {
     }
   }
 
+  async function deleteChatFully(chatId) {
+    // Collect all related IDs (LIDs + PNs) so we can thoroughly purge from DB
+    const relatedIds = new Set([chatId]);
+
+    // Check if the given chatId has a mapped LID/PN
+    if (chatId.includes('@lid') && sock?.signalRepository?.lidMapping) {
+      try {
+        const pn = await sock.signalRepository.lidMapping.getPNForLID(chatId);
+        if (pn) relatedIds.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
+      } catch (e) { }
+    } else if (chatId.includes('@s.whatsapp.net') && sock?.signalRepository?.lidMapping) {
+      try {
+        const lid = await sock.signalRepository.lidMapping.getLIDForPN(chatId);
+        if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
+      } catch (e) { }
+    }
+
+    // Fallbacks from contacts
+    for (const [c_jid, c_info] of contacts.entries()) {
+      if (chatId.includes('@lid') && c_info.lid && c_info.lid.includes(chatId.split('@')[0]) && c_jid.includes('@s.whatsapp.net')) {
+        relatedIds.add(c_jid);
+      }
+      if (c_jid === chatId && c_info.phoneNumber) {
+        relatedIds.add(c_info.phoneNumber + '@s.whatsapp.net');
+      }
+    }
+
+    const { deleteChatAndMessages, removeMonitoredChat } = db;
+    for (const id of relatedIds) {
+      deleteChatAndMessages(id);
+      removeMonitoredChat(id);
+    }
+  }
+
   return {
     client: sock,
     start,
@@ -985,6 +1192,7 @@ export function createMonitor(db, broadcast) {
     isAuthenticated: () => clientAuthenticated,
     getMyId: () => myId,
     getWhatsAppChats,
+    deleteChatFully,
     getNotifyEnabled: () => notifyWhatsApp,
     getPairingStatus: () => ({
       ...pairingData,

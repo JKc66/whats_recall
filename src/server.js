@@ -476,10 +476,10 @@ export function createServer(db, monitor) {
     return c.json({ ok: true });
   });
 
-  app.delete('/api/monitored/:chatId', (c) => {
+  app.delete('/api/monitored/:chatId', async (c) => {
     const chatId = decodeURIComponent(c.req.param('chatId'));
-    db.removeMonitoredChat(chatId);
-    log('API', `Removed monitored chat: ${chatId}`);
+    await monitor.deleteChatFully(chatId);
+    log('API', `Removed monitored chat and purged local data: ${chatId}`);
     return c.json({ ok: true });
   });
 

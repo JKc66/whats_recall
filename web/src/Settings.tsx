@@ -372,6 +372,9 @@ export default function Settings() {
                     <Show when={phone() && chat.name !== phone()}>
                       <div class="meta-phone">{phone()}</div>
                     </Show>
+                    <Show when={chat.lid}>
+                      <div class="meta-phone" style={{ "font-size": "0.75rem", opacity: 0.7 }}>{chat.lid}</div>
+                    </Show>
                     <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
                   </div>
                   <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
@@ -435,6 +438,9 @@ export default function Settings() {
                       <div class="name">{chat.name}</div>
                       <Show when={phone() && chat.name !== phone()}>
                         <div class="meta-phone">{phone()}</div>
+                      </Show>
+                      <Show when={chat.lid}>
+                        <div class="meta-phone" style={{ "font-size": "0.75rem", opacity: 0.7 }}>{chat.lid}</div>
                       </Show>
                       <div class="meta-text">{chat.isGroup ? 'Group' : 'Private'}</div>
                     </div>
