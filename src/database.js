@@ -83,49 +83,25 @@ export function initDatabase() {
     );
   `);
 
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN is_view_once INTEGER DEFAULT 0');
-  } catch { /* already exists */ }
+  const migrations = [
+    'ALTER TABLE messages ADD COLUMN is_view_once INTEGER DEFAULT 0',
+    'ALTER TABLE messages ADD COLUMN original_id TEXT',
+    'CREATE INDEX IF NOT EXISTS idx_messages_original_id ON messages(original_id)',
+    'ALTER TABLE chats ADD COLUMN profile_pic TEXT',
+    'ALTER TABLE chats ADD COLUMN lid TEXT',
+    'ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER',
+    'ALTER TABLE messages ADD COLUMN quoted_stanza_id TEXT',
+    'ALTER TABLE messages ADD COLUMN quoted_sender TEXT',
+    'ALTER TABLE messages ADD COLUMN quoted_preview TEXT',
+    'ALTER TABLE messages ADD COLUMN media_sha256 TEXT',
+    'CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)'
+  ];
 
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN original_id TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_original_id ON messages(original_id)');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE chats ADD COLUMN profile_pic TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE chats ADD COLUMN lid TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN quoted_stanza_id TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN quoted_sender TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN quoted_preview TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('ALTER TABLE messages ADD COLUMN media_sha256 TEXT');
-  } catch { /* already exists */ }
-
-  try {
-    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)');
-  } catch { /* already exists */ }
+  for (const query of migrations) {
+    try {
+      db.exec(query);
+    } catch { /* already exists */ }
+  }
 
   // Initial Seed from .env
   const seed = (key, val) => {
