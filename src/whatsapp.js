@@ -1247,22 +1247,25 @@ export function createMonitor(db, broadcast) {
     }
 
     // 3. For each media path, check if it's still used by any other chat in the DB
-    // If not, delete the file from disk.
-    let deletedCount = 0;
-    for (const path of mediaPaths) {
+    // If not, delete the file from disk in parallel.
+    const deletionResults = await Promise.all(Array.from(mediaPaths).map(async (path) => {
       if (!isMediaPathUsedElsewhere(path, ids)) {
         try {
           const fullPath = join(MEDIA_DIR, path);
+          // Only attempt to unlink if the file exists to avoid unnecessary errors
+          // Using existsSync here is okay because we're inside an async map and doing I/O anyway
           if (existsSync(fullPath)) {
             await unlink(fullPath);
-            deletedCount++;
+            return true;
           }
         } catch (e) {
           log('WA', `Error deleting media file ${path}: ` + e.message);
         }
       }
-    }
+      return false;
+    }));
 
+    const deletedCount = deletionResults.filter(Boolean).length;
     if (deletedCount > 0) {
       log('WA', `Deleted ${deletedCount} media files associated with ${chatId}`);
     }
