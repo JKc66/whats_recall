@@ -145,8 +145,10 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
       </Show>
       <div class="chat-row-body">
         <div class="chat-row-name">{displayName()}</div>
-        <Show when={phone() && props.chat.name && props.chat.name !== phone()}>
-          <div class="chat-row-phone">{phone()}</div>
+        <Show when={props.chat.name && (phone() !== props.chat.name || props.chat.lid)}>
+          <div class="chat-row-phone">
+            {phone()}{props.chat.lid && (phone() ? ` • ${props.chat.lid}` : props.chat.lid)}
+          </div>
         </Show>
         <div class="chat-row-preview">
           <Show when={props.chat.is_group && props.chat.last_message_sender}>

@@ -22,6 +22,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS chats (
       chat_id TEXT PRIMARY KEY,
       name TEXT,
+      lid TEXT,
       is_group INTEGER DEFAULT 0,
       last_message_at TEXT,
       created_at TEXT DEFAULT (datetime('now')),
@@ -99,6 +100,10 @@ export function initDatabase() {
   } catch { /* already exists */ }
 
   try {
+    db.exec('ALTER TABLE chats ADD COLUMN lid TEXT');
+  } catch { /* already exists */ }
+
+  try {
     db.exec('ALTER TABLE chats ADD COLUMN last_seen_deleted_at INTEGER');
   } catch { /* already exists */ }
 
@@ -130,16 +135,17 @@ export function initDatabase() {
   seed('whatsapp_notify', process.env.NOTIFY_WHATSAPP || 'false');
 
   return {
-    upsertChat(chatId, name, isGroup) {
+    upsertChat(chatId, name, isGroup, lid = null) {
       db.query(`
-        INSERT INTO chats (chat_id, name, is_group, last_message_at)
-        VALUES (?, ?, ?, datetime('now'))
+        INSERT INTO chats (chat_id, name, lid, is_group, last_message_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
         ON CONFLICT(chat_id) DO UPDATE SET
           name = COALESCE(excluded.name, chats.name),
+          lid = COALESCE(excluded.lid, chats.lid),
           is_group = excluded.is_group,
           last_message_at = datetime('now'),
           updated_at = datetime('now')
-      `).run(chatId, name, isGroup ? 1 : 0);
+      `).run(chatId, name, lid, isGroup ? 1 : 0);
     },
 
     saveMessage(msg) {
@@ -209,7 +215,7 @@ export function initDatabase() {
         FROM (
           SELECT * FROM chats
           UNION
-          SELECT mc.chat_id, mc.name, mc.is_group, NULL as last_message_at,
+          SELECT mc.chat_id, mc.name, NULL as lid, mc.is_group, NULL as last_message_at,
                  mc.added_at as created_at, mc.added_at as updated_at,
                  NULL as profile_pic, NULL as last_seen_deleted_at
           FROM monitored_chats mc
@@ -321,7 +327,12 @@ export function initDatabase() {
     },
 
     getMonitoredChats() {
-      return db.query('SELECT * FROM monitored_chats ORDER BY added_at DESC').all();
+      return db.query(`
+        SELECT mc.*, c.lid 
+        FROM monitored_chats mc
+        LEFT JOIN chats c ON mc.chat_id = c.chat_id
+        ORDER BY mc.added_at DESC
+      `).all();
     },
 
     isMonitored(chatId) {
@@ -357,6 +368,12 @@ export function initDatabase() {
 
     updateChatProfilePic(chatId, profilePic) {
       db.query('UPDATE chats SET profile_pic = ? WHERE chat_id = ?').run(profilePic, chatId);
+    },
+
+    deleteChatAndMessages(chatId) {
+      db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
+      db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
+      // Optional: Delete media? Too complex to pick specific files safely without a larger query
     },
 
     async clearAllData() {

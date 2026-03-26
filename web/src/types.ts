@@ -9,6 +9,7 @@ export interface Chat {
   last_message_preview: string | null;
   last_message_sender: string | null;
   profile_pic: string | null;
+  lid: string | null;
 }
 
 export interface Message {
@@ -45,6 +46,7 @@ export interface MonitoredChat {
   name: string;
   is_group: number;
   added_at: string;
+  lid?: string | null;
 }
 
 export interface WhatsAppChat {
@@ -54,6 +56,7 @@ export interface WhatsAppChat {
   timestamp: number;
   isMonitored: boolean;
   profilePic?: string | null;
+  lid?: string | null;
 }
 
 export interface Stats {
