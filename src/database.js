@@ -357,46 +357,56 @@ export function initDatabase() {
       return !!row;
     },
 
-    async deleteChatAndMessages(chatId) {
-      // Find media paths exclusively used by this chat
-      const mediaPaths = db.query(`
-        SELECT DISTINCT m.media_path
-        FROM messages m
-        WHERE m.chat_id = ? AND m.media_path IS NOT NULL
-          AND NOT EXISTS (
-            SELECT 1
-            FROM messages m2
-            WHERE m2.media_path = m.media_path
-              AND m2.chat_id != ?
-              AND m2.media_path IS NOT NULL
-          )
-      `).all(chatId, chatId).map(r => r.media_path);
+    async deleteChatsAndMessages(chatIds) {
+      if (!chatIds || chatIds.length === 0) return;
 
-      // Include profile_pic if it's not used by other chats
-      const profilePicRow = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
-      if (profilePicRow && profilePicRow.profile_pic) {
-        const pic = profilePicRow.profile_pic;
-        const picUsedElsewhere = db.query(`SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id != ? LIMIT 1`).get(pic, chatId);
-        if (!picUsedElsewhere) {
-          mediaPaths.push(pic);
+      const deleteTx = db.transaction((ids) => {
+        const placeholders = ids.map(() => '?').join(',');
+
+        // Find media paths exclusively used by these chats
+        const mediaPaths = db.query(`
+          SELECT DISTINCT m.media_path
+          FROM messages m
+          WHERE m.chat_id IN (${placeholders}) AND m.media_path IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM messages m2
+              WHERE m2.media_path = m.media_path
+                AND m2.chat_id NOT IN (${placeholders})
+                AND m2.media_path IS NOT NULL
+            )
+        `).all(...ids, ...ids).map(r => r.media_path);
+
+        // Include profile_pics if they're not used by other chats outside this list
+        const profilePicRows = db.query(`SELECT DISTINCT profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...ids);
+        for (const row of profilePicRows) {
+          const pic = row.profile_pic;
+          const picUsedElsewhere = db.query(`SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`).get(pic, ...ids);
+          if (!picUsedElsewhere) {
+            mediaPaths.push(pic);
+          }
         }
-      }
 
-      // Delete reactions associated with messages from this chat to avoid orphaned rows
-      db.query(`
-        DELETE FROM reactions
-        WHERE message_id IN (
-          SELECT message_id FROM messages WHERE chat_id = ?
-        )
-      `).run(chatId);
+        // Delete reactions associated with messages from these chats
+        db.query(`
+          DELETE FROM reactions
+          WHERE message_id IN (
+            SELECT message_id FROM messages WHERE chat_id IN (${placeholders})
+          )
+        `).run(...ids);
 
-      db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
-      db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
+        db.query(`DELETE FROM messages WHERE chat_id IN (${placeholders})`).run(...ids);
+        db.query(`DELETE FROM chats WHERE chat_id IN (${placeholders})`).run(...ids);
 
-      if (mediaPaths.length > 0) {
+        return mediaPaths;
+      });
+
+      const mediaPathsToDelete = deleteTx(chatIds);
+
+      if (mediaPathsToDelete.length > 0) {
         try {
           const { unlink } = await import('fs/promises');
-          const results = await Promise.allSettled(mediaPaths.map(async (p) => {
+          const results = await Promise.allSettled(mediaPathsToDelete.map(async (p) => {
             const fullPath = join(MEDIA_DIR, p);
             if (existsSync(fullPath)) {
               await unlink(fullPath);
@@ -406,7 +416,7 @@ export function initDatabase() {
             if (result.status === 'rejected') {
               const err = result.reason;
               if (!err || err.code !== 'ENOENT') {
-                console.error('Failed to delete media file:', mediaPaths[index], err);
+                console.error('Failed to delete media file:', mediaPathsToDelete[index], err);
               }
             }
           });

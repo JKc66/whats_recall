@@ -10,6 +10,12 @@ import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 
 const { initDatabase, MEDIA_DIR } = await import("../src/database.js");
 
+afterAll(() => {
+    if (tempDir) {
+        rmSync(tempDir, { recursive: true, force: true });
+    }
+});
+
 describe("database clearAllData", () => {
     let db;
 
@@ -20,9 +26,6 @@ describe("database clearAllData", () => {
     afterAll(() => {
         if (db) {
             db.close();
-        }
-        if (tempDir) {
-            rmSync(tempDir, { recursive: true, force: true });
         }
     });
 
@@ -178,7 +181,7 @@ describe("database deleteChatAndMessages", () => {
         expect(msg1.reactions.length).toBe(1);
 
         // Delete chat1
-        await db.deleteChatAndMessages(chat1);
+        await db.deleteChatsAndMessages([chat1]);
 
         // Verify chat1 is gone but chat2 remains
         const chats = db.getChats();
