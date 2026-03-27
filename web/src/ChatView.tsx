@@ -253,6 +253,7 @@ function ImageGroup(props: {
       class="download-btn"
       onClick={(e) => e.stopPropagation()}
       aria-label="Download media"
+      title="Download media"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
@@ -392,6 +393,7 @@ function MsgBubble(props: {
         class="download-btn"
         onClick={(e) => e.stopPropagation()}
         aria-label="Download media"
+        title="Download media"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
