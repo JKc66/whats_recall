@@ -1149,7 +1149,7 @@ export function createMonitor(db, broadcast) {
 
       // Expand monitored set with mapped LIDs and PNs so UI reflects status correctly for both formats
       if (sock?.signalRepository?.lidMapping) {
-        for (const jid of Array.from(monitored)) {
+        await Promise.all(Array.from(monitored).map(async (jid) => {
           try {
             if (jid.includes('@lid')) {
               const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
@@ -1159,7 +1159,7 @@ export function createMonitor(db, broadcast) {
               if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
             }
           } catch (e) { }
-        }
+        }));
       }
       log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
 
