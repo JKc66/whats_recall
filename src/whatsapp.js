@@ -1063,9 +1063,10 @@ export function createMonitor(db, broadcast) {
 
       // Merge contacts into chats map so private contacts show up too
       const resolvedIds = new Map(); // Cache LID to PN mapping for this loop
+      const blockedDomains = ['@g.us', '@broadcast', '@newsletter'];
 
       for (const [id, contact] of contacts.entries()) {
-        if (!id || id.endsWith('@g.us') || id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
+        if (!id || blockedDomains.some(domain => id.endsWith(domain))) continue;
 
         let preferredName = contact.name || contact.verifiedName || contact.notify || contact.pushname || '';
 
@@ -1100,9 +1101,10 @@ export function createMonitor(db, broadcast) {
       }
 
       const dedupedMap = new Map();
+      const chatBlockedDomains = ['@broadcast', '@newsletter'];
 
       for (const [id, c] of chats.entries()) {
-        if (id === 'status@broadcast' || id.endsWith('@broadcast') || id.endsWith('@newsletter')) continue;
+        if (!id || chatBlockedDomains.some(domain => id.endsWith(domain))) continue;
 
         let baseId = id;
         if (id.includes('@lid')) {
