@@ -1,11 +1,11 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', 'data');
-const MEDIA_DIR = join(DATA_DIR, 'media');
+const MEDIA_DIR = resolve(join(DATA_DIR, 'media'));
 const DB_PATH = process.env.DB_PATH || join(DATA_DIR, 'messages.db');
 
 export { MEDIA_DIR, DATA_DIR };
@@ -94,7 +94,8 @@ export function initDatabase() {
     'ALTER TABLE messages ADD COLUMN quoted_sender TEXT',
     'ALTER TABLE messages ADD COLUMN quoted_preview TEXT',
     'ALTER TABLE messages ADD COLUMN media_sha256 TEXT',
-    'CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)'
+    'CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_media_path ON messages(media_path)'
   ];
 
   for (const query of migrations) {
@@ -356,10 +357,95 @@ export function initDatabase() {
       return !!row;
     },
 
-    deleteChatAndMessages(chatId) {
-      db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
-      db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
-      // Optional: Delete media? Too complex to pick specific files safely without a larger query
+    async deleteChatsAndMessages(chatIds) {
+      if (!chatIds || chatIds.length === 0) return;
+
+      const deleteTx = db.transaction((ids) => {
+        const placeholders = ids.map(() => '?').join(',');
+
+        // Find media paths exclusively used by these chats
+        const mediaPaths = db.query(`
+          SELECT DISTINCT m.media_path
+          FROM messages m
+          WHERE m.chat_id IN (${placeholders}) AND m.media_path IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM messages m2
+              WHERE m2.media_path = m.media_path
+                AND m2.chat_id NOT IN (${placeholders})
+                AND m2.media_path IS NOT NULL
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM chats c
+              WHERE c.profile_pic = m.media_path
+                AND c.chat_id NOT IN (${placeholders})
+            )
+        `).all(...ids, ...ids, ...ids).map(r => r.media_path);
+
+        // Include profile_pics if they're not used by other chats or messages outside this list
+        const profilePicRows = db.query(`SELECT DISTINCT profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...ids);
+        for (const row of profilePicRows) {
+          const pic = row.profile_pic;
+          // Check if this profile pic is used as a profile_pic by any other chat
+          const picUsedElsewhere = db.query(
+            `SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`
+          ).get(pic, ...ids);
+
+          // Also check if this profile pic filename is used as media_path by messages in other chats
+          const picUsedInMessagesElsewhere = db.query(
+            `
+              SELECT 1
+              FROM messages m
+              WHERE m.media_path = ?
+                AND m.chat_id NOT IN (${placeholders})
+                AND m.media_path IS NOT NULL
+              LIMIT 1
+            `
+          ).get(pic, ...ids);
+
+          if (!picUsedElsewhere && !picUsedInMessagesElsewhere) {
+            mediaPaths.push(pic);
+          }
+        }
+
+        // Delete reactions associated with messages from these chats
+        db.query(`
+          DELETE FROM reactions
+          WHERE message_id IN (
+            SELECT message_id FROM messages WHERE chat_id IN (${placeholders})
+          )
+        `).run(...ids);
+
+        db.query(`DELETE FROM messages WHERE chat_id IN (${placeholders})`).run(...ids);
+        db.query(`DELETE FROM chats WHERE chat_id IN (${placeholders})`).run(...ids);
+
+        return mediaPaths;
+      });
+
+      const mediaPathsToDelete = deleteTx(chatIds);
+
+      if (mediaPathsToDelete.length > 0) {
+        try {
+          const { unlink } = await import('fs/promises');
+          const results = await Promise.allSettled(mediaPathsToDelete.map(async (p) => {
+            const fullPath = resolve(join(MEDIA_DIR, p));
+            if (fullPath.startsWith(MEDIA_DIR) && existsSync(fullPath)) {
+              await unlink(fullPath);
+            }
+          }));
+          results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+              const err = result.reason;
+              if (!err || err.code !== 'ENOENT') {
+                console.error('Failed to delete media file:', mediaPathsToDelete[index], err);
+              }
+            }
+          });
+        } catch (err) {
+          console.error('Error deleting media files:', err);
+        }
+      }
     },
 
     async clearAllData() {
