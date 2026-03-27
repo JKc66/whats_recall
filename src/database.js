@@ -94,7 +94,8 @@ export function initDatabase() {
     'ALTER TABLE messages ADD COLUMN quoted_sender TEXT',
     'ALTER TABLE messages ADD COLUMN quoted_preview TEXT',
     'ALTER TABLE messages ADD COLUMN media_sha256 TEXT',
-    'CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)'
+    'CREATE INDEX IF NOT EXISTS idx_messages_media_sha256 ON messages(media_sha256)',
+    'CREATE INDEX IF NOT EXISTS idx_messages_media_path ON messages(media_path)'
   ];
 
   for (const query of migrations) {
@@ -359,13 +360,35 @@ export function initDatabase() {
     async deleteChatAndMessages(chatId) {
       // Find media paths exclusively used by this chat
       const mediaPaths = db.query(`
-        SELECT DISTINCT media_path FROM messages
-        WHERE chat_id = ? AND media_path IS NOT NULL
-        AND media_path NOT IN (
-          SELECT media_path FROM messages
-          WHERE chat_id != ? AND media_path IS NOT NULL
-        )
+        SELECT DISTINCT m.media_path
+        FROM messages m
+        WHERE m.chat_id = ? AND m.media_path IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM messages m2
+            WHERE m2.media_path = m.media_path
+              AND m2.chat_id != ?
+              AND m2.media_path IS NOT NULL
+          )
       `).all(chatId, chatId).map(r => r.media_path);
+
+      // Include profile_pic if it's not used by other chats
+      const profilePicRow = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId);
+      if (profilePicRow && profilePicRow.profile_pic) {
+        const pic = profilePicRow.profile_pic;
+        const picUsedElsewhere = db.query(`SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id != ? LIMIT 1`).get(pic, chatId);
+        if (!picUsedElsewhere) {
+          mediaPaths.push(pic);
+        }
+      }
+
+      // Delete reactions associated with messages from this chat to avoid orphaned rows
+      db.query(`
+        DELETE FROM reactions
+        WHERE message_id IN (
+          SELECT message_id FROM messages WHERE chat_id = ?
+        )
+      `).run(chatId);
 
       db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
       db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
@@ -373,12 +396,20 @@ export function initDatabase() {
       if (mediaPaths.length > 0) {
         try {
           const { unlink } = await import('fs/promises');
-          await Promise.all(mediaPaths.map(async (p) => {
+          const results = await Promise.allSettled(mediaPaths.map(async (p) => {
             const fullPath = join(MEDIA_DIR, p);
             if (existsSync(fullPath)) {
-              await unlink(fullPath).catch(() => {});
+              await unlink(fullPath);
             }
           }));
+          results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+              const err = result.reason;
+              if (!err || err.code !== 'ENOENT') {
+                console.error('Failed to delete media file:', mediaPaths[index], err);
+              }
+            }
+          });
         } catch (err) {
           console.error('Error deleting media files:', err);
         }
