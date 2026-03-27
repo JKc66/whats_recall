@@ -356,10 +356,33 @@ export function initDatabase() {
       return !!row;
     },
 
-    deleteChatAndMessages(chatId) {
+    async deleteChatAndMessages(chatId) {
+      // Find media paths exclusively used by this chat
+      const mediaPaths = db.query(`
+        SELECT DISTINCT media_path FROM messages
+        WHERE chat_id = ? AND media_path IS NOT NULL
+        AND media_path NOT IN (
+          SELECT media_path FROM messages
+          WHERE chat_id != ? AND media_path IS NOT NULL
+        )
+      `).all(chatId, chatId).map(r => r.media_path);
+
       db.query("DELETE FROM messages WHERE chat_id = ?").run(chatId);
       db.query("DELETE FROM chats WHERE chat_id = ?").run(chatId);
-      // Optional: Delete media? Too complex to pick specific files safely without a larger query
+
+      if (mediaPaths.length > 0) {
+        try {
+          const { unlink } = await import('fs/promises');
+          await Promise.all(mediaPaths.map(async (p) => {
+            const fullPath = join(MEDIA_DIR, p);
+            if (existsSync(fullPath)) {
+              await unlink(fullPath).catch(() => {});
+            }
+          }));
+        } catch (err) {
+          console.error('Error deleting media files:', err);
+        }
+      }
     },
 
     async clearAllData() {
