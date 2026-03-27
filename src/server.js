@@ -107,14 +107,15 @@ export function createServer(db, monitor) {
   const app = new Hono();
   const wsClients = new Set();
 
-  const password = process.env.AUTH_PASSWORD;
+  let password = process.env.AUTH_PASSWORD;
   if (!password || password === 'changeme') {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    password = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     log('SECURITY', '=======================================================');
-    log('SECURITY', '❌ FATAL: AUTH_PASSWORD is not set or is set to default');
+    log('SECURITY', '⚠️  WARNING: AUTH_PASSWORD is not set or is set to default');
+    log('SECURITY', `   Generated temporary password: ${password}`);
     log('SECURITY', '   Please set a secure AUTH_PASSWORD in your .env file');
-    log('SECURITY', '   The server will not start without a secure password.');
     log('SECURITY', '=======================================================');
-    process.exit(1);
   }
 
   const port = parseInt(process.env.WEB_PORT || '3000', 10);

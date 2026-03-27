@@ -21,7 +21,6 @@ describe("AUTH_PASSWORD Security", () => {
         }));
         mock.module("hono/cookie", () => ({ getCookie: () => {}, setCookie: () => {}, deleteCookie: () => {} }));
         mock.module("./database.js", () => ({ MEDIA_DIR: "/tmp" }));
-        mock.module("./logger.js", () => ({ log: () => {} }));
     });
 
     afterEach(() => {
@@ -29,20 +28,58 @@ describe("AUTH_PASSWORD Security", () => {
         exitSpy.mockRestore();
     });
 
-    test("should exit if AUTH_PASSWORD is not set", async () => {
+    test("should generate temporary password if AUTH_PASSWORD is not set", async () => {
         delete process.env.AUTH_PASSWORD;
 
+        let loggedPassword = null;
+        const loggerModule = await import("../src/logger.js");
+        const logSpy = spyOn(loggerModule, "log").mockImplementation((category, message) => {
+            if (message && message.match) {
+                const match = message.match(/Generated temporary password: ([0-9a-f]{32})/);
+                if (match) loggedPassword = match[1];
+            }
+        });
+
         const { createServer } = await import(`../src/server.js?t=${Date.now()}`);
-        expect(() => createServer({}, {})).toThrow("process.exit called");
-        expect(exitSpy).toHaveBeenCalledWith(1);
+        const server = createServer({
+            cleanExpiredSessions: () => {},
+            getSettings: () => ({})
+        }, {
+            getNotifyEnabled: () => false
+        });
+
+        expect(exitSpy).not.toHaveBeenCalled();
+        expect(server).toBeDefined();
+        expect(loggedPassword).not.toBeNull();
+        expect(loggedPassword).toMatch(/^[0-9a-f]{32}$/);
+        logSpy.mockRestore();
     });
 
-    test("should exit if AUTH_PASSWORD is 'changeme'", async () => {
+    test("should generate temporary password if AUTH_PASSWORD is 'changeme'", async () => {
         process.env.AUTH_PASSWORD = "changeme";
 
+        let loggedPassword = null;
+        const loggerModule = await import("../src/logger.js");
+        const logSpy = spyOn(loggerModule, "log").mockImplementation((category, message) => {
+            if (message && message.match) {
+                const match = message.match(/Generated temporary password: ([0-9a-f]{32})/);
+                if (match) loggedPassword = match[1];
+            }
+        });
+
         const { createServer } = await import(`../src/server.js?t=${Date.now() + 1}`);
-        expect(() => createServer({}, {})).toThrow("process.exit called");
-        expect(exitSpy).toHaveBeenCalledWith(1);
+        const server = createServer({
+            cleanExpiredSessions: () => {},
+            getSettings: () => ({})
+        }, {
+            getNotifyEnabled: () => false
+        });
+
+        expect(exitSpy).not.toHaveBeenCalled();
+        expect(server).toBeDefined();
+        expect(loggedPassword).not.toBeNull();
+        expect(loggedPassword).toMatch(/^[0-9a-f]{32}$/);
+        logSpy.mockRestore();
     });
 
     test("should NOT exit if AUTH_PASSWORD is set to a secure value", async () => {
