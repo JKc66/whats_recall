@@ -1,11 +1,11 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', 'data');
-const MEDIA_DIR = join(DATA_DIR, 'media');
+const MEDIA_DIR = resolve(join(DATA_DIR, 'media'));
 const DB_PATH = process.env.DB_PATH || join(DATA_DIR, 'messages.db');
 
 export { MEDIA_DIR, DATA_DIR };
@@ -375,14 +375,36 @@ export function initDatabase() {
                 AND m2.chat_id NOT IN (${placeholders})
                 AND m2.media_path IS NOT NULL
             )
-        `).all(...ids, ...ids).map(r => r.media_path);
+            AND NOT EXISTS (
+              SELECT 1
+              FROM chats c
+              WHERE c.profile_pic = m.media_path
+                AND c.chat_id NOT IN (${placeholders})
+            )
+        `).all(...ids, ...ids, ...ids).map(r => r.media_path);
 
-        // Include profile_pics if they're not used by other chats outside this list
+        // Include profile_pics if they're not used by other chats or messages outside this list
         const profilePicRows = db.query(`SELECT DISTINCT profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...ids);
         for (const row of profilePicRows) {
           const pic = row.profile_pic;
-          const picUsedElsewhere = db.query(`SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`).get(pic, ...ids);
-          if (!picUsedElsewhere) {
+          // Check if this profile pic is used as a profile_pic by any other chat
+          const picUsedElsewhere = db.query(
+            `SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`
+          ).get(pic, ...ids);
+
+          // Also check if this profile pic filename is used as media_path by messages in other chats
+          const picUsedInMessagesElsewhere = db.query(
+            `
+              SELECT 1
+              FROM messages m
+              WHERE m.media_path = ?
+                AND m.chat_id NOT IN (${placeholders})
+                AND m.media_path IS NOT NULL
+              LIMIT 1
+            `
+          ).get(pic, ...ids);
+
+          if (!picUsedElsewhere && !picUsedInMessagesElsewhere) {
             mediaPaths.push(pic);
           }
         }
@@ -407,8 +429,8 @@ export function initDatabase() {
         try {
           const { unlink } = await import('fs/promises');
           const results = await Promise.allSettled(mediaPathsToDelete.map(async (p) => {
-            const fullPath = join(MEDIA_DIR, p);
-            if (existsSync(fullPath)) {
+            const fullPath = resolve(join(MEDIA_DIR, p));
+            if (fullPath.startsWith(MEDIA_DIR) && existsSync(fullPath)) {
               await unlink(fullPath);
             }
           }));
