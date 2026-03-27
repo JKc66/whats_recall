@@ -1232,10 +1232,13 @@ export function createMonitor(db, broadcast) {
     const ids = Array.from(relatedIds);
     log('WA', `Purging local data for IDs: ${ids.join(', ')}`);
 
-    const { deleteChatAndMessages, removeMonitoredChat } = db;
-    for (const id of ids) {
-      await deleteChatAndMessages(id);
-      removeMonitoredChat(id);
+    const { deleteChatsAndMessages, removeMonitoredChat } = db;
+
+    if (ids.length > 0) {
+      await deleteChatsAndMessages(ids);
+      for (const id of ids) {
+        removeMonitoredChat(id);
+      }
     }
   }
 
