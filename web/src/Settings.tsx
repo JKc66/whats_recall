@@ -378,7 +378,7 @@ export default function Settings() {
                     <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
                   </div>
                   <button class="btn-remove" disabled={busy() === chat.chat_id} onClick={() => handleRemove(chat.chat_id)}>
-                    {busy() === chat.chat_id ? '…' : 'Remove'}
+                    {busy() === chat.chat_id ? 'Removing…' : 'Remove'}
                   </button>
                 </div>
               );
@@ -446,11 +446,11 @@ export default function Settings() {
                     </div>
                     <Show when={isAdded()} fallback={
                       <button class="btn-add" disabled={busy() === chat.id} onClick={() => handleAdd(chat)}>
-                        {busy() === chat.id ? '…' : 'Add'}
+                        {busy() === chat.id ? 'Adding…' : 'Add'}
                       </button>
                     }>
                       <button class="btn-remove" disabled={busy() === chat.id} onClick={() => handleRemove(chat.id)}>
-                        {busy() === chat.id ? '…' : 'Remove'}
+                        {busy() === chat.id ? 'Removing…' : 'Remove'}
                       </button>
                     </Show>
                   </div>
@@ -487,6 +487,7 @@ export default function Settings() {
               placeholder="Enter password…"
               value={clearPassword()}
               onInput={(e) => setClearPassword(e.currentTarget.value)}
+              onKeyDown={(e) => e.key === 'Enter' && confirmClearData()}
               aria-label="Confirm password for data deletion"
               autofocus
             />
