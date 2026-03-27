@@ -85,7 +85,7 @@ describe("database clearAllData", () => {
     });
 });
 
-describe("database deleteChatAndMessages", () => {
+describe("database deleteChatsAndMessages", () => {
     let db;
 
     beforeAll(() => {
