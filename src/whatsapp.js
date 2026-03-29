@@ -688,6 +688,7 @@ export function createMonitor(db, broadcast) {
         }
         senderId = await resolveToPN(senderId);
         const senderName = await getChatName(senderId, msg.pushName);
+        const chatName = await getChatName(chatId);
         const lid = rawChatId.includes('@lid') ? rawChatId : await resolveToLID(rawChatId);
         db.upsertChat(chatId, chatName, isGroup, lid);
 
@@ -900,8 +901,8 @@ export function createMonitor(db, broadcast) {
       mediaData = await downloadAndSaveMedia(msg.message, msg);
     }
 
-    // If this is a reply to a view-once message and we downloaded the quoted media, use it
-    if (!mediaData && quotedViewOnceMedia) {
+    // If this is a reply to a view-once message and we downloaded the quoted media, prioritize it
+    if (quotedViewOnceMedia) {
       mediaData = quotedViewOnceMedia;
       hasMedia = true;
     }
