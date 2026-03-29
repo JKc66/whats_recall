@@ -75,4 +75,18 @@ describe("getClientIp", () => {
 
         expect(getClientIp(c)).toBe("127.0.0.1");
     });
+
+    test("should safely return 127.0.0.1 if an error is thrown when accessing properties", () => {
+        process.env.TRUST_PROXY = "false";
+        const c = {
+            req: {
+                header: () => null,
+            },
+            get env() {
+                throw new Error("Malicious or broken getter");
+            }
+        };
+
+        expect(getClientIp(c)).toBe("127.0.0.1");
+    });
 });

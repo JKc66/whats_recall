@@ -25,7 +25,7 @@ const deleteDirRecursive = async (path) => {
   await rm(path, { recursive: true, force: true });
 };
 
-function safeMerge(oldObj, newObj) {
+export function safeMerge(oldObj, newObj) {
   const merged = { ...oldObj };
   for (const key in newObj) {
     if (newObj[key] !== undefined && newObj[key] !== null) {
@@ -539,7 +539,9 @@ export function createMonitor(db, broadcast) {
           chats.set(jid, { ...chat, id: jid, name: metadata.subject });
           return metadata.subject;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to fetch group metadata for ${jid}: ${e.message}`);
+      }
     }
 
     return jid.split('@')[0];
@@ -588,7 +590,9 @@ export function createMonitor(db, broadcast) {
           pnToLid.set(fullPn, jid);
           return fullPn;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get PN for LID ${jid}: ${e.message}`);
+      }
     }
 
     // 3. Fallback: search contacts for matching LID
@@ -626,7 +630,9 @@ export function createMonitor(db, broadcast) {
           lidToPn.set(lid, jid);
           return lid;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get LID for PN ${jid}: ${e.message}`);
+      }
     }
 
     // Fallback from contacts
@@ -682,6 +688,7 @@ export function createMonitor(db, broadcast) {
         }
         senderId = await resolveToPN(senderId);
         const senderName = await getChatName(senderId, msg.pushName);
+        const chatName = await getChatName(chatId);
         const lid = rawChatId.includes('@lid') ? rawChatId : await resolveToLID(rawChatId);
         db.upsertChat(chatId, chatName, isGroup, lid);
 
@@ -894,8 +901,8 @@ export function createMonitor(db, broadcast) {
       mediaData = await downloadAndSaveMedia(msg.message, msg);
     }
 
-    // If this is a reply to a view-once message and we downloaded the quoted media, use it
-    if (!mediaData && quotedViewOnceMedia) {
+    // If this is a reply to a view-once message and we downloaded the quoted media, prioritize it
+    if (quotedViewOnceMedia) {
       mediaData = quotedViewOnceMedia;
       hasMedia = true;
     }
@@ -1045,6 +1052,24 @@ export function createMonitor(db, broadcast) {
     }
   }
 
+  async function expandMonitoredSetWithMappings(monitoredSet) {
+    if (!sock?.signalRepository?.lidMapping) return;
+
+    await Promise.all(Array.from(monitoredSet).map(async (jid) => {
+      try {
+        if (jid.includes('@lid')) {
+          const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
+          if (pn) monitoredSet.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
+        } else if (jid.includes('@s.whatsapp.net')) {
+          const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
+          if (lid) monitoredSet.add(lid.includes('@lid') ? lid : lid + '@lid');
+        }
+      } catch (e) {
+        log('WA', `Failed to map LID/PN for monitored chat ${jid}: ${e.message}`);
+      }
+    }));
+  }
+
   async function getWhatsAppChats() {
     if (!clientReady) return [];
     try {
@@ -1087,7 +1112,9 @@ export function createMonitor(db, broadcast) {
               targetId = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
               resolvedIds.set(id, targetId);
             }
-          } catch (e) { }
+          } catch (e) {
+            log('WA', `Failed to get PN for LID ${id} during chat sync: ${e.message}`);
+          }
         }
 
         if (!chats.has(targetId)) {
@@ -1151,19 +1178,7 @@ export function createMonitor(db, broadcast) {
       const profilePics = db.getChatProfilePics(allChats.map(c => c.id));
 
       // Expand monitored set with mapped LIDs and PNs so UI reflects status correctly for both formats
-      if (sock?.signalRepository?.lidMapping) {
-        await Promise.all(Array.from(monitored).map(async (jid) => {
-          try {
-            if (jid.includes('@lid')) {
-              const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
-              if (pn) monitored.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
-            } else if (jid.includes('@s.whatsapp.net')) {
-              const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
-              if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
-            }
-          } catch (e) { }
-        }));
-      }
+      await expandMonitoredSetWithMappings(monitored);
       log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
 
       const results = await Promise.all(allChats
@@ -1221,7 +1236,9 @@ export function createMonitor(db, broadcast) {
           const lid = await sock.signalRepository.lidMapping.getLIDForPN(chatId);
           if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get LID/PN mapping during chat deletion for ${chatId}: ${e.message}`);
+      }
     }
 
     // Fallbacks from contacts
