@@ -6,3 +6,6 @@ nohup.out
 .wwebjs_auth/
 .wwebjs_cache/
 .env
+
+skills-lock.json
+.agents/
