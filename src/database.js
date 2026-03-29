@@ -367,49 +367,25 @@ export function initDatabase() {
       const deleteTx = db.transaction((ids) => {
         const placeholders = ids.map(() => '?').join(',');
 
-        // Find media paths exclusively used by these chats
+        // Find media paths and profile pics exclusively used by these chats
         const mediaPaths = db.query(`
-          SELECT DISTINCT m.media_path
-          FROM messages m
-          WHERE m.chat_id IN (${placeholders}) AND m.media_path IS NOT NULL
-            AND NOT EXISTS (
-              SELECT 1
-              FROM messages m2
-              WHERE m2.media_path = m.media_path
-                AND m2.chat_id NOT IN (${placeholders})
-                AND m2.media_path IS NOT NULL
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM chats c
-              WHERE c.profile_pic = m.media_path
-                AND c.chat_id NOT IN (${placeholders})
-            )
-        `).all(...ids, ...ids, ...ids).map(r => r.media_path);
-
-        // Include profile_pics if they're not used by other chats or messages outside this list
-        const profilePics = db.query(`
-          SELECT DISTINCT c.profile_pic
-          FROM chats c
-          WHERE c.chat_id IN (${placeholders}) AND c.profile_pic IS NOT NULL
-            AND NOT EXISTS (
-              SELECT 1
-              FROM chats c2
-              WHERE c2.profile_pic = c.profile_pic
-                AND c2.chat_id NOT IN (${placeholders})
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM messages m
-              WHERE m.media_path = c.profile_pic
-                AND m.chat_id NOT IN (${placeholders})
-                AND m.media_path IS NOT NULL
-            )
-        `).all(...ids, ...ids, ...ids).map(r => r.profile_pic);
-
-        for (const pic of profilePics) {
-          mediaPaths.push(pic);
-        }
+          WITH TargetMedia AS (
+            SELECT media_path as path FROM messages WHERE chat_id IN (${placeholders}) AND media_path IS NOT NULL
+            UNION
+            SELECT profile_pic as path FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL
+          )
+          SELECT path FROM TargetMedia t
+          WHERE NOT EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.media_path = t.path
+              AND m.chat_id NOT IN (${placeholders})
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM chats c
+            WHERE c.profile_pic = t.path
+              AND c.chat_id NOT IN (${placeholders})
+          )
+        `).all(...ids, ...ids, ...ids, ...ids).map(r => r.path);
 
         // Delete reactions associated with messages from these chats
         db.query(`

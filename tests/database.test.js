@@ -30,6 +30,7 @@ describe("database clearAllData", () => {
     });
 
     test("should clear messages, chats, reactions, and media", async () => {
+        await db.clearAllData();
         // 1. Insert dummy data
         const chatId = "12345@c.us";
         const messageId = "MSG123";
@@ -99,6 +100,7 @@ describe("database deleteChatsAndMessages", () => {
     });
 
     test("should delete chat, messages, reactions, exclusive media, and profile pic, but preserve shared media", async () => {
+        await db.clearAllData();
         const chat1 = "chat1@c.us";
         const chat2 = "chat2@c.us";
 
