@@ -367,51 +367,25 @@ export function initDatabase() {
       const deleteTx = db.transaction((ids) => {
         const placeholders = ids.map(() => '?').join(',');
 
-        // Find media paths exclusively used by these chats
+        // Find media paths and profile pics exclusively used by these chats
         const mediaPaths = db.query(`
-          SELECT DISTINCT m.media_path
-          FROM messages m
-          WHERE m.chat_id IN (${placeholders}) AND m.media_path IS NOT NULL
-            AND NOT EXISTS (
-              SELECT 1
-              FROM messages m2
-              WHERE m2.media_path = m.media_path
-                AND m2.chat_id NOT IN (${placeholders})
-                AND m2.media_path IS NOT NULL
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM chats c
-              WHERE c.profile_pic = m.media_path
-                AND c.chat_id NOT IN (${placeholders})
-            )
-        `).all(...ids, ...ids, ...ids).map(r => r.media_path);
-
-        // Include profile_pics if they're not used by other chats or messages outside this list
-        const profilePicRows = db.query(`SELECT DISTINCT profile_pic FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL`).all(...ids);
-        for (const row of profilePicRows) {
-          const pic = row.profile_pic;
-          // Check if this profile pic is used as a profile_pic by any other chat
-          const picUsedElsewhere = db.query(
-            `SELECT 1 FROM chats WHERE profile_pic = ? AND chat_id NOT IN (${placeholders}) LIMIT 1`
-          ).get(pic, ...ids);
-
-          // Also check if this profile pic filename is used as media_path by messages in other chats
-          const picUsedInMessagesElsewhere = db.query(
-            `
-              SELECT 1
-              FROM messages m
-              WHERE m.media_path = ?
-                AND m.chat_id NOT IN (${placeholders})
-                AND m.media_path IS NOT NULL
-              LIMIT 1
-            `
-          ).get(pic, ...ids);
-
-          if (!picUsedElsewhere && !picUsedInMessagesElsewhere) {
-            mediaPaths.push(pic);
-          }
-        }
+          WITH TargetMedia AS (
+            SELECT media_path as path FROM messages WHERE chat_id IN (${placeholders}) AND media_path IS NOT NULL
+            UNION
+            SELECT profile_pic as path FROM chats WHERE chat_id IN (${placeholders}) AND profile_pic IS NOT NULL
+          )
+          SELECT path FROM TargetMedia t
+          WHERE NOT EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.media_path = t.path
+              AND m.chat_id NOT IN (${placeholders})
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM chats c
+            WHERE c.profile_pic = t.path
+              AND c.chat_id NOT IN (${placeholders})
+          )
+        `).all(...ids, ...ids, ...ids, ...ids).map(r => r.path);
 
         // Delete reactions associated with messages from these chats
         db.query(`
