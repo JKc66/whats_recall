@@ -15,8 +15,9 @@ describe("database searchMessages", () => {
     const chatId = "12345@c.us";
     const groupChatId = "group123@g.us";
 
-    beforeAll(() => {
+    beforeAll(async () => {
         db = initDatabase();
+        await db.clearAllData();
 
         // Setup initial data
         db.upsertChat(chatId, "Individual Chat", false);
