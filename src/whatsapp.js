@@ -1045,6 +1045,22 @@ export function createMonitor(db, broadcast) {
     }
   }
 
+  async function expandMonitoredSetWithMappings(monitoredSet) {
+    if (!sock?.signalRepository?.lidMapping) return;
+
+    await Promise.all(Array.from(monitoredSet).map(async (jid) => {
+      try {
+        if (jid.includes('@lid')) {
+          const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
+          if (pn) monitoredSet.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
+        } else if (jid.includes('@s.whatsapp.net')) {
+          const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
+          if (lid) monitoredSet.add(lid.includes('@lid') ? lid : lid + '@lid');
+        }
+      } catch (e) { }
+    }));
+  }
+
   async function getWhatsAppChats() {
     if (!clientReady) return [];
     try {
@@ -1151,19 +1167,8 @@ export function createMonitor(db, broadcast) {
       const profilePics = db.getChatProfilePics(allChats.map(c => c.id));
 
       // Expand monitored set with mapped LIDs and PNs so UI reflects status correctly for both formats
-      if (sock?.signalRepository?.lidMapping) {
-        await Promise.all(Array.from(monitored).map(async (jid) => {
-          try {
-            if (jid.includes('@lid')) {
-              const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
-              if (pn) monitored.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
-            } else if (jid.includes('@s.whatsapp.net')) {
-              const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
-              if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
-            }
-          } catch (e) { }
-        }));
-      }
+      await expandMonitoredSetWithMappings(monitored);
+
       log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
 
       const results = await Promise.all(allChats
