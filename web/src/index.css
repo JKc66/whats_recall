@@ -141,7 +141,7 @@ body,
   padding: 64px 48px 48px;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 80px rgba(52, 211, 153, 0.03);
+  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4), 0 0 80px rgba(52, 211, 153, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   text-align: center;
 }
 
@@ -194,9 +194,9 @@ body,
 }
 
 .login-card h1 {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   margin-bottom: 2px;
   color: var(--text);
   background: linear-gradient(to bottom, #fff, #a1a1aa);
@@ -208,11 +208,31 @@ body,
 .login-version {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  font-weight: 700;
-  color: var(--accent);
+  color: var(--text-4);
+  text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 12px;
-  opacity: 0.8;
+  margin-bottom: 24px;
+}
+
+.meta-lid {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.ml-2 {
+  margin-left: 10px;
+}
+
+.p-1 {
+  padding: 4px;
 }
 
 .login-card>p {
@@ -281,8 +301,8 @@ body,
 }
 
 .login-btn:hover {
-  opacity: 0.9;
-  box-shadow: 0 4px 16px var(--accent-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px var(--accent-glow);
 }
 
 .login-btn:active {
@@ -353,6 +373,7 @@ body,
   overflow: hidden;
   height: calc(100dvh - 24px);
   transition: transform var(--t-normal), opacity var(--t-normal);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 768px) {
@@ -573,6 +594,7 @@ body,
   text-align: left;
   position: relative;
   outline: none;
+  animation: list-fade-in 0.3s var(--ease) both;
 }
 
 .chat-row:focus-visible {
@@ -758,6 +780,7 @@ body,
   height: calc(100dvh - 24px);
   overflow: hidden;
   position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 768px) {
@@ -1858,6 +1881,7 @@ body,
   padding: 8px 10px;
   border-radius: var(--radius);
   transition: background var(--t-fast);
+  animation: list-fade-in 0.3s var(--ease) both;
 }
 
 .settings-item:hover {
@@ -1910,7 +1934,8 @@ body,
 }
 
 .btn-add:hover {
-  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-dim);
 }
 
 .btn-add:active {
@@ -2062,7 +2087,40 @@ body,
   max-width: 90%;
   max-height: 90%;
   object-fit: contain;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  cursor: default;
+  animation: lightbox-scale-in 0.25s var(--ease);
+  box-shadow: 0 24px 80px -12px rgba(0, 0, 0, 0.6);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  z-index: 2001;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.lightbox-close:active {
+  transform: scale(0.95);
 }
 
 @keyframes fade-in {
@@ -2072,6 +2130,18 @@ body,
 
   to {
     opacity: 1;
+  }
+}
+
+@keyframes lightbox-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -2286,6 +2356,18 @@ body,
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes list-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

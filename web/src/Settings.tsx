@@ -374,7 +374,7 @@ export default function Settings() {
                       <div class="meta-phone">{phone()}</div>
                     </Show>
                     <Show when={chat.lid}>
-                      <div class="meta-phone" style={{ "font-size": "0.75rem", opacity: 0.7 }}>{chat.lid}</div>
+                      <div class="meta-phone meta-lid">{chat.lid}</div>
                     </Show>
                     <div class="meta-text">{chat.is_group ? 'Group' : 'Private'}</div>
                   </div>
@@ -402,12 +402,12 @@ export default function Settings() {
             <button class="pill xs" classList={{ active: filterType() === 'chats' }} onClick={() => setFilterType('chats')}>Chats</button>
             <button class="pill xs" classList={{ active: filterType() === 'contacts' }} onClick={() => setFilterType('contacts')}>Contacts</button>
 
-            <span class="sort-label" style="margin-left: 10px;">Sort by:</span>
+            <span class="sort-label ml-2">Sort by:</span>
             <button class="pill xs" classList={{ active: sortBy() === 'recent' }} onClick={() => setSortBy('recent')}>Recent</button>
             <button class="pill xs" classList={{ active: sortBy() === 'name' }} onClick={() => setSortBy('name')}>A-Z</button>
 
-            <div style={{ flex: 1 }}></div>
-            <button class="icon-btn xs" onClick={() => refetchAvailable()} title="Refresh chats" aria-label="Refresh chats list" style={{ "margin-left": "auto", padding: "4px" }}>
+            <div class="flex-1"></div>
+            <button class="icon-btn xs ml-auto p-1" onClick={() => refetchAvailable()} title="Refresh chats" aria-label="Refresh chats list">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={available.loading ? 'spin-icon' : ''}>
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -441,7 +441,7 @@ export default function Settings() {
                         <div class="meta-phone">{phone()}</div>
                       </Show>
                       <Show when={chat.lid}>
-                        <div class="meta-phone" style={{ "font-size": "0.75rem", opacity: 0.7 }}>{chat.lid}</div>
+                        <div class="meta-phone meta-lid">{chat.lid}</div>
                       </Show>
                       <div class="meta-text">{chat.isGroup ? 'Group' : 'Private'}</div>
                     </div>
