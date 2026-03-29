@@ -539,7 +539,9 @@ export function createMonitor(db, broadcast) {
           chats.set(jid, { ...chat, id: jid, name: metadata.subject });
           return metadata.subject;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to fetch group metadata for ${jid}: ${e.message}`);
+      }
     }
 
     return jid.split('@')[0];
@@ -588,7 +590,9 @@ export function createMonitor(db, broadcast) {
           pnToLid.set(fullPn, jid);
           return fullPn;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get PN for LID ${jid}: ${e.message}`);
+      }
     }
 
     // 3. Fallback: search contacts for matching LID
@@ -626,7 +630,9 @@ export function createMonitor(db, broadcast) {
           lidToPn.set(lid, jid);
           return lid;
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get LID for PN ${jid}: ${e.message}`);
+      }
     }
 
     // Fallback from contacts
@@ -1087,7 +1093,9 @@ export function createMonitor(db, broadcast) {
               targetId = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
               resolvedIds.set(id, targetId);
             }
-          } catch (e) { }
+          } catch (e) {
+            log('WA', `Failed to get PN for LID ${id} during chat sync: ${e.message}`);
+          }
         }
 
         if (!chats.has(targetId)) {
@@ -1161,7 +1169,9 @@ export function createMonitor(db, broadcast) {
               const lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
               if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
             }
-          } catch (e) { }
+          } catch (e) {
+            log('WA', `Failed to map LID/PN for monitored chat ${jid}: ${e.message}`);
+          }
         }));
       }
       log('WA', `Available chats: ${allChats.length} (contacts: ${contacts.size}, chats: ${chats.size})`);
@@ -1221,7 +1231,9 @@ export function createMonitor(db, broadcast) {
           const lid = await sock.signalRepository.lidMapping.getLIDForPN(chatId);
           if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
         }
-      } catch (e) { }
+      } catch (e) {
+        log('WA', `Failed to get LID/PN mapping during chat deletion for ${chatId}: ${e.message}`);
+      }
     }
 
     // Fallbacks from contacts
