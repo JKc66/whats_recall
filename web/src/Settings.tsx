@@ -295,9 +295,10 @@ export default function Settings() {
             </div>
 
             <div class="config-item">
-              <label>WhatsApp Phone Number</label>
+              <label for="whatsapp_phone">WhatsApp Phone Number</label>
               <div class="config-input-row">
                 <input
+                  id="whatsapp_phone"
                   type="text"
                   placeholder="+123456789 (With country code)"
                   value={config()?.whatsapp_phone || ''}
@@ -320,11 +321,11 @@ export default function Settings() {
             <div class="config-item">
               <div class="toggle-row no-pad">
                 <div>
-                  <div class="toggle-label">Forward deletions to WhatsApp</div>
-                  <div class="toggle-sublabel">Send yourself a message when someone deletes a message</div>
+                  <div class="toggle-label" id="notify-label">Forward deletions to WhatsApp</div>
+                  <div class="toggle-sublabel" id="notify-desc">Send yourself a message when someone deletes a message</div>
                 </div>
                 <label class="toggle">
-                  <input type="checkbox" checked={config() ? config()?.whatsapp_notify === 'true' : stats().notifyEnabled} onChange={toggleNotify} aria-label="WhatsApp notifications toggle" />
+                  <input type="checkbox" checked={config() ? config()?.whatsapp_notify === 'true' : stats().notifyEnabled} onChange={toggleNotify} aria-labelledby="notify-label" aria-describedby="notify-desc" />
                   <span class="toggle-track" />
                 </label>
               </div>
@@ -333,11 +334,11 @@ export default function Settings() {
             <div class="config-item">
               <div class="toggle-row no-pad">
                 <div>
-                  <div class="toggle-label">Show only deleted messages</div>
-                  <div class="toggle-sublabel">Only list messages that have been explicitly deleted in Chat</div>
+                  <div class="toggle-label" id="deleted-label">Show only deleted messages</div>
+                  <div class="toggle-sublabel" id="deleted-desc">Only list messages that have been explicitly deleted in Chat</div>
                 </div>
                 <label class="toggle">
-                  <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-label="Show only deleted toggle" />
+                  <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-labelledby="deleted-label" aria-describedby="deleted-desc" />
                   <span class="toggle-track" />
                 </label>
               </div>
