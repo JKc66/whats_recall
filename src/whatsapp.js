@@ -1161,6 +1161,11 @@ export function createMonitor(db, broadcast) {
         // --- MERGE FIX: Ensure we move the LID to the PN entry permanently ---
         if (id !== baseId) {
           chats.delete(id);
+          if (!chats.has(baseId)) {
+            chats.set(baseId, existing);
+          } else {
+            chats.set(baseId, safeMerge(chats.get(baseId), existing));
+          }
         }
 
         // If c has conversationTimestamp and existing doesn't or existing's is older, update it
