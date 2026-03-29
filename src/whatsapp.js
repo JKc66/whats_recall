@@ -343,9 +343,9 @@ export function createMonitor(db, broadcast) {
         if (method === 'qr') {
           pairingData = { type: 'qr', data: qr };
           log('WA', 'QR Code generated');
-          console.log('\n========================================');
+          log('WA', '========================================');
           qrcode.generate(qr, { small: true });
-          console.log('========================================\n');
+          log('WA', '========================================');
         }
       }
 
