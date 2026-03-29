@@ -3,7 +3,7 @@ import { stats, setStats, setView, setChats, setMessages, setCurrentChatId, show
 import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
-import { createSignal, createResource, Show, For, onCleanup, createEffect } from 'solid-js';
+import { createSignal, createMemo, createResource, Show, For, onCleanup, createEffect } from 'solid-js';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
@@ -40,9 +40,11 @@ export default function Settings() {
     }
   }, 5000);
 
-  const monitoredIds = () => new Set((monitored() || []).map((m) => m.chat_id));
+  // ⚡ Bolt: Cache set creation for monitored chats
+  const monitoredIds = createMemo(() => new Set((monitored() || []).map((m) => m.chat_id)));
 
-  const filteredAvailable = () => {
+  // ⚡ Bolt: Memoize expensive array filtering and sorting to prevent re-evaluation on un-related updates
+  const filteredAvailable = createMemo(() => {
     const q = search().toLowerCase().trim();
     let list = [...(available() || [])];
 
@@ -60,14 +62,15 @@ export default function Settings() {
       list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     }
     return list;
-  };
+  });
 
-  const filteredMonitored = () => {
+  // ⚡ Bolt: Memoize filtered monitored list to prevent re-rendering when typing other inputs
+  const filteredMonitored = createMemo(() => {
     const q = search().toLowerCase().trim();
     let list = monitored() || [];
     if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || extractPhone(c.chat_id).includes(q));
     return list;
-  };
+  });
 
   async function handleAdd(chat: WhatsAppChat) {
     setBusy(chat.id);
