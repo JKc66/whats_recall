@@ -1147,6 +1147,9 @@ export function createMonitor(db, broadcast) {
       const allChats = Array.from(dedupedMap.values());
       const monitored = new Set(db.getMonitoredChats().map(m => m.chat_id));
 
+      // Batch fetch profile pics for all chats to avoid N+1 queries during mapping
+      const profilePics = db.getChatProfilePics(allChats.map(c => c.id));
+
       // Expand monitored set with mapped LIDs and PNs so UI reflects status correctly for both formats
       if (sock?.signalRepository?.lidMapping) {
         await Promise.all(Array.from(monitored).map(async (jid) => {
@@ -1179,7 +1182,7 @@ export function createMonitor(db, broadcast) {
             isGroup: isGroup,
             timestamp: ts,
             isMonitored: monitored.has(c.id),
-            profilePic: db.getChatProfilePic(c.id) || null,
+            profilePic: profilePics[c.id] || null,
             lid: c.lids && c.lids.length > 0 ? c.lids[0].split('@')[0] : (c.id.includes('@lid') ? c.id.split('@')[0] : null)
           };
         }));
