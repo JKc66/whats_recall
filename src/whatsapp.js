@@ -27,9 +27,12 @@ const deleteDirRecursive = async (path) => {
 
 function safeMerge(oldObj, newObj) {
   const merged = { ...oldObj };
-  for (const key in newObj) {
-    if (newObj[key] !== undefined && newObj[key] !== null) {
-      merged[key] = newObj[key];
+  const keys = Object.keys(newObj);
+  for (let i = 0, len = keys.length; i < len; i++) {
+    const key = keys[i];
+    const val = newObj[key];
+    if (val !== undefined && val !== null) {
+      merged[key] = val;
     }
   }
   return merged;
