@@ -163,7 +163,7 @@ export default function Settings() {
       await refetchPairing();
       setShowResetNotice(false);
       setIsWaitingForPairing(!isLogOutOnly);
-      
+
       if (isLogOutOnly) {
         notify.success('Logged out', 'Session cleared successfully.');
       } else {
@@ -401,11 +401,11 @@ export default function Settings() {
             <button class="pill xs" classList={{ active: filterType() === 'all' }} onClick={() => setFilterType('all')}>All</button>
             <button class="pill xs" classList={{ active: filterType() === 'chats' }} onClick={() => setFilterType('chats')}>Chats</button>
             <button class="pill xs" classList={{ active: filterType() === 'contacts' }} onClick={() => setFilterType('contacts')}>Contacts</button>
-            
+
             <span class="sort-label" style="margin-left: 10px;">Sort by:</span>
             <button class="pill xs" classList={{ active: sortBy() === 'recent' }} onClick={() => setSortBy('recent')}>Recent</button>
             <button class="pill xs" classList={{ active: sortBy() === 'name' }} onClick={() => setSortBy('name')}>A-Z</button>
-            
+
             <div style={{ flex: 1 }}></div>
             <button class="icon-btn xs" onClick={() => refetchAvailable()} title="Refresh chats" aria-label="Refresh chats list" style={{ "margin-left": "auto", padding: "4px" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={available.loading ? 'spin-icon' : ''}>

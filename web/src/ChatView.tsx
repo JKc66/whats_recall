@@ -15,8 +15,77 @@ function groupReactions(reactions: Reaction[]): { emoji: string; count: number; 
   return Array.from(map.entries()).map(([emoji, senders]) => ({ emoji, count: senders.length, senders }));
 }
 
+function MediaGallery(props: { 
+  messages: Message[]; 
+  onImageClick: (src: string) => void;
+  onJumpToMessage: (id: string) => void;
+}) {
+  function mediaUrl(path: string) {
+    return `${BASE}/api/media/${encodeURIComponent(path)}`;
+  }
+
+  return (
+    <div class="gallery-view">
+      <Show when={props.messages.length > 0} fallback={<div class="list-empty">No media found in this chat</div>}>
+        <div class="gallery-grid">
+          <For each={props.messages}>
+            {(msg) => {
+              const src = mediaUrl(msg.media_path!);
+              const type = msg.type;
+              return (
+                <div class="gallery-item" classList={{ deleted: !!msg.is_deleted }}>
+                  <Show when={type === 'image' || type === 'sticker'}>
+                    <img 
+                      src={src} 
+                      alt="" 
+                      loading="lazy" 
+                      onClick={() => props.onImageClick(src)}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} 
+                    />
+                  </Show>
+                  <Show when={type === 'video'}>
+                    <div class="gallery-video-preview" onClick={() => props.onImageClick(src)}>
+                      <video src={src} preload="metadata" />
+                      <div class="video-icon">▶</div>
+                    </div>
+                  </Show>
+                  <Show when={type === 'audio' || type === 'ptt'}>
+                    <div class="gallery-audio-item">
+                      <div class="audio-icon">🎵</div>
+                      <audio src={src} controls preload="metadata" />
+                    </div>
+                  </Show>
+                  <Show when={type === 'document'}>
+                    <div class="gallery-doc-item">
+                      <div class="doc-icon">📄</div>
+                      <span class="doc-name">{msg.media_filename || 'Document'}</span>
+                    </div>
+                  </Show>
+                  
+                  <div class="gallery-item-hover">
+                    <div class="gallery-item-info">
+                      <span class="gallery-item-time">{formatTime(new Date(msg.timestamp * 1000))}</span>
+                      <Show when={!!msg.is_deleted}>
+                        <span class="gallery-item-tag deleted">Deleted</span>
+                      </Show>
+                    </div>
+                    <button class="gallery-item-btn" onClick={() => props.onJumpToMessage(msg.message_id)}>
+                      Jump to message
+                    </button>
+                  </div>
+                </div>
+              );
+            }}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 export default function ChatView() {
   const [lightboxSrc, setLightboxSrc] = createSignal<string | null>(null);
+  const [viewMode, setViewMode] = createSignal<'messages' | 'media'>('messages');
   let containerRef: HTMLDivElement | undefined;
 
   const chat = () => chats().find((c) => c.chat_id === currentChatId());
@@ -27,15 +96,20 @@ export default function ChatView() {
     return msgs;
   };
 
+  const mediaMessages = () => messages().filter(m => m.has_media && m.media_path && m.type !== 'sticker');
+
   createEffect(() => {
     if (currentChatId()) {
+      setViewMode('messages');
       requestAnimationFrame(() => scrollToBottom());
     }
   });
 
   createEffect(() => {
     messages();
-    requestAnimationFrame(() => scrollToBottom());
+    if (viewMode() === 'messages') {
+      requestAnimationFrame(() => scrollToBottom());
+    }
   });
 
   function scrollToBottom() {
@@ -106,32 +180,46 @@ export default function ChatView() {
                 <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" width="34" height="34" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             </Show>
-            <div>
+            <div style={{ flex: 1 }}>
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
-                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_deleted_count ?? 0} deleted messages
-                <Show when={!chat()?.is_group && currentChatId()}>
-                  {' · '}{extractPhone(currentChatId()!)}
-                </Show>
+                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_deleted_count ?? 0} deleted
               </span>
             </div>
-          </div>
-          <div class="chat-header-actions">
+            
+            <div class="chat-mode-tabs">
+              <button class="chat-mode-tab" classList={{ active: viewMode() === 'messages' }} onClick={() => setViewMode('messages')}>
+                Messages
+              </button>
+              <button class="chat-mode-tab" classList={{ active: viewMode() === 'media' }} onClick={() => setViewMode('media')}>
+                Media Gallery
+              </button>
+            </div>
           </div>
         </header>
 
-        <div class="messages-container" ref={(el) => (containerRef = el)}>
-          <Show when={displayMessages().length > 0} fallback={
-            <div class="list-empty">
-              No {showOnlyDeleted() ? 'deleted ' : ''}messages in this chat
-            </div>
-          }>
-            <MsgList
-              messages={displayMessages()}
-              isGroup={!!chat()?.is_group}
-              onImageClick={setLightboxSrc}
-              onQuoteClick={scrollToMessage}
-              findMessage={findMessageByStanzaId}
+        <div class="messages-container" ref={(el) => (containerRef = el)} classList={{ gallery: viewMode() === 'media' }}>
+          <Show when={viewMode() === 'messages'}>
+            <Show when={displayMessages().length > 0} fallback={
+              <div class="list-empty">
+                No {showOnlyDeleted() ? 'deleted ' : ''}messages in this chat
+              </div>
+            }>
+              <MsgList
+                messages={displayMessages()}
+                isGroup={!!chat()?.is_group}
+                onImageClick={setLightboxSrc}
+                onQuoteClick={scrollToMessage}
+                findMessage={findMessageByStanzaId}
+              />
+            </Show>
+          </Show>
+          
+          <Show when={viewMode() === 'media'}>
+            <MediaGallery 
+              messages={mediaMessages()} 
+              onImageClick={setLightboxSrc} 
+              onJumpToMessage={(id: string) => { setViewMode('messages'); setTimeout(() => scrollToMessage(id), 50); }}
             />
           </Show>
         </div>
@@ -145,6 +233,7 @@ export default function ChatView() {
     </>
   );
 }
+
 
 function MsgList(props: {
   messages: Message[];
