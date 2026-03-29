@@ -420,7 +420,9 @@ function MsgBubble(props: {
             onClick={() => props.onImageClick(src)}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
-          <DownloadBtn url={src} filename={msg.media_filename || undefined} />
+          <Show when={type !== 'sticker'}>
+            <DownloadBtn url={src} filename={msg.media_filename || undefined} />
+          </Show>
         </div>
       );
     }
