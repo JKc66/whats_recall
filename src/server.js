@@ -95,12 +95,17 @@ export function getClientIp(c) {
 
 export function safePath(baseDir, userPath) {
   if (userPath.includes('\0')) return null;
-  const decodedPath = decodeURIComponent(userPath);
-  const base = resolve(baseDir);
-  const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
-  // Ensure resolved path is within base and handle directory prefix bypass
-  if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
-  return resolved;
+  try {
+    const decodedPath = decodeURIComponent(userPath);
+    if (decodedPath.includes('\0')) return null;
+    const base = resolve(baseDir);
+    const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
+    // Ensure resolved path is within base and handle directory prefix bypass
+    if (!resolved.startsWith(base + (base.endsWith('/') ? '' : '/'))) return null;
+    return resolved;
+  } catch (e) {
+    return null;
+  }
 }
 
 export function createServer(db, monitor) {
