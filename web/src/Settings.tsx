@@ -351,10 +351,15 @@ export default function Settings() {
 
       <Show when={tab() === 'monitored'}>
         <div class="settings-list">
-          <Show when={(monitored() || []).length === 0 && !monitored.loading}>
+          <Show when={(monitored() || []).length === 0 && !monitored.loading && !search()}>
             <div class="list-empty">
               <p>No chats monitored yet.</p>
               <p>Switch to <strong>Available</strong> to add chats.</p>
+            </div>
+          </Show>
+          <Show when={((monitored() && monitored().length > 0) || search()) && filteredMonitored().length === 0}>
+            <div class="list-empty">
+              <p>No monitored chats matching "{search()}"</p>
             </div>
           </Show>
           <Show when={monitored.loading}>
@@ -458,8 +463,13 @@ export default function Settings() {
                 );
               }}
             </For>
-            <Show when={!available.loading && (available() || []).length === 0}>
+            <Show when={!available.loading && (available() || []).length === 0 && !search()}>
               <div class="list-empty">No chats available.</div>
+            </Show>
+            <Show when={!available.loading && (((available() || []).length > 0) || search()) && filteredAvailable().length === 0}>
+              <div class="list-empty">
+                <p>No available chats matching "{search()}"</p>
+              </div>
             </Show>
           </div>
         </Show>

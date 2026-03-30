@@ -103,7 +103,11 @@ export default function Sidebar() {
       </div>
 
       <div class="chat-list">
-        <Show when={filteredChats().length > 0} fallback={<div class="list-empty">No chats found</div>}>
+        <Show when={filteredChats().length > 0} fallback={
+          <div class="list-empty">
+            {search() ? `No chats matching "${search()}"` : 'No chats found'}
+          </div>
+        }>
           <For each={filteredChats()}>
             {(chat) => (
               <ChatRow
