@@ -1,4 +1,4 @@
-import { createSignal, createEffect, Show, For, onCleanup } from 'solid-js';
+import { createSignal, createMemo, createEffect, Show, For, onCleanup } from 'solid-js';
 import { currentChatId, setCurrentChatId, messages, chats, showOnlyDeleted, setView } from './store';
 import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message, Reaction } from './types';
@@ -90,13 +90,15 @@ export default function ChatView() {
 
   const chat = () => chats().find((c) => c.chat_id === currentChatId());
 
-  const displayMessages = () => {
+  // ⚡ Bolt: Memoize filtered messages to prevent O(N) recalculations on unrelated state changes
+  const displayMessages = createMemo(() => {
     const msgs = messages();
     if (showOnlyDeleted()) return msgs.filter((m) => m.is_deleted);
     return msgs;
-  };
+  });
 
-  const mediaMessages = () => messages().filter(m => m.has_media && m.media_path && m.type !== 'sticker');
+  // ⚡ Bolt: Cache media filter to prevent re-evaluation on every render cycle
+  const mediaMessages = createMemo(() => messages().filter(m => m.has_media && m.media_path && m.type !== 'sticker'));
 
   createEffect(() => {
     if (currentChatId()) {
