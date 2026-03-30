@@ -2,6 +2,10 @@ import { createSignal, createMemo, createEffect, Show, For, onCleanup } from 'so
 import { currentChatId, setCurrentChatId, messages, chats, showOnlyDeleted, setView } from './store';
 import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message, Reaction } from './types';
+import { 
+  PlayIcon, MusicIcon, FileIcon, MessageSquareIcon, SettingsIcon, 
+  ArrowLeftIcon, XIcon, DownloadIcon, TrashIcon, EyeIcon 
+} from './components/Icons';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
@@ -46,18 +50,18 @@ function MediaGallery(props: {
                   <Show when={type === 'video'}>
                     <div class="gallery-video-preview" onClick={() => props.onImageClick(src)}>
                       <video src={src} preload="metadata" />
-                      <div class="video-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3" /></svg></div>
+                      <div class="video-icon"><PlayIcon size={24} fill="currentColor" stroke="none" /></div>
                     </div>
                   </Show>
                   <Show when={type === 'audio' || type === 'ptt'}>
                     <div class="gallery-audio-item">
-                       <div class="audio-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg></div>
+                       <div class="audio-icon"><MusicIcon size={28} stroke-width={1.5} /></div>
                       <audio src={src} controls preload="metadata" />
                     </div>
                   </Show>
                   <Show when={type === 'document'}>
                     <div class="gallery-doc-item">
-                       <div class="doc-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></div>
+                       <div class="doc-icon"><FileIcon size={28} stroke-width={1.5} /></div>
                       <span class="doc-name">{msg.media_filename || 'Document'}</span>
                     </div>
                   </Show>
@@ -152,14 +156,14 @@ export default function ChatView() {
     <>
       <Show when={!currentChatId()}>
         <div class="empty-state">
-          <div class="empty-icon" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+          <div class="empty-icon" aria-hidden="true"><MessageSquareIcon size={56} stroke-width={1} /></div>
           <h2>Message Monitor</h2>
           <p>Select a chat to view messages. Deleted messages are highlighted and preserved.</p>
           <button
             class="btn-outline btn-configure"
             onClick={() => setView('settings')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+            <SettingsIcon size={16} stroke-width={2} />
             Configure Chats
           </button>
         </div>
@@ -168,7 +172,7 @@ export default function ChatView() {
       <Show when={currentChatId()}>
         <header class="chat-header">
           <button class="icon-btn back-btn" onClick={back} aria-label="Back to chat list">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            <ArrowLeftIcon size={20} />
           </button>
           <div class="chat-header-info">
             <Show when={profilePicUrl(chat()?.profile_pic)} fallback={
@@ -229,7 +233,7 @@ export default function ChatView() {
       <Show when={lightboxSrc()}>
         <div class="lightbox" onClick={closeLightbox} role="dialog" aria-label="Image preview">
           <button class="lightbox-close" onClick={closeLightbox} aria-label="Close preview">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            <XIcon size={24} />
           </button>
           <img src={lightboxSrc()!} alt="Full size preview" onClick={(e) => e.stopPropagation()} />
         </div>
@@ -355,11 +359,7 @@ function ImageGroup(props: {
       aria-label="Download media"
       title="Download media"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
-        <polyline points="7 10 12 15 17 10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
-      </svg>
+      <DownloadIcon size={14} stroke-width={2.5} />
     </a>
   );
 
@@ -407,7 +407,7 @@ function ImageGroup(props: {
               <DownloadBtn url={mediaUrl(msg.media_path!)} filename={msg.media_filename || undefined} />
               <Show when={!!msg.is_deleted}>
                 <div class="image-grid-deleted-tag">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg> Deleted
+                  <TrashIcon size={12} /> Deleted
                 </div>
               </Show>
             </div>
@@ -439,11 +439,7 @@ function ImageGroup(props: {
             onClick={downloadAll}
             title="Download all images in this album"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <DownloadIcon size={12} stroke-width={2.5} />
             Download Album
           </button>
         </Show>
@@ -475,7 +471,7 @@ function MsgBubble(props: {
       if (msg.has_media) {
         return (
           <div class="msg-media-placeholder">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg> {msg.type}
+            <FileIcon size={14} /> {msg.type}
           </div>
         );
       }
@@ -495,13 +491,9 @@ function MsgBubble(props: {
         aria-label="Download media"
         title="Download media"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v2" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-      </a>
-    );
+      <DownloadIcon size={14} stroke-width={2.5} />
+    </a>
+  );
 
     if (type === 'image' || type === 'sticker' || mt.startsWith('image/')) {
       return (
@@ -537,7 +529,7 @@ function MsgBubble(props: {
     }
     return (
       <div class="msg-media-placeholder">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+        <FileIcon size={14} />
         <a href={src} target="_blank" rel="noopener">{msg.media_filename || 'Download'}</a>
         <DownloadBtn url={src} filename={msg.media_filename || undefined} />
       </div>
@@ -612,7 +604,7 @@ function MsgBubble(props: {
       </Show>
 
       <Show when={isViewOnce()}>
-        <div class="view-once-tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 3px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>View once</div>
+        <div class="view-once-tag"><EyeIcon size={14} style="vertical-align: -2px; margin-right: 3px;" />View once</div>
       </Show>
 
       <Show when={replyData()}>
@@ -636,7 +628,7 @@ function MsgBubble(props: {
 
       <Show when={isViewOnce() && !bodyText() && !m().has_media}>
         <div class="msg-media-placeholder">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg> View-once {m().type || 'message'}
+          <EyeIcon size={14} /> View-once {m().type || 'message'}
         </div>
       </Show>
 

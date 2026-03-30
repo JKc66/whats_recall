@@ -471,9 +471,22 @@ body,
   padding: 8px 14px;
 }
 
+.sidebar-search .search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-search .search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
 .sidebar-search input {
   width: 100%;
-  padding: 9px 14px;
+  padding: 9px 14px 9px 36px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);

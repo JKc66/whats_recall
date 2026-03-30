@@ -4,6 +4,9 @@ import { notify } from './notify';
 import type { WhatsAppChat, MonitoredChat } from './types';
 import { avatarColor, getInitials, extractPhone, profilePicUrl } from './utils';
 import { createSignal, createMemo, createResource, Show, For, onCleanup, createEffect } from 'solid-js';
+import { 
+  ArrowLeftIcon, WifiIcon, AlertTriangleIcon, SettingsIcon, RefreshIcon 
+} from './components/Icons';
 
 export default function Settings() {
   const [search, setSearch] = createSignal('');
@@ -184,7 +187,7 @@ export default function Settings() {
       <header class="settings-top">
         <div class="settings-title-row">
           <button class="icon-btn settings-back" onClick={() => setView('chats')} title="Back" aria-label="Back to chats">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            <ArrowLeftIcon size={20} />
           </button>
           <h2>Settings</h2>
         </div>
@@ -218,7 +221,7 @@ export default function Settings() {
         <div class="settings-list">
           <div class="config-section">
             <h3 class="section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.58 16.11a7 7 0 0 1 6.84 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></svg>
+              <WifiIcon size={14} stroke-width={2.5} />
               Connectivity
             </h3>
 
@@ -268,7 +271,7 @@ export default function Settings() {
               <div class="pairing-actions">
                 <Show when={showResetNotice()}>
                   <div class="config-alert">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    <AlertTriangleIcon size={16} />
                     Settings changed. Click below to apply.
                   </div>
                 </Show>
@@ -318,7 +321,7 @@ export default function Settings() {
             </div>
 
             <h3 class="section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
+              <SettingsIcon size={14} stroke-width={2.5} />
               Preferences
             </h3>
             <div class="config-item">
@@ -411,11 +414,7 @@ export default function Settings() {
 
             <div class="flex-1"></div>
             <button class="icon-btn xs ml-auto p-1" onClick={() => refetchAvailable()} title="Refresh chats" aria-label="Refresh chats list">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class={available.loading ? 'spin-icon' : ''}>
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
+              <RefreshIcon size={16} class={available.loading ? 'spin-icon' : ''} />
             </button>
           </div>
           <div class="settings-list">
@@ -470,7 +469,7 @@ export default function Settings() {
 
       <div class="settings-danger-zone">
         <h3 class="section-title" style="margin-top: 0; color: var(--red);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          <AlertTriangleIcon size={14} stroke-width={2.5} />
           Danger zone
         </h3>
         <div class="danger-item">

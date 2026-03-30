@@ -6,6 +6,7 @@ import {
 } from './store';
 import { avatarColor, getInitials, formatRelativeDate, truncate, extractPhone, profilePicUrl } from './utils';
 import type { Chat } from './types';
+import { SettingsIcon, LogoutIcon, SearchIcon } from './components/Icons';
 
 export default function Sidebar() {
   const [search, setSearch] = createSignal('');
@@ -83,24 +84,28 @@ export default function Sidebar() {
             title="Settings"
             aria-label="Settings"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+            <SettingsIcon size={18} />
           </button>
           <button class="icon-btn" onClick={handleLogout} title="Sign out" aria-label="Sign out">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+            <LogoutIcon size={18} />
           </button>
         </nav>
       </header>
 
       <div class="sidebar-search">
-        <input
-          type="text"
-          placeholder="Search chats…"
-          value={search()}
-          onInput={(e) => setSearch(e.currentTarget.value)}
-          spellcheck={false}
-          aria-label="Search chats"
-        />
+        <div class="search-input-wrapper">
+          <SearchIcon size={16} class="search-icon" />
+          <input
+            type="text"
+            placeholder="Search chats…"
+            value={search()}
+            onInput={(e) => setSearch(e.currentTarget.value)}
+            spellcheck={false}
+            aria-label="Search chats"
+          />
+        </div>
       </div>
+
 
       <div class="chat-list">
         <Show when={filteredChats().length > 0} fallback={<div class="list-empty">No chats found</div>}>
