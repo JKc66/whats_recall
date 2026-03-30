@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { login } from './api';
 import { setAuthenticated } from './store';
 import { MonitorIcon, LockIcon } from './components/Icons';
@@ -53,11 +53,21 @@ export default function Login() {
 
   return (
     <div class="login-page">
+      <div class="ambient-glow" aria-hidden="true" />
+      <div class="watermark-bg" aria-hidden="true">SECURED</div>
+      
       <div class="login-card">
         <div class="login-logo" aria-hidden="true">
-          <MonitorIcon size={36} color="var(--accent)" />
+          <MonitorIcon size={32} color="var(--accent)" stroke-width={1.5} />
           <div class="logo-pulse"></div>
+          <div class="logo-pulse-2"></div>
         </div>
+        
+        <div class="login-header">
+          <h1>System Access</h1>
+          <p>End-to-end encrypted telemetry platform.</p>
+        </div>
+
         <form onSubmit={handleSubmit} name="whatsapp-monitor-login">
           <input
             type="text"
@@ -70,12 +80,11 @@ export default function Login() {
             aria-hidden="true"
           />
           <div class="login-field">
-            <label for="login-password">Password</label>
             <input
               id="login-password"
               type="password"
               name="password"
-              placeholder="Enter password…"
+              placeholder="Authentication Key"
               value={password()}
               onInput={(e) => setPassword(e.currentTarget.value)}
               autocomplete="current-password webauthn"
@@ -83,17 +92,24 @@ export default function Login() {
               required
               autofocus
             />
+            <div class="field-focus-bg"></div>
           </div>
           <button class="login-btn" type="submit" disabled={loading()}>
-            {loading() ? 'Authenticating…' : 'Unlock Dashboard'}
+            <Show when={!loading()} fallback={<div class="spinner sm" />}>
+              <span>Initialize Connection</span>
+            </Show>
           </button>
         </form>
-        <div class="login-error" aria-live="polite">{error()}</div>
+
+        <Show when={error()}>
+          <div class="login-error" aria-live="polite">{error()}</div>
+        </Show>
+
         <div class="login-footer">
           <span class="lock-icon" aria-hidden="true">
-            <LockIcon size={12} color="var(--text-3)" />
+            <LockIcon size={12} color="var(--text-3)" stroke-width={2.5} />
           </span>
-          Encrypted Session
+          Zero-Knowledge Architecture
         </div>
       </div>
     </div>
