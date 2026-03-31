@@ -28,11 +28,16 @@ export function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+const fullDateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+
 export function formatTime(date: Date): string {
-  return date.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return timeFormatter.format(date);
 }
 
 export function formatRelativeDate(date: Date): string {
@@ -42,8 +47,8 @@ export function formatRelativeDate(date: Date): string {
 
   if (days === 0) return formatTime(date);
   if (days === 1) return "Yesterday";
-  if (days < 7) return date.toLocaleDateString(undefined, { weekday: "short" });
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (days < 7) return dayFormatter.format(date);
+  return fullDateFormatter.format(date);
 }
 
 export function truncate(str: string, max: number): string {

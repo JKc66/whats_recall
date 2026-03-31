@@ -109,6 +109,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     CREATE INDEX IF NOT EXISTS idx_messages_chat_timestamp ON messages(chat_id, timestamp DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_chat_deleted ON messages(chat_id, is_deleted);
     CREATE INDEX IF NOT EXISTS idx_reactions_message_id ON reactions(message_id);
+    CREATE INDEX IF NOT EXISTS idx_chats_last_message_at ON chats(last_message_at DESC);
   `);
 
   // Initial Seed

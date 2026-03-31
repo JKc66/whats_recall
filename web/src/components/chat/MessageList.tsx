@@ -11,6 +11,12 @@ interface MessageListProps {
   highlightQuery?: string;
 }
 
+const messageListDateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
 export default function MessageList(props: MessageListProps) {
   let lastDate = "";
 
@@ -25,11 +31,7 @@ export default function MessageList(props: MessageListProps) {
     while (i < msgs.length) {
       const msg = msgs[i];
       const msgDate = new Date(msg.timestamp * 1000);
-      const dateStr = msgDate.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      const dateStr = messageListDateFormatter.format(msgDate);
       const showDate = dateStr !== lastDate;
       if (showDate) lastDate = dateStr;
 
