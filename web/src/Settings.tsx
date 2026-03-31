@@ -26,9 +26,11 @@ export default function Settings() {
   const [sortBy, setSortBy] = createSignal<'recent' | 'name'>('recent');
   const [filterType, setFilterType] = createSignal<'all' | 'chats' | 'contacts'>('chats');
 
+  // ⚡ Bolt: Memoize the connected state to prevent the effect from re-running when unrelated stats change.
+  const isConnected = createMemo(() => stats().connected);
   createEffect(() => {
     // When the status changes to connected, dynamically refetch the lists
-    if (stats().connected) {
+    if (isConnected()) {
       refetchAvailable();
       refetchMonitored();
     }
