@@ -19,7 +19,7 @@ export function safePath(baseDir: string, userPath: string): string | null {
 }
 
 export function getClientIp(c: any): string {
-  let remoteAddress = '127.0.0.1';
+  let remoteAddress: string;
   try {
     const rawIp = c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
     remoteAddress = rawIp.replace(/^::ffff:/, '');

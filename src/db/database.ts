@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync, existsSync, rmSync } from 'fs';
-import { unlink, rm } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';

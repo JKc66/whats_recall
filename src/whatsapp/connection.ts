@@ -11,7 +11,7 @@ import { rm } from 'fs/promises';
 import { join } from 'path';
 import pino from 'pino';
 import { log } from '../logger.js';
-import { getDb, DATA_DIR, MEDIA_DIR } from '../db/database.js';
+import { getDb, DATA_DIR } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { MessageProcessor } from './processor.ts';
 import { downloadProfilePic } from './media.ts';
