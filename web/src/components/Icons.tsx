@@ -87,6 +87,12 @@ export const ArrowLeftIcon = (props: IconProps) => (
   </IconBase>
 );
 
+export const ArrowRightIcon = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M221.66 133.66l-72 72a8 8 0 0 1-11.32-11.32L196.69 136H32a8 8 0 0 1 0-16H196.69L138.34 61.66a8 8 0 0 1 11.32-11.32l72 72a8 8 0 0 1 0 11.32" />
+  </IconBase>
+);
+
 export const XIcon = (props: IconProps) => (
   <IconBase {...props}>
     <path d="M205.66 194.34a8 8 0 0 1-11.32 11.32L128 139.31l-66.34 66.35a8 8 0 0 1-11.32-11.32L116.69 128L50.34 61.66a8 8 0 0 1 11.32-11.32L128 116.69l66.34-66.35a8 8 0 0 1 11.32 11.32L139.31 128Z" />
@@ -191,6 +197,12 @@ export const ShieldIcon = (props: IconProps) => (
 
 export const ArrowDownIcon = (props: IconProps) => (
   <IconBase {...props}>
-    <path d="M205.66 149.66a8 8 0 0 1-11.32 11.32L136 102.63V216a8 8 0 0 1-16 0V102.63l-58.34 58.35a8 8 0 0 1-11.32-11.32l72-72a8 8 0 0 1 11.32 0Z" />
+    <path d="M205.66 149.66a8 8 0 0 1 0 11.32l-72 72a8 8 0 0 1-11.32 0l-72-72a8 8 0 0 1 11.32-11.32L120 208.69V48a8 8 0 0 1 16 0V208.69l58.34-58.35a8 8 0 0 1 11.32 0" />
+  </IconBase>
+);
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M205.66 117.66a8 8 0 0 1-11.32 0L136 59.31V216a8 8 0 0 1-16 0V59.31L61.66 117.66a8 8 0 0 1-11.32-11.32l72-72a8 8 0 0 1 11.32 0l72 72a8 8 0 0 1-11.32 11.32" />
   </IconBase>
 );

@@ -38,6 +38,14 @@ export interface WhatsAppMessage {
   quoted_preview?: string;
   created_at?: string;
   reactions?: WhatsAppReaction[];
+  edits?: WhatsAppEdit[];
+  updated_at?: string;
+}
+
+export interface WhatsAppEdit {
+  old_body: string;
+  new_body: string;
+  edited_at: string;
 }
 
 export interface WhatsAppReaction {
@@ -64,6 +72,6 @@ export interface PairingStatus {
   reason?: string;
 }
 
-export type BroadcastEvent = 'status' | 'new_message' | 'message_deleted' | 'message_reaction';
+export type BroadcastEvent = 'status' | 'new_message' | 'message_deleted' | 'message_reaction' | 'message_edited';
 
 export type BroadcastFn = (event: BroadcastEvent, data: any) => void;

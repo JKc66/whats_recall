@@ -71,6 +71,7 @@ export function MessageBubble(props: MessageBubbleProps) {
   const isDeleted = () => !!m().is_deleted;
   const isViewOnce = () => !!m().is_view_once;
   const phone = () => (m().sender_id ? extractPhone(m().sender_id!) : "");
+  const [showHistory, setShowHistory] = createSignal(false);
 
   const replyData = () => {
     const msg = m();
@@ -374,7 +375,38 @@ export function MessageBubble(props: MessageBubbleProps) {
             deleted
           </span>
         </Show>
+        <Show when={m().edits?.length}>
+          <button
+            onClick={() => setShowHistory(!showHistory())}
+            class="text-[9px] font-bold text-accent uppercase tracking-widest px-1.5 py-px bg-accent/10 rounded-full border border-accent/15 hover:bg-accent/20 transition-colors"
+          >
+            {showHistory() ? "Hide History" : `${m().edits!.length} edits`}
+          </button>
+        </Show>
       </div>
+
+      <Show when={showHistory() && m().edits?.length}>
+        <div class="mt-3 space-y-2.5 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+          <For each={m().edits}>
+            {(edit) => (
+              <div class="bg-black/20 rounded-lg p-2.5 border border-white/5 relative group/edit overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-zinc-700 opacity-30 group-hover/edit:opacity-100 transition-opacity" />
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                    Previous Version
+                  </span>
+                  <span class="text-[9px] font-mono text-zinc-600 opacity-80 tabular-nums">
+                    {formatTime(new Date(edit.edited_at))}
+                  </span>
+                </div>
+                <div class="text-[13px] text-zinc-400 line-through opacity-60 leading-relaxed italic wrap-break-word">
+                  {edit.old_body}
+                </div>
+              </div>
+            )}
+          </For>
+        </div>
+      </Show>
     </div>
   );
 }

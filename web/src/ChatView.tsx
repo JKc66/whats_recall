@@ -18,7 +18,7 @@ import {
   setJumpToQuery,
   searchQuery,
 } from "./store";
-import { MessageSquareIcon, SettingsIcon, XIcon, ArrowDownIcon, SearchIcon } from "./components/Icons";
+import { MessageSquareIcon, SettingsIcon, XIcon, ArrowDownIcon, SearchIcon, ArrowUpIcon } from "./components/Icons";
 import ChatHeader from "./components/chat/ChatHeader";
 import MessageList from "./components/chat/MessageList";
 import MediaGallery from "./components/chat/MediaGallery";
@@ -214,7 +214,7 @@ export default function ChatView() {
                 onClick={() => navigateMatch(-1)}
                 aria-label="Previous match"
               >
-                <ArrowDownIcon size={13} stroke-width={2.5} class="rotate-180" />
+                <ArrowUpIcon size={13} stroke-width={2.5} />
               </button>
               <button
                 class="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center transition-all active:scale-90"

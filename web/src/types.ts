@@ -31,6 +31,12 @@ export interface Reaction {
   emoji: string;
 }
 
+export interface MessageEdit {
+  old_body: string;
+  new_body: string;
+  edited_at: string;
+}
+
 export interface Message {
   message_id: string;
   chat_id: string;
@@ -52,6 +58,7 @@ export interface Message {
   quoted_sender: string | null;
   quoted_preview: string | null;
   reactions?: Reaction[];
+  edits?: MessageEdit[];
 }
 
 export interface MonitoredChat {

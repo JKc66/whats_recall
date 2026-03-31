@@ -210,6 +210,45 @@ export default function App() {
           );
         }
       }
+
+      if (event === "message_edited") {
+        const edit = data as {
+          message_id: string;
+          chat_id: string;
+          body: string;
+          old_body: string;
+          updated_at: string;
+        };
+        if (currentChatId() === edit.chat_id) {
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.message_id !== edit.message_id) return m;
+              const newEdits = [...(m.edits || [])];
+              if (edit.old_body) {
+                newEdits.push({
+                  old_body: edit.old_body,
+                  new_body: edit.body,
+                  edited_at: edit.updated_at,
+                });
+              }
+              return { ...m, body: edit.body, edits: newEdits };
+            }),
+          );
+        }
+
+        setChats((prev) => {
+          const idx = prev.findIndex((c) => c.chat_id === edit.chat_id);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = {
+              ...updated[idx],
+              last_message_preview: edit.body,
+            };
+            return updated;
+          }
+          return prev;
+        });
+      }
     });
   }
 

@@ -84,11 +84,62 @@ export class MessageProcessor {
   }
 
   /**
-   * Processes message update events, specifically looking for 'REVOKE' (deletion) protocol messages.
+   * Processes message update events, specifically looking for 'REVOKE' (deletion) 
+   * and 'MESSAGE_EDIT' protocol messages.
    */
   public async handleMessageUpdate(event: any) {
-    if (event.update?.message?.protocolMessage?.type === 0 || event.update?.message?.protocolMessage?.type === 'REVOKE') {
-      await this.handleRevoke(event.key, event.update.message.protocolMessage.key);
+    const protocolMsg = event.update?.message?.protocolMessage;
+    if (!protocolMsg) return;
+
+    if (protocolMsg.type === 0 || protocolMsg.type === 'REVOKE') {
+      await this.handleRevoke(event.key, protocolMsg.key);
+    } else if (protocolMsg.type === 14 || protocolMsg.type === 'MESSAGE_EDIT') {
+      await this.handleEdit(protocolMsg.key, protocolMsg.editedMessage);
+    }
+  }
+
+  /**
+   * Processes an edited message, updates the local database, and broadcasts the event.
+   */
+  public async handleEdit(key: any, editedMessage: any) {
+    const messageId = key.id;
+    const rawChatId = key.remoteJid;
+    if (!rawChatId || !messageId) return;
+
+    const chatId = await syncService.resolvePN(rawChatId, this.sock);
+    if (!(await this.checkIsMonitored(chatId))) return;
+
+    const content = extractMessageContent(editedMessage);
+    if (!content) return;
+
+    const mType = getContentType(content);
+    if (!mType) return;
+
+    const inner = (content as any)[mType];
+    let body = '';
+    if (mType === 'conversation') body = (content as any).conversation;
+    else if (mType === 'extendedTextMessage') body = inner.text;
+    else if (inner && inner.caption) body = inner.caption;
+
+    if (body !== undefined) {
+      const oldMsg = db.getMessage(messageId);
+      const oldBody = oldMsg?.body;
+      
+      db.updateMessageBody(messageId, body);
+      
+      if (oldBody !== undefined && oldBody !== null && oldBody !== body) {
+        db.addMessageEdit(messageId, oldBody, body);
+      }
+      
+      log('PROCESSOR', `Message edited: ${messageId} in ${chatId}`);
+      
+      this.broadcast('message_edited', {
+        message_id: messageId,
+        chat_id: chatId,
+        body: body,
+        old_body: oldBody,
+        updated_at: new Date().toISOString()
+      });
     }
   }
 
@@ -205,6 +256,8 @@ export class MessageProcessor {
     if (messageType === 'protocolMessage') {
       if (content.type === 0 || content.type === 'REVOKE') {
         await this.handleRevoke(msg.key, content.key);
+      } else if (content.type === 14 || content.type === 'MESSAGE_EDIT') {
+        await this.handleEdit(content.key, content.editedMessage);
       }
       return;
     }

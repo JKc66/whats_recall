@@ -28,13 +28,13 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
   if (!existsSync(currentMediaDir)) mkdirSync(currentMediaDir, { recursive: true });
 
   const db = new Database(currentDbPath);
-  db.exec('PRAGMA journal_mode = WAL');
-  db.exec('PRAGMA foreign_keys = ON');
+  db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA foreign_keys = ON');
 
   dbInstances.set(currentDbPath, db);
 
   // Initialize schema
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS chats (
       chat_id TEXT PRIMARY KEY,
       name TEXT,
@@ -68,7 +68,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       quoted_stanza_id TEXT,
       quoted_sender TEXT,
       quoted_preview TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -98,6 +99,14 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       key TEXT PRIMARY KEY,
       value TEXT,
       updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS message_edits (
+      message_id TEXT NOT NULL,
+      old_body TEXT,
+      new_body TEXT,
+      edited_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (message_id) REFERENCES messages (message_id) ON DELETE CASCADE
     );
 
     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
@@ -222,6 +231,20 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       `).run(messageId);
     },
 
+    updateMessageBody(messageId: string, body: string) {
+      db.query(`
+        UPDATE messages SET body = ?, updated_at = datetime('now')
+        WHERE message_id = ?
+      `).run(body, messageId);
+    },
+
+    addMessageEdit(messageId: string, oldBody: string, newBody: string) {
+      db.query(`
+        INSERT INTO message_edits (message_id, old_body, new_body)
+        VALUES (?, ?, ?)
+      `).run(messageId, oldBody, newBody);
+    },
+
     updateMessageMedia(messageIdOrOriginalId: string, path: string, sha256: string | null = null, type: string = 'image') {
       db.query(`
         UPDATE messages SET 
@@ -255,7 +278,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
           if (!reactionMap[r.message_id]) reactionMap[r.message_id] = [];
           reactionMap[r.message_id].push({ sender_id: r.sender_id, sender_name: r.sender_name, emoji: r.emoji });
         }
-        for (const m of messages) m.reactions = reactionMap[m.message_id] || [];
+        for (const m of messages) {
+          m.reactions = reactionMap[m.message_id] || [];
+        }
+
+        const edits = db.query(`SELECT * FROM message_edits WHERE message_id IN (${ids.map(() => '?').join(',')}) ORDER BY edited_at ASC`).all(...ids);
+        const editMap: Record<string, any[]> = {};
+        for (const e of edits as any[]) {
+          if (!editMap[e.message_id]) editMap[e.message_id] = [];
+          editMap[e.message_id].push({ old_body: e.old_body, new_body: e.new_body, edited_at: e.edited_at });
+        }
+        for (const m of messages) m.edits = editMap[m.message_id] || [];
       }
       return messages;
     },
