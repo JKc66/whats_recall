@@ -1,12 +1,37 @@
-import { createSignal, Show } from "solid-js";
-import { login } from "./api";
+import { createSignal, Show, onMount, onCleanup } from "solid-js";
+import { login, fetchUptime } from "./api";
 import { setAuthenticated } from "./store";
-import { LockIcon, ShieldIcon } from "./components/Icons";
+import { LockIcon, ShieldIcon, UserIcon } from "./components/Icons";
 import { notify } from "./notify";
 
 export default function Login() {
+  const [username, setUsername] = createSignal("whatsapp-monitor");
   const [password, setPassword] = createSignal("");
   const [loading, setLoading] = createSignal(false);
+  const [uptimeSeconds, setUptimeSeconds] = createSignal(0);
+
+  onMount(async () => {
+    try {
+      const data = await fetchUptime();
+      setUptimeSeconds(data.uptime);
+    } catch {
+      setUptimeSeconds(2142720); // Fallback to 24.8d
+    }
+
+    const timer = setInterval(() => {
+      setUptimeSeconds(prev => prev + 1);
+    }, 1000);
+
+    onCleanup(() => clearInterval(timer));
+  });
+
+  const formatUptime = (totalSeconds: number) => {
+    const d = Math.floor(totalSeconds / (24 * 3600));
+    const h = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${d}D ${h}H ${m}M ${s}S`;
+  };
 
   async function getFingerprint(): Promise<string> {
     try {
@@ -59,74 +84,111 @@ export default function Login() {
   }
 
   return (
-    <div class="flex items-center justify-center min-h-dvh relative overflow-hidden bg-black selection:bg-accent/30">
-      {/* Immersive background elements */}
+    <div class="flex items-center justify-center min-h-dvh bg-[#0A0A0A] text-[#EAEAEA] font-mono selection:bg-red-600/30 overflow-hidden relative">
+      {/* CRT Scanline Effect */}
       <div 
-        class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.05)_0%,transparent_50%)] z-0" 
-        aria-hidden="true" 
+        class="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
+        style="background: repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px);"
       />
-      <div 
-        class="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.02)_1px,transparent_1px)] bg-size-[40px_40px] mask-[radial-gradient(ellipse_at_center,black,transparent_80%)] z-0" 
-        aria-hidden="true" 
-      />
+      
+      {/* Technical Background Grid */}
+      <div class="fixed inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" />
 
-      <div class="relative z-10 w-full max-w-105 p-6 animate-reveal">
-        <div class="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-4xl overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] transition-all duration-500 hover:border-white/10 group">
-          <div class="p-10 pt-12 text-center text-zinc-100">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/5 border border-accent/10 mb-8 relative group-hover:scale-110 transition-transform duration-500">
-              <ShieldIcon size={28} class="text-accent" />
-              <div class="absolute -inset-2 border border-accent/20 rounded-2xl animate-logo-pulse pointer-events-none" />
-            </div>
-
-            <h1 class="text-2xl font-bold mb-2 font-outfit uppercase tracking-[0.2em]">
-              Security Node
-            </h1>
-            <p class="text-zinc-500 text-[12px] uppercase tracking-widest font-mono mb-10 opacity-60">
-              System Identifier: MONITOR-TS-01
-            </p>
-
-            <form onSubmit={handleSubmit} class="space-y-6">
-              <div class="relative group/input">
-                <div class="absolute inset-y-0 left-4 flex items-center text-zinc-500 group-focus-within/input:text-accent transition-colors">
-                  <LockIcon size={16} />
-                </div>
-                <input
-                  type="password"
-                  placeholder="AUTHORIZATION KEY"
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                  required
-                  autofocus
-                  class="w-full bg-black/40 border border-white/5 py-4 pl-12 pr-4 rounded-xl text-center font-mono text-sm tracking-[0.5em] outline-none transition-all focus:border-accent/40 focus:bg-accent/5 focus:shadow-[0_0_30px_rgba(16,185,129,0.05)]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading()}
-                class="w-full py-4 bg-zinc-100 hover:bg-white text-black font-bold text-[12px] uppercase tracking-[0.3em] rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 flex items-center justify-center min-h-13"
-              >
-                <Show when={!loading()} fallback={
-                  <div class="flex gap-1.5">
-                    <div class="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-                    <div class="w-1.5 h-1.5 rounded-full bg-black animate-pulse [animation-delay:0.2s]" />
-                    <div class="w-1.5 h-1.5 rounded-full bg-black animate-pulse [animation-delay:0.4s]" />
-                  </div>
-                }>
-                  Authorize Access
-                </Show>
-              </button>
-            </form>
+      <div class="relative z-10 w-full max-w-lg border-x border-white/10 animate-reveal">
+        {/* Top Header Bar */}
+        <div class="border-y border-white/10 px-6 py-3 flex items-center justify-between text-[10px] tracking-[0.2em] bg-white/2">
+          <div class="flex items-center gap-4">
+            <span class="text-red-600 font-bold">● LIVE</span>
+            <span class="opacity-40">COMM_NODE / WHATSAPP_MONITOR</span>
           </div>
+          <span class="opacity-40">REV / 4.0.1</span>
+        </div>
 
-          <div class="px-8 py-5 bg-white/2 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
-            <span>Status: Idle</span>
-            <span>Uptime: 24.8d</span>
+        {/* Macro Typography Title Section */}
+        <div class="px-8 py-16 border-b border-white/10">
+          <h1 class="text-6xl font-black font-sans leading-[0.8] tracking-[-0.05em] uppercase mb-4">
+            Security<br/>Access
+          </h1>
+          <div class="flex items-center gap-4 text-[10px] opacity-40 tracking-[0.3em]">
+            <span>[ AUTHREQ_SIGNAL ]</span>
+            <div class="h-px grow bg-white/10" />
+            <span>0x00FE24</span>
           </div>
         </div>
 
-        <div class="mt-8 text-center text-zinc-700 text-[10px] uppercase tracking-[0.3em] font-medium">
-          <span class="inline-block animate-pulse">Encrypted Session Secure</span>
+        <form onSubmit={handleSubmit} class="p-0">
+          {/* Input Section - Username */}
+          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors">
+            <div class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase">
+              Identity
+            </div>
+            <input
+              type="text"
+              name="username"
+              autocomplete="username"
+              placeholder="/// USER_ID"
+              value={username()}
+              onInput={(e) => setUsername(e.currentTarget.value)}
+              class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.2em] placeholder:opacity-20 uppercase font-mono"
+            />
+          </div>
+
+          {/* Input Section - Password */}
+          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors">
+            <div class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase">
+              Access_Key
+            </div>
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="/// **********"
+              value={password()}
+              onInput={(e) => setPassword(e.currentTarget.value)}
+              required
+              autofocus
+              class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.5em] placeholder:opacity-20 font-mono"
+            />
+          </div>
+
+          {/* Action Section */}
+          <div class="p-8">
+            <button
+              type="submit"
+              disabled={loading()}
+              class="w-full py-6 bg-[#EAEAEA] hover:bg-red-600 text-black hover:text-white font-black text-[14px] uppercase tracking-[0.5em] transition-all duration-200 active:scale-[0.99] disabled:opacity-20 relative overflow-hidden group/btn"
+            >
+              <Show when={!loading()} fallback={
+                <span class="animate-pulse">AUTHENTICATING...</span>
+              }>
+                Authorize_Session
+              </Show>
+              {/* Button Decoration */}
+              <div class="absolute top-0 right-0 p-1 opacity-20 group-hover/btn:opacity-100 transition-opacity">
+                <span class="text-[8px] font-mono leading-none">®</span>
+              </div>
+            </button>
+          </div>
+        </form>
+
+        {/* Footer Meta Data */}
+        <div class="border-t border-white/10 grid grid-cols-2 bg-white/2">
+          <div class="border-r border-white/10 p-5 flex flex-col gap-1">
+            <span class="text-[8px] opacity-40 tracking-widest font-bold">NODE_STATUS</span>
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 bg-red-600 shadow-[0_0_8px_rgba(230,25,25,0.6)]" />
+              <span class="text-[10px] tracking-widest font-bold">TERMINAL_ACTIVE</span>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-1">
+            <span class="text-[8px] opacity-40 tracking-widest font-bold">UPTIME_METRIC</span>
+            <span class="text-[10px] tracking-widest font-bold">{formatUptime(uptimeSeconds())}</span>
+          </div>
+        </div>
+
+        {/* Bottom Decorative Bar */}
+        <div class="border-t border-white/10 p-4 text-[8px] opacity-20 tracking-[0.5em] text-center">
+          DECRIPTION_MODE: AES_256_GCM /// SESSION_STABILITY: 99.8%
         </div>
       </div>
     </div>

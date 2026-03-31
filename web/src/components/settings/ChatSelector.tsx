@@ -27,10 +27,10 @@ export default function ChatSelector(props: ChatSelectorProps) {
   return (
     <div class="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
       <Show when={props.type === "available"}>
-        <div class="flex items-center gap-2 px-6 py-3 border-b border-white/5 bg-zinc-900/20 backdrop-blur-sm sticky top-0 z-10 overflow-x-auto no-scrollbar">
+        <div class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 border-b border-white/10 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10 overflow-x-auto no-scrollbar">
           <div class="flex bg-black/40 p-1 rounded-lg border border-white/5 shrink-0">
             <button
-              class="px-3 py-1 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.filterType === "all",
                 "text-zinc-500 hover:text-zinc-300": props.filterType !== "all",
@@ -40,7 +40,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               All
             </button>
             <button
-              class="px-3 py-1 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm":
                   props.filterType === "chats",
@@ -52,7 +52,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               Groups
             </button>
             <button
-              class="px-3 py-1 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm":
                   props.filterType === "contacts",
@@ -67,7 +67,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
 
           <div class="flex bg-black/40 p-1 rounded-lg border border-white/5 shrink-0 ml-auto">
             <button
-              class="px-3 py-1 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.sortBy === "recent",
                 "text-zinc-500 hover:text-zinc-300": props.sortBy !== "recent",
@@ -77,7 +77,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               Recent
             </button>
             <button
-              class="px-3 py-1 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.sortBy === "name",
                 "text-zinc-500 hover:text-zinc-300": props.sortBy !== "name",
@@ -89,40 +89,37 @@ export default function ChatSelector(props: ChatSelectorProps) {
           </div>
 
           <button
-            class="w-8 h-8 flex items-center justify-center text-zinc-400 hover:bg-white/5 rounded-full transition-all shrink-0"
+            class="w-7 h-7 flex items-center justify-center text-zinc-400 hover:bg-white/5 rounded-full transition-all shrink-0"
             onClick={() => props.onRefetch?.()}
             title="Force refresh list"
           >
             <RefreshIcon
-              size={16}
+              size={14}
               class={props.loading ? "animate-pulse opacity-50" : ""}
             />
           </button>
         </div>
       </Show>
 
-      <div class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+      <div class="flex-1 overflow-y-auto px-2 md:px-4 py-2 md:py-4 space-y-1">
         <Show when={props.loading}>
           <div class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
             <div class="flex gap-1.5">
-              <div class="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <div class="w-2 h-2 rounded-full bg-accent animate-pulse [animation-delay:0.2s]" />
-              <div class="w-2 h-2 rounded-full bg-accent animate-pulse [animation-delay:0.4s]" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse [animation-delay:0.2s]" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse [animation-delay:0.4s]" />
             </div>
-            <span class="text-[13px] font-medium animate-pulse">
-              Scanning WhatsApp chats...
+            <span class="text-[12px] font-medium animate-pulse uppercase tracking-wider opacity-60">
+              Scanning WhatsApp...
             </span>
           </div>
         </Show>
 
         <Show when={!props.loading && props.chats.length === 0}>
-          <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-center gap-2">
-            <div class="text-[14px] font-bold text-zinc-400">
-              No chats found
+          <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-center gap-1">
+            <div class="text-[12px] font-bold text-zinc-400 uppercase tracking-widest opacity-60">
+              No results found
             </div>
-            <p class="text-[12px] opacity-60">
-              Try adjusting your filters or search query.
-            </p>
           </div>
         </Show>
 
@@ -135,12 +132,12 @@ export default function ChatSelector(props: ChatSelectorProps) {
             const isBusy = () => props.busy === id;
 
             return (
-              <div class="group flex items-center gap-3 p-3 rounded-2xl border border-transparent hover:bg-white/3 hover:border-white/5 transition-all duration-200">
+              <div class="group flex items-center gap-2.5 p-2 md:p-3 rounded-xl border border-transparent hover:bg-white/3 hover:border-white/5 transition-all duration-200">
                 <Show
                   when={profilePicUrl(chat.profilePic || chat.profile_pic)}
                   fallback={
                     <div
-                      class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white uppercase shadow-inner"
+                      class="w-8 h-8 md:w-10 md:h-10 min-w-8 md:min-w-10 rounded-lg md:rounded-xl flex items-center justify-center text-[10px] md:text-sm font-bold text-white uppercase shadow-inner"
                       style={{ background: avatarColor(chat.name) }}
                     >
                       {getInitials(chat.name)}
@@ -148,7 +145,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                   }
                 >
                   <div
-                    class="relative w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white uppercase overflow-hidden shadow-inner"
+                    class="relative w-8 h-8 md:w-10 md:h-10 min-w-8 md:min-w-10 rounded-lg md:rounded-xl flex items-center justify-center text-[10px] md:text-sm font-bold text-white uppercase overflow-hidden shadow-inner"
                     style={{ background: avatarColor(chat.name) }}
                   >
                     <span class="relative z-1">{getInitials(chat.name)}</span>

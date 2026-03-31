@@ -92,26 +92,30 @@ export default function Sidebar() {
       class="flex flex-col bg-zinc-900/55 backdrop-blur-glass border border-white/5 rounded-xl z-10 overflow-hidden h-[calc(100dvh-24px)] transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] max-md:h-dvh max-md:border-none max-md:rounded-none"
       classList={{ "max-md:hidden": sidebarHidden() }}
     >
-      <header class="flex items-center justify-between p-[14px_16px] min-h-14 border-b border-white/5">
-        <div class="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-zinc-100 font-outfit">
-          <span
-            class="w-1.75 h-1.75 rounded-full bg-zinc-700 transition-all duration-300 shrink-0"
-            classList={{
-              "bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.5)] animate-pulse-glow":
-                stats().connected,
-            }}
-            title={
-              stats().connected
-                ? "Connected"
-                : stats().authenticated
-                  ? "Initializing…"
-                  : "Disconnected"
-            }
-          />
+      <header class="flex items-center justify-between p-4 min-h-16 border-b border-white/10 bg-white/2">
+        <div class="flex items-center gap-3 text-[14px] font-black uppercase tracking-[-0.03em] text-zinc-100 font-sans">
+          <div class="relative flex items-center justify-center">
+            <span
+              class="w-2 h-2 rounded-full bg-red-600 transition-all duration-300 shadow-[0_0_8px_rgba(230,25,25,0.4)]"
+              classList={{
+                "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse-glow":
+                  stats().connected,
+              }}
+              title={
+                stats().connected
+                  ? "Connected"
+                  : stats().authenticated
+                    ? "Initializing…"
+                    : "Disconnected"
+              }
+            />
+          </div>
           Monitor
+          <span class="text-[8px] opacity-20 ml-1 font-mono tracking-widest">v4.0.1</span>
           <Show when={stats().deletedMessages > 0}>
-            <span class="ml-2 bg-red-muted text-red-500 border border-red-500/15 p-[2px_8px] rounded-full text-[11px] font-semibold tracking-wide tabular-nums flex items-center">
-              {stats().deletedMessages} deleted
+            <div class="h-3 w-px bg-white/10 mx-2" />
+            <span class="text-red-500 text-[10px] font-bold tabular-nums">
+              {stats().deletedMessages} DELETED MESSAGES
             </span>
           </Show>
         </div>

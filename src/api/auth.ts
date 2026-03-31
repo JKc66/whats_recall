@@ -5,7 +5,12 @@ import { getDb } from '../db/database.ts';
 const db = getDb();
 const auth = new Hono();
 
+const startTime = Date.now();
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
+
+auth.get('/uptime', (c) => {
+  return c.json({ uptime: Math.floor((Date.now() - startTime) / 1000) });
+});
 
 auth.post('/login', async (c) => {
   const { password, fingerprint } = await c.req.json();

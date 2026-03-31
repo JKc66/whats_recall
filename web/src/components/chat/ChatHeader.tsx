@@ -22,21 +22,21 @@ export default function ChatHeader(props: ChatHeaderProps) {
   const displayName = () => props.chat?.name || props.chatId;
 
   return (
-    <header class="flex items-center gap-4 px-5 py-3.5 bg-zinc-900/40 backdrop-blur-md border-b border-white/5 min-h-18 z-20 shrink-0">
+    <header class="flex items-center gap-3 px-3 md:px-5 py-2.5 md:py-3.5 bg-zinc-900/40 backdrop-blur-md border-b border-white/5 min-h-16 md:min-h-18 z-20 shrink-0">
       <button
-        class="flex md:hidden items-center justify-center w-10 h-10 -ml-2 text-zinc-400 hover:bg-white/5 rounded-full transition-all active:scale-95"
+        class="flex md:hidden items-center justify-center w-9 h-9 -ml-1 text-zinc-400 hover:bg-white/5 rounded-full transition-all active:scale-95"
         onClick={() => props.onBack()}
         aria-label="Back to chat list"
       >
-        <ArrowLeftIcon size={20} />
+        <ArrowLeftIcon size={18} />
       </button>
 
-      <div class="flex items-center gap-3.5 flex-1 min-w-0">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
         <Show
           when={profilePicUrl(props.chat?.profile_pic)}
           fallback={
             <div
-              class="w-10 h-10 min-w-10 rounded-xl flex items-center justify-center text-sm font-bold text-white uppercase shadow-sm"
+              class="w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-xl flex items-center justify-center text-[13px] md:text-sm font-bold text-white uppercase shadow-sm"
               style={{ background: avatarColor(displayName()) }}
             >
               {getInitials(displayName())}
@@ -44,7 +44,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           }
         >
           <div
-            class="relative w-10 h-10 min-w-10 rounded-xl flex items-center justify-center text-sm font-bold text-white uppercase overflow-hidden shadow-sm"
+            class="relative w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-xl flex items-center justify-center text-[13px] md:text-sm font-bold text-white uppercase overflow-hidden shadow-sm"
             style={{ background: avatarColor(displayName()) }}
           >
             <span class="relative z-1">{getInitials(displayName())}</span>
@@ -62,10 +62,10 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </Show>
 
         <div class="flex-1 min-w-0">
-          <h2 class="text-[15px] font-semibold text-zinc-100 truncate tracking-tight">
+          <h2 class="text-[14px] md:text-[15px] font-semibold text-zinc-100 truncate tracking-tight">
             {displayName()}
           </h2>
-          <div class="text-[11px] text-zinc-500 font-medium font-mono tabular-nums leading-tight flex items-center gap-1.5">
+          <div class="text-[10px] md:text-[11px] text-zinc-500 font-medium font-mono tabular-nums leading-tight flex items-center gap-1.5">
             <Show
               when={props.chat?.is_group}
               fallback={
@@ -86,7 +86,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 md:gap-4 ml-auto">
         <div
           class="flex bg-black/30 p-1 rounded-lg border border-white/5"
           role="tablist"
@@ -94,7 +94,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           <button
             role="tab"
             aria-selected={props.viewMode === "messages"}
-            class="px-4 py-1.5 text-[12px] font-semibold rounded-md transition-all"
+            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-md transition-all whitespace-nowrap"
             classList={{
               "bg-zinc-800 text-white shadow-sm": props.viewMode === "messages",
               "text-text-3 hover:text-zinc-200": props.viewMode !== "messages",
@@ -106,7 +106,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           <button
             role="tab"
             aria-selected={props.viewMode === "media"}
-            class="px-4 py-1.5 text-[12px] font-semibold rounded-md transition-all"
+            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-md transition-all whitespace-nowrap"
             classList={{
               "bg-zinc-800 text-white shadow-sm": props.viewMode === "media",
               "text-text-3 hover:text-zinc-200": props.viewMode !== "media",
@@ -118,7 +118,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </div>
 
         <button
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border border-transparent"
+          class="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto md:px-3 md:py-1.5 rounded-lg transition-all border border-transparent"
           classList={{
             "bg-red-500/15 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]":
               props.showOnlyDeleted,

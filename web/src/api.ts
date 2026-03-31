@@ -70,6 +70,10 @@ export async function login(
   });
 }
 
+export async function fetchUptime(): Promise<{ uptime: number }> {
+  return request<{ uptime: number }>(`${BASE}/api/auth/uptime`);
+}
+
 export async function verifyAuth(): Promise<boolean> {
   try {
     const data = await request<{ authenticated: boolean }>(

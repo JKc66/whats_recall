@@ -222,39 +222,39 @@ export default function Settings() {
         onSearchChange={setSearch}
       />
 
-      <div class="flex gap-2 p-6 pb-2 overflow-x-auto no-scrollbar">
+      <div class="flex gap-0 p-3 md:p-6 pb-0 overflow-x-auto no-scrollbar border-b border-white/10 bg-white/2">
         <button
-          class="px-6 py-2 rounded-xl text-[13px] font-bold transition-all shrink-0 uppercase tracking-wider"
+          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
           classList={{
-            "bg-accent text-white shadow-lg shadow-accent/20":
-              tab() === "config",
-            "bg-white/5 text-zinc-500 hover:bg-white/10": tab() !== "config",
+            "border-red-600 text-red-600 bg-red-600/5": tab() === "config",
+            "border-transparent text-zinc-500 hover:text-zinc-300":
+              tab() !== "config",
           }}
           onClick={() => setTab("config")}
         >
-          Configuration
+          CONFIGURATION
         </button>
         <button
-          class="px-6 py-2 rounded-xl text-[13px] font-bold transition-all shrink-0 uppercase tracking-wider"
+          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
           classList={{
-            "bg-accent text-white shadow-lg shadow-accent/20":
-              tab() === "monitored",
-            "bg-white/5 text-zinc-500 hover:bg-white/10": tab() !== "monitored",
+            "border-red-600 text-red-600 bg-red-600/5": tab() === "monitored",
+            "border-transparent text-zinc-500 hover:text-zinc-300":
+              tab() !== "monitored",
           }}
           onClick={() => setTab("monitored")}
         >
-          Monitored ({(monitored() || []).length})
+          MONITORED [{(monitored() || []).length}]
         </button>
         <button
-          class="px-6 py-2 rounded-xl text-[13px] font-bold transition-all shrink-0 uppercase tracking-wider"
+          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
           classList={{
-            "bg-accent text-white shadow-lg shadow-accent/20":
-              tab() === "available",
-            "bg-white/5 text-zinc-500 hover:bg-white/10": tab() !== "available",
+            "border-red-600 text-red-600 bg-red-600/5": tab() === "available",
+            "border-transparent text-zinc-500 hover:text-zinc-300":
+              tab() !== "available",
           }}
           onClick={() => setTab("available")}
         >
-          Available ({(available() || []).length})
+          AVAILABLE [{(available() || []).length}]
         </button>
       </div>
 

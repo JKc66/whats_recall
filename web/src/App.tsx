@@ -242,18 +242,19 @@ export default function App() {
         </Show>
       </Show>
       <Toaster
-        position="top-right"
+        position={window.innerWidth <= 768 ? "bottom-center" : "top-right"}
         gutter={8}
-        containerStyle={{ "z-index": "2100" }}
+        containerStyle={{ "z-index": "2100", "font-family": "var(--font-mono)" }}
         toastOptions={{
           style: {
-            background: "var(--color-bg-elevated)",
-            color: "var(--color-zinc-100)",
-            border: "1px solid var(--color-border-strong)",
-            "border-radius": "var(--radius-lg)",
-            "font-family": "inherit",
-            "font-size": "13px",
-            "box-shadow": "0 20px 60px -15px rgba(0, 0, 0, 0.8)",
+            background: "#0A0A0A",
+            color: "#EAEAEA",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            "border-radius": "0px",
+            "font-size": "11px",
+            "text-transform": "uppercase",
+            "letter-spacing": "0.1em",
+            "box-shadow": "0 20px 60px -15px rgba(0, 0, 0, 0.9)",
           },
           duration: 4000,
         }}
