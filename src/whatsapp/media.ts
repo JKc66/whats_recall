@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getDb, MEDIA_DIR } from '../db/database.js';
 import { log } from '../logger.js';
-import { createHash } from 'crypto';
+
 
 const db = getDb();
 let hashWorker: Worker | null = null;
@@ -13,7 +13,7 @@ function getHashWorker() {
   if (!hashWorker) {
     hashWorker = new Worker(new URL("../workers/media-worker.ts", import.meta.url).href);
     hashWorker.onmessage = (event) => {
-      const { id, hash, error } = event.data;
+      const { id, hash, error: _error } = event.data;
       const resolve = hashPending.get(id);
       if (resolve) {
         resolve(hash || null);

@@ -182,3 +182,15 @@ export const LockIcon = (props: IconProps) => (
     <path d="M208 80h-32V56a48 48 0 0 0-96 0v24H48a16 16 0 0 0-16 16v112a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16V96a16 16 0 0 0-16-16M96 56a32 32 0 0 1 64 0v24H96Zm112 152H48V96h160z" />
   </IconBase>
 );
+
+export const ShieldIcon = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M208 40H48a24 24 0 0 0-24 24v80c0 79.4 64.6 144 144 144s144-64.6 144-144V64a24 24 0 0 0-24-24m8 104c0 70.6-57.4 128-128 128S40 214.6 40 144V64a8 8 0 0 1 8-8h160a8 8 0 0 1 8 8Z" />
+  </IconBase>
+);
+
+export const ArrowDownIcon = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M205.66 149.66a8 8 0 0 1-11.32 11.32L136 102.63V216a8 8 0 0 1-16 0V102.63l-58.34 58.35a8 8 0 0 1-11.32-11.32l72-72a8 8 0 0 1 11.32 0Z" transform="rotate(180 128 128)"/>
+  </IconBase>
+);

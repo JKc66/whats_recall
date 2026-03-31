@@ -125,7 +125,7 @@ export class WhatsAppSync {
 
     const contact = this.contacts.get(jid);
     if (contact?.lid) {
-      let lid = contact.lid.includes('@lid') ? contact.lid : (contact.lid + '@lid');
+      const lid = contact.lid.includes('@lid') ? contact.lid : (contact.lid + '@lid');
       this.pnToLid.set(jid, lid);
       this.lidToPn.set(lid, jid);
       return lid;

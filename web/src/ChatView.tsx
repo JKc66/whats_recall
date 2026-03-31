@@ -4,6 +4,7 @@ import {
   createEffect,
   Show,
   onCleanup,
+  onMount,
 } from "solid-js";
 import {
   currentChatId,
@@ -14,7 +15,7 @@ import {
   setShowOnlyDeleted,
   setView,
 } from "./store";
-import { MessageSquareIcon, SettingsIcon, XIcon } from "./components/Icons";
+import { MessageSquareIcon, SettingsIcon, XIcon, ArrowDownIcon } from "./components/Icons";
 import ChatHeader from "./components/chat/ChatHeader";
 import MessageList from "./components/chat/MessageList";
 import MediaGallery from "./components/chat/MediaGallery";
@@ -24,9 +25,35 @@ export default function ChatView() {
   const [viewMode, setViewMode] = createSignal<"messages" | "media">(
     "messages",
   );
+  const [showScrollBottom, setShowScrollBottom] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
 
   const chat = () => chats().find((c) => c.chat_id === currentChatId());
+
+  // Auto-scroll on chat change or message updates
+  createEffect(() => {
+    if (currentChatId() && viewMode() === "messages") {
+      // Small delay to ensure render is complete
+      setTimeout(() => scrollToBottom("auto"), 50);
+    }
+  });
+
+  // Track scroll position to show/hide "Scroll to Bottom" button
+  function handleScroll() {
+    if (!containerRef) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 150;
+    setShowScrollBottom(!isAtBottom);
+  }
+
+  function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+    if (containerRef) {
+      containerRef.scrollTo({
+        top: containerRef.scrollHeight,
+        behavior,
+      });
+    }
+  }
 
   const displayMessages = createMemo(() => {
     const msgs = messages();
@@ -40,24 +67,6 @@ export default function ChatView() {
     ),
   );
 
-  createEffect(() => {
-    if (currentChatId()) {
-      setViewMode("messages");
-      requestAnimationFrame(() => scrollToBottom());
-    }
-  });
-
-  createEffect(() => {
-    messages();
-    if (viewMode() === "messages") {
-      requestAnimationFrame(() => scrollToBottom());
-    }
-  });
-
-  function scrollToBottom() {
-    if (containerRef) containerRef.scrollTop = containerRef.scrollHeight;
-  }
-
   function closeLightbox() {
     setLightboxSrc(null);
   }
@@ -69,9 +78,12 @@ export default function ChatView() {
     }
   }
 
-  createEffect(() => {
+  onMount(() => {
     document.addEventListener("keydown", handleKeyDown);
-    onCleanup(() => document.removeEventListener("keydown", handleKeyDown));
+  });
+
+  onCleanup(() => {
+    document.removeEventListener("keydown", handleKeyDown);
   });
 
   function back() {
@@ -139,6 +151,7 @@ export default function ChatView() {
         <div
           class="flex-1 flex flex-col overflow-hidden relative"
           ref={(el) => (containerRef = el)}
+          onScroll={handleScroll}
         >
           <Show when={viewMode() === "messages"}>
             <Show
@@ -156,6 +169,17 @@ export default function ChatView() {
                 onQuoteClick={scrollToMessage}
                 findMessage={findMessageByStanzaId}
               />
+            </Show>
+
+            {/* Scroll to Bottom Button */}
+            <Show when={showScrollBottom() && displayMessages().length > 0}>
+              <button
+                class="absolute bottom-6 right-6 w-12 h-12 bg-accent text-bg rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all animate-entrance z-20"
+                onClick={() => scrollToBottom()}
+                aria-label="Scroll to bottom"
+              >
+                <ArrowDownIcon size={20} stroke-width={3} class="rotate-180" />
+              </button>
             </Show>
           </Show>
 

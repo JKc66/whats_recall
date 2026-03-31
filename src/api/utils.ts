@@ -1,4 +1,4 @@
-import { resolve, join, basename } from 'path';
+import { resolve } from 'path';
 
 export function safePath(baseDir: string, userPath: string): string | null {
   if (!userPath || userPath === '.' || userPath === '..') return null;
@@ -13,7 +13,7 @@ export function safePath(baseDir: string, userPath: string): string | null {
     const baseWithSlash = base.endsWith('/') ? base : base + '/';
     if (!resolved.startsWith(baseWithSlash) && resolved !== base) return null;
     return resolved;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

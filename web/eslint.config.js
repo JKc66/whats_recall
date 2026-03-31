@@ -1,47 +1,37 @@
-import js from "@eslint/js";
-import solid from "eslint-plugin-solid";
+import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
+import solid from "eslint-plugin-solid";
 import globals from "globals";
 
 export default tseslint.config(
-  {
-    // Global ignores must be in their own object with no other properties
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/.bundle/**",
-      "**/public/assets/**",
-      "**/*.html"
-    ]
-  },
-  js.configs.recommended,
+  eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],
+    plugins: {
+      solid,
+    },
     languageOptions: {
       globals: {
         ...globals.browser,
       },
-      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
-    },
-    plugins: {
-      solid,
     },
     rules: {
       ...solid.configs.recommended.rules,
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", { 
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }],
+      "no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "off",
-      "solid/no-innerhtml": "warn",
-      "solid/self-closing-comp": "warn"
+      "solid/reactivity": "warn"
     },
   },
+  {
+    ignores: ["dist/**", "node_modules/**"],
+  }
 );

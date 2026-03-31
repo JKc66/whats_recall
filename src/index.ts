@@ -12,7 +12,7 @@ const db = getDb();
 log('BOOT', 'Database initialized');
 
 // 2. Setup Client & Server with Broadcast Loop
-let broadcastRef = (event: BroadcastEvent, data: any) => { };
+let broadcastRef = (_event: BroadcastEvent, _data: any) => { };
 
 const client = new WhatsAppConnection((event, data) => broadcastRef(event, data));
 const { start } = createHonoServer(client);

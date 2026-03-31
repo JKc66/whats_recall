@@ -379,7 +379,7 @@ export class WhatsAppConnection {
           baseId = syncService.lidToPn.get(id) || id;
         }
 
-        let existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
+        const existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
 
         // Retain meaningful names
         if (c.name && (!existing.name || existing.name === existing.id.split('@')[0])) {
@@ -410,8 +410,8 @@ export class WhatsAppConnection {
         }
 
         // Timestamp merge
-        let cTs = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
-        let eTs = existing.conversationTimestamp?.low || existing.conversationTimestamp || 0;
+        const cTs = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
+        const eTs = existing.conversationTimestamp?.low || existing.conversationTimestamp || 0;
         if (cTs > eTs) existing.conversationTimestamp = cTs;
 
         dedupedMap.set(baseId, existing);

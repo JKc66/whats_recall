@@ -58,7 +58,7 @@ export class MessageProcessor {
     const origId = revokedKey?.id;
 
     let messageId = origId || revokeId;
-    let cached = db.getMessage(messageId) || db.getMessage(revokeId) || (origId ? db.getMessageByOriginalId(origId) : null);
+    const cached = db.getMessage(messageId) || db.getMessage(revokeId) || (origId ? db.getMessageByOriginalId(origId) : null);
     if (cached) messageId = cached.message_id;
 
     db.markDeleted(messageId);
@@ -266,11 +266,11 @@ export class MessageProcessor {
       const quotedStr = JSON.stringify(contextInfo.quotedMessage);
       const quotedIsViewOnce = quotedStr.includes('viewOnce') || quotedStr.includes('viewOnceMessage');
 
-      let qMsg = extractMessageContent(contextInfo.quotedMessage);
+      const qMsg = extractMessageContent(contextInfo.quotedMessage);
       const qMsgType = getContentType(qMsg);
       const qContent = qMsg ? (qMsg as any)[qMsgType!] : null;
 
-      let preview = '';
+      let preview: string;
       if (qMsgType === 'conversation') preview = (qMsg as any).conversation;
       else if (qMsgType === 'extendedTextMessage') preview = qContent?.text;
       else if (qContent?.caption) preview = qContent.caption;
@@ -301,8 +301,6 @@ export class MessageProcessor {
     // Download and store media attachments (images, videos, documents, stickers)
     let mediaPath = null;
     let mediaSha256: string | null = null;
-    let mediaType: string | null = null;
-    let mediaFilename: string | null = null;
     const hasMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(messageType);
     
     if (hasMedia) {

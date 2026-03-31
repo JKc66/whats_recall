@@ -8,7 +8,7 @@ import monitored from './monitored.ts';
 import settings from './settings.ts';
 import whatsappRouter from './whatsapp.ts';
 import { join, basename } from 'path';
-import { MEDIA_DIR, DATA_DIR, getDb } from '../db/database.ts';
+import { MEDIA_DIR, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
 import { safePath } from './utils.ts';
@@ -55,7 +55,7 @@ export function createHonoServer(client: WhatsAppConnection) {
 
     const file = Bun.file(filepath);
     if (!(await file.exists())) return c.notFound();
-    return c.body(await file.arrayBuffer(), 200, { 
+    return c.body(await file.arrayBuffer(), 200, {
       'Content-Type': file.type,
       'Cache-Control': 'public, max-age=86400'
     });
@@ -89,16 +89,15 @@ export function createHonoServer(client: WhatsAppConnection) {
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
     for (const ws of wsClients) {
-      try { 
-        (ws as any).send(payload); 
+      try {
+        (ws as any).send(payload);
       } catch { /* handled by close */ }
     }
   };
 
   const start = () => {
     const port = parseInt(process.env.WEB_PORT || '3000', 10);
-    
-    // @ts-ignore
+
     const bunServer = Bun.serve({
       port,
       fetch: (req: Request, server: any) => {
@@ -117,7 +116,7 @@ export function createHonoServer(client: WhatsAppConnection) {
           wsClients.delete(ws);
           log('WS', `Client disconnected (total: ${wsClients.size})`);
         },
-        message: () => {}
+        message: () => { }
       }
     });
 
