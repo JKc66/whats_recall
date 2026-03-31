@@ -362,7 +362,9 @@ export default function Settings() {
           <Show when={(monitored() || []).length === 0 && !monitored.loading}>
             <div class="list-empty">
               <p>No chats monitored yet.</p>
-              <p>Switch to <strong>Available</strong> to add chats.</p>
+              <button class="btn-outline" onClick={() => setTab('available')}>
+                Find chats to monitor
+              </button>
             </div>
           </Show>
           <Show when={monitored.loading}>
@@ -400,7 +402,9 @@ export default function Settings() {
         <Show when={!stats().connected}>
           <div class="list-empty">
             <p>WhatsApp is not connected.</p>
-            <p>Go to the <strong>Configuration</strong> tab to pair your device.</p>
+            <button class="btn-outline" onClick={() => setTab('config')}>
+              Go to Configuration
+            </button>
           </div>
         </Show>
         <Show when={stats().connected}>
