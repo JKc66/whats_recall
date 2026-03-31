@@ -339,18 +339,6 @@ export default function Settings() {
               </div>
             </div>
 
-            <div class="config-item">
-              <div class="toggle-row no-pad">
-                <div>
-                  <div class="toggle-label" id="deleted-label">Show only deleted messages</div>
-                  <div class="toggle-sublabel" id="deleted-desc">Only list messages that have been explicitly deleted in Chat</div>
-                </div>
-                <label class="toggle">
-                  <input type="checkbox" checked={showOnlyDeleted()} onChange={(e) => setShowOnlyDeleted(e.currentTarget.checked)} aria-labelledby="deleted-label" aria-describedby="deleted-desc" />
-                  <span class="toggle-track" />
-                </label>
-              </div>
-            </div>
 
 
           </div>

@@ -1,5 +1,5 @@
 import { createSignal, createMemo, createEffect, Show, For, onCleanup } from 'solid-js';
-import { currentChatId, setCurrentChatId, messages, chats, showOnlyDeleted, setView } from './store';
+import { currentChatId, setCurrentChatId, messages, chats, showOnlyDeleted, setShowOnlyDeleted, setView } from './store';
 import { avatarColor, getInitials, formatTime, mediaIcon, extractPhone, profilePicUrl } from './utils';
 import type { Message, Reaction } from './types';
 import { 
@@ -185,21 +185,42 @@ export default function ChatView() {
                 <img class="avatar-img" src={profilePicUrl(chat()?.profile_pic)!} alt="" width="34" height="34" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             </Show>
-            <div style={{ flex: 1 }}>
+            <div style="flex: 1; min-width: 0;">
               <h2>{chat()?.name || currentChatId()}</h2>
               <span class="subtitle">
-                {chat()?.is_group ? 'Group' : 'Private'} · {chat()?.total_deleted_count ?? 0} deleted
+                <Show when={chat()?.is_group} fallback={
+                  <>
+                    <span class="desktop-only text-muted">Private · </span>
+                    <span>{currentChatId() ? extractPhone(currentChatId()!) : ''}</span>
+                  </>
+                }>
+                  Group · {chat()?.total_deleted_count ?? 0} deleted
+                </Show>
               </span>
             </div>
-            
-            <div class="chat-mode-tabs" role="tablist">
-              <button class="chat-mode-tab" role="tab" aria-selected={viewMode() === 'messages'} classList={{ active: viewMode() === 'messages' }} onClick={() => setViewMode('messages')}>
-                Messages
-              </button>
-              <button class="chat-mode-tab" role="tab" aria-selected={viewMode() === 'media'} classList={{ active: viewMode() === 'media' }} onClick={() => setViewMode('media')}>
-                Media Gallery
-              </button>
-            </div>
+          </div>
+
+          <div class="header-actions">
+            <button
+              class="ghost-toggle"
+              classList={{ active: showOnlyDeleted() }}
+              onClick={() => setShowOnlyDeleted(!showOnlyDeleted())}
+              title={showOnlyDeleted() ? 'Showing ONLY deleted messages' : 'Showing all messages'}
+            >
+              <div class="ghost-toggle-inner">
+                <TrashIcon size={16} stroke-width={showOnlyDeleted() ? 2.5 : 2} />
+                <span class="ghost-label">{showOnlyDeleted() ? 'Deleted' : 'All'}</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="chat-mode-tabs" role="tablist">
+            <button class="chat-mode-tab" role="tab" aria-selected={viewMode() === 'messages'} classList={{ active: viewMode() === 'messages' }} onClick={() => setViewMode('messages')}>
+              Messages
+            </button>
+            <button class="chat-mode-tab" role="tab" aria-selected={viewMode() === 'media'} classList={{ active: viewMode() === 'media' }} onClick={() => setViewMode('media')}>
+              Media Gallery
+            </button>
           </div>
         </header>
 
