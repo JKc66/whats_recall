@@ -8,9 +8,9 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 interface MessageBubbleProps {
   msg: Message;
   isGroup: boolean;
-  onImageClick: (src: string) => void;
-  onQuoteClick: (messageId: string) => void;
-  findMessage: (stanzaId: string) => Message | undefined;
+  onImageClick: (_src: string) => void;
+  onQuoteClick: (_messageId: string) => void;
+  findMessage: (_stanzaId: string) => Message | undefined;
 }
 
 function groupReactions(reactions: Reaction[]) {
@@ -294,9 +294,9 @@ export function MessageBubble(props: MessageBubbleProps) {
 export function ImageGroup(props: {
   messages: Message[];
   isGroup: boolean;
-  onImageClick: (src: string) => void;
-  onQuoteClick: (messageId: string) => void;
-  findMessage: (stanzaId: string) => Message | undefined;
+  onImageClick: (_src: string) => void;
+  onQuoteClick: (_messageId: string) => void;
+  findMessage: (_stanzaId: string) => Message | undefined;
 }) {
   const first = () => props.messages[0];
   const isMe = () => !!first().is_from_me;

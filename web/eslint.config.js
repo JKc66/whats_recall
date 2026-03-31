@@ -1,9 +1,18 @@
+import { defineConfig } from "eslint/config";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import solid from "eslint-plugin-solid";
 import globals from "globals";
 
-export default tseslint.config(
+export default defineConfig([
+  {
+    ignores: ["dist/**", "node_modules/**", "**/.*"],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "warn",
+    },
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -25,13 +34,19 @@ export default tseslint.config(
     },
     rules: {
       ...solid.configs.recommended.rules,
-      "no-unused-vars": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       "@typescript-eslint/no-explicit-any": "off",
       "solid/reactivity": "warn"
     },
   },
-  {
-    ignores: ["dist/**", "node_modules/**"],
-  }
-);
+]);
+
+

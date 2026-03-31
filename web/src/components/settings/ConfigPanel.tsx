@@ -9,7 +9,7 @@ interface ConfigPanelProps {
   showResetNotice: boolean;
   isWaitingForPairing: boolean;
   stats: any;
-  onConfigUpdate: (key: string, value: string) => void;
+  onConfigUpdate: (_key: string, _value: string) => void;
   onReset: () => void;
   onToggleNotify: () => void;
 }

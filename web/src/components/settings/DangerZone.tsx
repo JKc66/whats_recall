@@ -7,7 +7,7 @@ interface DangerZoneProps {
   clearPassword: string;
   onClearData: () => void;
   onConfirmClearData: () => void;
-  onSetClearPassword: (val: string) => void;
+  onSetClearPassword: ( _val: string) => void;
   onCancelClear: () => void;
 }
 

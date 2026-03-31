@@ -12,9 +12,9 @@ interface ChatHeaderProps {
   chat: Chat | undefined;
   chatId: string;
   showOnlyDeleted: boolean;
-  onShowOnlyDeletedChange: (val: boolean) => void;
+  onShowOnlyDeletedChange: (_val: boolean) => void;
   viewMode: "messages" | "media";
-  onViewModeChange: (mode: "messages" | "media") => void;
+  onViewModeChange: (_mode: "messages" | "media") => void;
   onBack: () => void;
 }
 

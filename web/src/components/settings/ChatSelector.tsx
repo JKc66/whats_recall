@@ -14,13 +14,13 @@ interface ChatSelectorProps {
   monitoredIds?: Set<string>;
   loading: boolean;
   busy: string | null;
-  onAdd?: (chat: WhatsAppChat) => void;
-  onRemove: (chatId: string) => void;
+  onAdd?: (_chat: WhatsAppChat) => void;
+  onRemove: (_chatId: string) => void;
   onRefetch?: () => void;
   filterType: "all" | "chats" | "contacts";
-  setFilterType: (val: "all" | "chats" | "contacts") => void;
+  setFilterType: (_val: "all" | "chats" | "contacts") => void;
   sortBy: "recent" | "name";
-  setSortBy: (val: "recent" | "name") => void;
+  setSortBy: (_val: "recent" | "name") => void;
 }
 
 export default function ChatSelector(props: ChatSelectorProps) {

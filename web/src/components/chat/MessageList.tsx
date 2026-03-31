@@ -5,9 +5,9 @@ import { MessageBubble, ImageGroup } from "./MessageBubble";
 interface MessageListProps {
   messages: Message[];
   isGroup: boolean;
-  onImageClick: (src: string) => void;
-  onQuoteClick: (messageId: string) => void;
-  findMessage: (stanzaId: string) => Message | undefined;
+  onImageClick: (_src: string) => void;
+  onQuoteClick: (_messageId: string) => void;
+  findMessage: (_stanzaId: string) => Message | undefined;
 }
 
 export default function MessageList(props: MessageListProps) {

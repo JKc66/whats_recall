@@ -194,7 +194,7 @@ export async function resetWhatsApp(requestPairing = true): Promise<void> {
   });
 }
 
-export function createWs(onEvent: (event: string, data: any) => void): {
+export function createWs(onEvent: (_event: string, _data: any) => void): {
   close: () => void;
 } {
   let stopped = false;

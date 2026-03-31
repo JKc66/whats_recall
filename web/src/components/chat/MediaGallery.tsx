@@ -7,8 +7,8 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface MediaGalleryProps {
   messages: Message[];
-  onImageClick: (src: string) => void;
-  onJumpToMessage: (id: string) => void;
+  onImageClick: (_src: string) => void;
+  onJumpToMessage: (_id: string) => void;
 }
 
 export default function MediaGallery(props: MediaGalleryProps) {

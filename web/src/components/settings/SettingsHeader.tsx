@@ -3,7 +3,7 @@ import { ArrowLeftIcon } from "../Icons";
 interface SettingsHeaderProps {
   onBack: () => void;
   search: string;
-  onSearchChange: (val: string) => void;
+  onSearchChange: ( _val: string) => void;
 }
 
 export default function SettingsHeader(props: SettingsHeaderProps) {

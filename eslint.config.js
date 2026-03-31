@@ -1,8 +1,9 @@
+import { defineConfig } from "eslint/config";
 import globals from "globals";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+export default defineConfig([
   {
     ignores: [
       "**/web/**",
@@ -14,7 +15,13 @@ export default tseslint.config(
       "**/archive/**",
       "*.test.ts",
       "*.bench.ts",
+      "**/.*",
     ],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "warn",
+    },
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -49,6 +56,7 @@ export default tseslint.config(
         ...globals.node,
       },
     },
-  }
-);
+  },
+]);
+
 

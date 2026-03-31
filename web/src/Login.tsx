@@ -1,7 +1,7 @@
 import { createSignal, Show } from "solid-js";
 import { login } from "./api";
 import { setAuthenticated } from "./store";
-import { MonitorIcon, LockIcon, ShieldIcon } from "./components/Icons";
+import { LockIcon, ShieldIcon } from "./components/Icons";
 import { notify } from "./notify";
 
 export default function Login() {
