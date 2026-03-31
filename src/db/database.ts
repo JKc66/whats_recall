@@ -5,17 +5,17 @@ import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', '..', 'data');
+const DATA_DIR = join(__dirname, '..', '..', 'data');
 const MEDIA_DIR_DEFAULT = resolve(join(DATA_DIR, 'media'));
 
-export const MEDIA_DIR = process.env.MEDIA_DIR || MEDIA_DIR_DEFAULT;
+export const MEDIA_DIR = MEDIA_DIR_DEFAULT;
 export { DATA_DIR };
 
 const dbInstances: Map<string, any> = new Map();
 
 export function getDb(testDbPath?: string, testMediaDir?: string) {
-  const currentDbPath = testDbPath || process.env.DB_PATH || join(DATA_DIR, 'messages.db');
-  const currentMediaDir = testMediaDir || process.env.MEDIA_DIR || MEDIA_DIR_DEFAULT;
+  const currentDbPath = testDbPath || join(DATA_DIR, 'messages.db');
+  const currentMediaDir = testMediaDir || MEDIA_DIR_DEFAULT;
 
   if (dbInstances.has(currentDbPath)) return dbInstances.get(currentDbPath);
 

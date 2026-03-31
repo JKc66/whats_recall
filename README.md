@@ -85,8 +85,7 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 | `AUTH_PASSWORD` | `—` | **Required.** Password for dashboard access. |
 | `NODE_ENV` | `development` | Set to `production` for secure/https-only cookies. |
 | `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Proxy. |
-| `DB_PATH` | `./data/...` | Optional custom SQLite database path. |
-| `MEDIA_DIR` | `./data/media`| Optional custom directory for media storage. |
+
 
 ---
 
