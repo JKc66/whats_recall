@@ -8,7 +8,7 @@ export function safePath(baseDir: string, userPath: string): string | null {
     if (decodedPath.includes('\0')) return null;
     const base = resolve(baseDir);
     const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
-    
+
     // Ensure resolved path is strictly within base
     const baseWithSlash = base.endsWith('/') ? base : base + '/';
     if (!resolved.startsWith(baseWithSlash) && resolved !== base) return null;
@@ -40,7 +40,7 @@ export function getClientIp(c: any): string {
   const forwarded = c.req.header('x-forwarded-for');
   if (forwarded) {
     const ips = forwarded.split(',').map((ip: string) => ip.trim().replace(/^::ffff:/, ''));
-    
+
     // Traverse from right to left, skipping trusted proxies
     for (let i = ips.length - 1; i >= 0; i--) {
       if (!trustedProxies.includes(ips[i])) {
