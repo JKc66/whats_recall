@@ -8,6 +8,7 @@ interface MessageListProps {
   onImageClick: (_src: string) => void;
   onQuoteClick: (_messageId: string) => void;
   findMessage: (_stanzaId: string) => Message | undefined;
+  highlightQuery?: string;
 }
 
 export default function MessageList(props: MessageListProps) {
@@ -91,7 +92,7 @@ export default function MessageList(props: MessageListProps) {
   };
 
   return (
-    <div class="flex-1 flex flex-col gap-1.5 px-6 py-6 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30">
+    <div class="flex-1 flex flex-col gap-1.5 px-6 py-6 pb-24">
       <For each={grouped()}>
         {(group) => (
           <>
@@ -111,6 +112,7 @@ export default function MessageList(props: MessageListProps) {
                   onImageClick={props.onImageClick}
                   onQuoteClick={props.onQuoteClick}
                   findMessage={props.findMessage}
+                  highlightQuery={props.highlightQuery}
                 />
               }
             >
@@ -120,6 +122,7 @@ export default function MessageList(props: MessageListProps) {
                 onImageClick={props.onImageClick}
                 onQuoteClick={props.onQuoteClick}
                 findMessage={props.findMessage}
+                highlightQuery={props.highlightQuery}
               />
             </Show>
           </>

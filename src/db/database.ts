@@ -13,6 +13,10 @@ export { DATA_DIR };
 
 const dbInstances: Map<string, any> = new Map();
 
+function escapeLike(query: string): string {
+  return query.replace(/[%_]/g, '\\$&');
+}
+
 export function getDb(testDbPath?: string, testMediaDir?: string) {
   const currentDbPath = testDbPath || join(DATA_DIR, 'messages.db');
   const currentMediaDir = testMediaDir || MEDIA_DIR_DEFAULT;
@@ -139,8 +143,9 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       `).get(chatId, chatId) as WhatsAppChat | null;
     },
 
-    getChats(): WhatsAppChat[] {
-      return db.query(`
+    getChats(search?: string): WhatsAppChat[] {
+      const query = search ? `%${search}%` : null;
+      const sql = `
         SELECT c.*,
           (
             SELECT COUNT(*) FROM messages m 
@@ -165,8 +170,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
           FROM monitored_chats mc
           WHERE mc.chat_id NOT IN (SELECT chat_id FROM chats)
         ) c
+        ${query ? `WHERE c.chat_id IN (
+          SELECT chat_id FROM chats WHERE name LIKE ?
+          UNION
+          SELECT chat_id FROM monitored_chats WHERE name LIKE ?
+          UNION
+          SELECT chat_id FROM messages WHERE body LIKE ?
+        )` : ''}
         ORDER BY c.last_message_at DESC
-      `).all() as WhatsAppChat[];
+      `;
+      
+      return (query ? db.query(sql).all(query, query, query) : db.query(sql).all()) as WhatsAppChat[];
     },
 
     // Message Operations
@@ -204,6 +218,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         UPDATE messages SET is_deleted = 1, deleted_at = datetime('now')
         WHERE message_id = ?
       `).run(messageId);
+    },
+
+    updateMessageMedia(messageIdOrOriginalId: string, path: string, sha256: string | null = null, type: string = 'image') {
+      db.query(`
+        UPDATE messages SET 
+          media_path = ?, 
+          media_sha256 = ?, 
+          has_media = 1,
+          type = ?
+        WHERE (message_id = ? OR original_id = ?) AND media_path IS NULL
+      `).run(path, sha256, type, messageIdOrOriginalId, messageIdOrOriginalId);
     },
 
     getMessage(messageId: string): WhatsAppMessage | null {
@@ -249,10 +274,10 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         SELECT m.*, c.name as chat_name, c.is_group
         FROM messages m
         JOIN chats c ON m.chat_id = c.chat_id
-        WHERE m.body LIKE ?
+        WHERE m.body LIKE ? ESCAPE '\\'
         ORDER BY m.timestamp DESC
         LIMIT ?
-      `).all(`%${query}%`, limit) as WhatsAppMessage[];
+      `).all(`%${escapeLike(query)}%`, limit) as WhatsAppMessage[];
     },
 
     getMediaBySha256(sha256: string) {

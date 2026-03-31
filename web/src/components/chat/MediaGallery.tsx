@@ -17,7 +17,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
   }
 
   return (
-    <div class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+    <div class="flex-1 p-6 pb-24">
       <Show
         when={props.messages.length > 0}
         fallback={

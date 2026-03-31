@@ -274,10 +274,20 @@ export class MessageProcessor {
       if (qMsgType === 'conversation') preview = (qMsg as any).conversation;
       else if (qMsgType === 'extendedTextMessage') preview = qContent?.text;
       else if (qContent?.caption) preview = qContent.caption;
-      else preview = '[' + (qMsgType || 'message').replace('Message', '') + ']';
+      else {
+        const typeLabel = (qMsgType || 'message')
+          .replace('Message', '')
+          .replace('ptt', 'Audio')
+          .replace('audio', 'Audio')
+          .replace('image', 'Photo')
+          .replace('video', 'Video')
+          .replace('sticker', 'Sticker')
+          .replace('document', 'Document');
+        preview = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+      }
 
       if (quotedIsViewOnce || qContent?.viewOnce) {
-        preview = '👁️ (View Once) ' + preview;
+        preview = '👁️ View Once ' + (preview.startsWith('👁️') ? preview.slice(2) : preview);
 
         // Try to download the quoted view-once media
         const quotedMediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
@@ -285,9 +295,10 @@ export class MessageProcessor {
           log('PROCESSOR', `Attempting to download quoted view-once ${qMsgType}...`);
           try {
             const fakeMsg = { message: qMsg, key: { remoteJid: chatId, id: quotedStanzaId, participant: rawQuotedSender } } as any;
-            quotedViewOnceMedia = await downloadMedia(fakeMsg, qMsgType.replace('Message', ''), this.sock);
-            if (quotedViewOnceMedia) {
-              log('PROCESSOR', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.path}`);
+            const res = await downloadMedia(fakeMsg, qMsgType.replace('Message', ''), this.sock);
+            if (res) {
+              quotedViewOnceMedia = { ...res, type: qMsgType.replace('Message', '') };
+              log('PROCESSOR', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.path} (${quotedViewOnceMedia.type})`);
             }
           } catch (e: any) {
             log('PROCESSOR', `Failed to download quoted view-once media: ${e.message}`);
@@ -311,10 +322,9 @@ export class MessageProcessor {
       }
     }
 
-    // If replying to a view-once message, prioritize the quoted media we just recovered
-    if (quotedViewOnceMedia) {
-      mediaPath = quotedViewOnceMedia.path;
-      mediaSha256 = quotedViewOnceMedia.sha256hex;
+    // If replying to a view-once message, save the recovered media to the original message
+    if (quotedViewOnceMedia && quotedStanzaId) {
+      db.updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
     }
 
     const msgData: WhatsAppMessage = {
@@ -324,7 +334,7 @@ export class MessageProcessor {
       sender_name: senderName,
       body,
       type: mediaPath ? messageType.replace('Message', '') : 'chat',
-      has_media: !!mediaPath || !!quotedViewOnceMedia,
+      has_media: !!mediaPath,
       media_type: mediaPath ? (content.mimetype || messageType.replace('Message', '')) : undefined,
       media_filename: mediaPath ? (content.fileName || undefined) : undefined,
       media_path: mediaPath || undefined,

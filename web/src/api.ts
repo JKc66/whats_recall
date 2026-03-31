@@ -13,17 +13,24 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const fp = () => localStorage.getItem("fingerprint") || "";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const fingerprint = fp();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string>),
   };
-  const fingerprint = fp();
+  
   if (fingerprint) headers["X-Fingerprint"] = fingerprint;
 
-  const res = await fetch(url, { ...init, headers });
+  const res = await fetch(url, { 
+    ...init, 
+    headers,
+    credentials: "include" // REQUIRED for cross-port/cross-origin cookies
+  });
 
   if (res.status === 401) {
     if (!window.location.pathname.endsWith("/login")) {
+      // Clear invalid state on 401
+      localStorage.removeItem("fingerprint");
       window.location.href = BASE + "/";
     }
     throw new Error("Unauthorized");
@@ -44,15 +51,20 @@ async function silentRequest<T>(
   url: string,
   init?: RequestInit,
 ): Promise<T | null> {
+  const fingerprint = fp();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string>),
   };
-  const fingerprint = fp();
+  
   if (fingerprint) headers["X-Fingerprint"] = fingerprint;
 
   try {
-    const res = await fetch(url, { ...init, headers });
+    const res = await fetch(url, { 
+      ...init, 
+      headers,
+      credentials: "include" 
+    });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -98,13 +110,15 @@ export async function fetchStatsSilent(): Promise<Stats | null> {
   return silentRequest<Stats>(`${BASE}/api/status`);
 }
 
-export async function fetchChats(): Promise<Chat[]> {
-  const data = await request<{ chats: Chat[] }>(`${BASE}/api/chats`);
+export async function fetchChats(q?: string): Promise<Chat[]> {
+  const url = q ? `${BASE}/api/chats?q=${encodeURIComponent(q)}` : `${BASE}/api/chats`;
+  const data = await request<{ chats: Chat[] }>(url);
   return data.chats;
 }
 
-export async function fetchChatsSilent(): Promise<Chat[] | null> {
-  const data = await silentRequest<{ chats: Chat[] }>(`${BASE}/api/chats`);
+export async function fetchChatsSilent(q?: string): Promise<Chat[] | null> {
+  const url = q ? `${BASE}/api/chats?q=${encodeURIComponent(q)}` : `${BASE}/api/chats`;
+  const data = await silentRequest<{ chats: Chat[] }>(url);
   return data?.chats ?? null;
 }
 

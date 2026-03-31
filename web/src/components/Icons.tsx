@@ -191,6 +191,6 @@ export const ShieldIcon = (props: IconProps) => (
 
 export const ArrowDownIcon = (props: IconProps) => (
   <IconBase {...props}>
-    <path d="M205.66 149.66a8 8 0 0 1-11.32 11.32L136 102.63V216a8 8 0 0 1-16 0V102.63l-58.34 58.35a8 8 0 0 1-11.32-11.32l72-72a8 8 0 0 1 11.32 0Z" transform="rotate(180 128 128)"/>
+    <path d="M205.66 149.66a8 8 0 0 1-11.32 11.32L136 102.63V216a8 8 0 0 1-16 0V102.63l-58.34 58.35a8 8 0 0 1-11.32-11.32l72-72a8 8 0 0 1 11.32 0Z" />
   </IconBase>
 );

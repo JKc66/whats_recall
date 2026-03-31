@@ -86,9 +86,9 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                     }
                   >
                     <div class="flex gap-1.5 mb-2">
-                      <div class="w-1.5 h-1.5 bg-red-600 animate-pulse" />
-                      <div class="w-1.5 h-1.5 bg-red-600 animate-pulse [animation-delay:0.2s]" />
-                      <div class="w-1.5 h-1.5 bg-red-600 animate-pulse [animation-delay:0.4s]" />
+                      <div class="w-1.5 h-1.5 bg-red-600 rounded-full animate-dot-pulse" />
+                      <div class="w-1.5 h-1.5 bg-red-600 rounded-full animate-dot-pulse [animation-delay:0.2s]" />
+                      <div class="w-1.5 h-1.5 bg-red-600 rounded-full animate-dot-pulse [animation-delay:0.4s]" />
                     </div>
                     <span class="text-[11px] font-mono text-zinc-300 uppercase tracking-widest">
                       Initializing Session...
@@ -140,9 +140,9 @@ export default function ConfigPanel(props: ConfigPanelProps) {
             <label class="text-[12px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-1">
               Auth Mechanism
             </label>
-            <div class="flex bg-black/40 p-1 rounded-lg border border-white/10 w-fit">
+            <div class="flex bg-black/40 p-1 rounded-full border border-white/10 w-fit">
               <button
-                class="px-4 py-1.5 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+                class="px-4 py-1.5 text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
                 classList={{
                   "bg-zinc-800 text-white shadow-md":
                     (props.config?.whatsapp_pairing_method || "code") === "qr",
@@ -156,7 +156,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 QR Scan
               </button>
               <button
-                class="px-4 py-1.5 text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+                class="px-4 py-1.5 text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
                 classList={{
                   "bg-zinc-800 text-white shadow-md":
                     (props.config?.whatsapp_pairing_method || "code") ===
@@ -198,7 +198,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 class="w-full p-2.5 px-4 bg-black/30 border border-white/10 rounded-lg text-zinc-100 font-mono text-[13px] outline-none transition-all focus:border-red-600/30 focus:bg-red-600/5 focus:shadow-[0_0_20px_rgba(230,25,25,0.03)]"
               />
               <Show when={props.savingConfig === "whatsapp_phone"}>
-                <div class="absolute right-3 w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" />
+                <div class="absolute right-3 w-1.5 h-1.5 bg-red-600 rounded-full animate-dot-pulse" />
               </Show>
             </div>
           </div>

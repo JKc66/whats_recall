@@ -70,6 +70,7 @@ export default function Login() {
     try {
       const fp = await getFingerprint();
       await login(password(), fp);
+      localStorage.setItem("fingerprint", fp); // Persist fingerprint for API requests
       setAuthenticated(true);
       notify.success("Access Granted", "Welcome to the terminal.");
     } catch (err: any) {

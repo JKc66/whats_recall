@@ -1,7 +1,7 @@
 import { Show, For } from "solid-js";
 import type { Message, Reaction } from "../../types";
 import { avatarColor, formatTime, extractPhone } from "../../utils";
-import { FileIcon, DownloadIcon, TrashIcon, EyeIcon } from "../Icons";
+import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon } from "../Icons";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -11,6 +11,26 @@ interface MessageBubbleProps {
   onImageClick: (_src: string) => void;
   onQuoteClick: (_messageId: string) => void;
   findMessage: (_stanzaId: string) => Message | undefined;
+  highlightQuery?: string;
+}
+
+function HighlightedText(props: { text: string; query?: string }) {
+  if (!props.query || props.query.trim().length === 0) return <span>{props.text}</span>;
+  
+  const query = props.query.trim();
+  const parts = props.text.split(new RegExp(`(${query})`, 'gi'));
+  
+  return (
+    <span>
+      <For each={parts}>
+        {(part) => (
+          part.toLowerCase() === query.toLowerCase() 
+            ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark> 
+            : part
+        )}
+      </For>
+    </span>
+  );
 }
 
 function groupReactions(reactions: Reaction[]) {
@@ -68,6 +88,39 @@ export function MessageBubble(props: MessageBubbleProps) {
     return null;
   };
 
+  const formattedReply = () => {
+    const data = replyData();
+    if (!data) return null;
+    const previewRaw = data.preview || "Message";
+    const lower = previewRaw.toLowerCase();
+    
+    const hasPhoto = lower.includes("photo") || lower.includes("image");
+    const hasVideo = lower.includes("video");
+    const hasAudio = lower.includes("audio") || lower.includes("ptt");
+    const hasSticker = lower.includes("sticker");
+    const hasViewOnce = previewRaw.includes("👁️") || lower.includes("view once");
+    
+    let p = previewRaw.replace(/👁️/g, "").trim();
+    p = p.replace(/\s*\(\s*view once\s*\)\s*/gi, "").trim();
+    p = p.replace(/\s*view once\s*/gi, "").trim();
+    p = p.replace(/\[?(image|video|audio|document|sticker)(Message)?\]?/gi, "").trim();
+    p = p.replace(/^\(\)\s*/, "").replace(/^\[\]\s*/, "").trim();
+    p = p.replace(/^[-\s]+|[|-\s]+$/g, "").trim();
+    
+    const finalLabel = p || (hasPhoto ? "Photo" : hasVideo ? "Video" : hasAudio ? "Audio" : hasSticker ? "Sticker" : "Message");
+    
+    return {
+      sender: data.sender,
+      hasPhoto: hasPhoto && !hasSticker,
+      hasVideo,
+      hasAudio,
+      hasSticker,
+      hasViewOnce,
+      label: finalLabel,
+      stanzaId: data.stanzaId,
+    };
+  };
+
   const bodyText = () => {
     const msg = m();
     if (!msg.body) return "";
@@ -88,7 +141,7 @@ export function MessageBubble(props: MessageBubbleProps) {
   function renderMedia() {
     const msg = m();
     if (!msg.has_media || !msg.media_path) {
-      return msg.has_media ? (
+      return (msg.has_media && msg.type !== 'chat') ? (
         <div class="flex items-center gap-2 p-3 bg-white/5 rounded-lg text-xs text-text-3 italic">
           <FileIcon size={14} /> {msg.type}
         </div>
@@ -186,7 +239,6 @@ export function MessageBubble(props: MessageBubbleProps) {
         "self-end bg-accent/20 backdrop-blur-md border border-accent/20 rounded-br-sm shadow-[0_4px_15px_rgba(0,0,0,0.2)]":
           isMe(),
         "opacity-75 bg-red-dim/10 border-red-dim/20": isDeleted(),
-        "border-l-2 border-l-violet-500": isViewOnce(),
         "mb-5": (m().reactions?.length || 0) > 0,
       }}
       data-msg-id={m().message_id}
@@ -220,22 +272,40 @@ export function MessageBubble(props: MessageBubbleProps) {
         </div>
       </Show>
 
-      <Show when={replyData()}>
+      <Show when={formattedReply()}>
         <div
-          class="bg-black/10 border-l-3 border-l-accent rounded p-2 mb-1.5 text-[12.5px] text-zinc-400 overflow-hidden transition-all hover:bg-black/15 cursor-pointer"
-          classList={{ "border-l-accent/50": isMe() }}
+          class="relative bg-zinc-900/60 rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-zinc-400 overflow-hidden transition-all hover:bg-zinc-800/80 cursor-pointer group/reply border border-white/5"
           onClick={handleQuoteClick}
         >
-          <Show when={replyData()?.sender}>
+          <div 
+            class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg"
+            classList={{ "bg-accent/50": isMe() }}
+          />
+          <Show when={formattedReply()?.sender}>
             <div
-              class="text-[11px] font-semibold text-accent-bright mb-px"
+              class="text-[11px] font-bold text-accent-bright mb-0.5 uppercase tracking-wider opacity-90 group-hover/reply:opacity-100"
               classList={{ "text-accent": isMe() }}
             >
-              {replyData()!.sender.split("@")[0]}
+              {formattedReply()!.sender.split("@")[0]}
             </div>
           </Show>
-          <div class="whitespace-nowrap overflow-hidden text-ellipsis opacity-85 italic">
-            {replyData()!.preview || "Message"}
+          <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis opacity-80 group-hover/reply:opacity-100 transition-opacity">
+            <Show when={formattedReply()!.hasPhoto}>
+              <ImageIcon size={12} class="shrink-0 text-accent/70" />
+            </Show>
+            <Show when={formattedReply()!.hasVideo}>
+              <VideoIcon size={12} class="shrink-0 text-accent/70" />
+            </Show>
+            <Show when={formattedReply()!.hasAudio}>
+              <MusicIcon size={12} class="shrink-0 text-accent/70" />
+            </Show>
+            <Show when={formattedReply()!.hasSticker}>
+              <ImageIcon size={12} class="shrink-0 text-accent/70 opacity-50" />
+            </Show>
+            <Show when={formattedReply()!.hasViewOnce}>
+              <EyeIcon size={12} class="shrink-0 text-violet-400" />
+            </Show>
+            <span class="truncate">{formattedReply()!.label}</span>
           </div>
         </div>
       </Show>
@@ -244,7 +314,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
       <Show when={bodyText()}>
         <div class="text-[14px] text-zinc-100 whitespace-pre-wrap leading-relaxed">
-          {bodyText()}
+          <HighlightedText text={bodyText()} query={props.highlightQuery} />
         </div>
       </Show>
 
@@ -297,6 +367,7 @@ export function ImageGroup(props: {
   onImageClick: (_src: string) => void;
   onQuoteClick: (_messageId: string) => void;
   findMessage: (_stanzaId: string) => Message | undefined;
+  highlightQuery?: string;
 }) {
   const first = () => props.messages[0];
   const isMe = () => !!first().is_from_me;
@@ -394,7 +465,7 @@ export function ImageGroup(props: {
 
       <Show when={first().body}>
         <div class="text-[14px] text-zinc-100 whitespace-pre-wrap leading-relaxed px-0.5 pt-1">
-          {first().body}
+          <HighlightedText text={first().body!} query={props.highlightQuery} />
         </div>
       </Show>
 

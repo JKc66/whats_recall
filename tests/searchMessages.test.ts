@@ -76,16 +76,15 @@ describe("database searchMessages", () => {
         expect(results.length).toBe(7);
     });
 
-    test("should handle SQL LIKE special characters as literals (standard LIKE behavior)", () => {
-        // SQLite LIKE uses % as wildcard. Our code uses `%${query}%`
-        // So searching for "%" will result in "%%%" which matches everything with a % in it,
-        // OR it might just match everything if not escaped.
-        // Actually `%${query}%` where query is `%` becomes `%%%` which matches everything.
+    test("should handle SQL LIKE special characters as literals (escaped behavior)", () => {
+        // Now searching for "%" should ONLY match "Special characters % and _"
         const results = db.searchMessages("%");
-        expect(results.length).toBe(7); // Because % is a wildcard in LIKE
+        expect(results.length).toBe(1);
+        expect(results[0].body).toBe("Special characters % and _");
 
         const resultsUnderscore = db.searchMessages("_");
-        expect(resultsUnderscore.length).toBe(7); // _ matches any single character
+        expect(resultsUnderscore.length).toBe(1);
+        expect(resultsUnderscore[0].body).toBe("Special characters % and _");
     });
 
     test("should return empty array when no matches found", () => {

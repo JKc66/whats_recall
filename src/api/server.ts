@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
+import { cors } from 'hono/cors';
 import { log } from '../logger.ts';
 import auth from './auth.ts';
 import { authMiddleware } from './middleware.ts';
@@ -11,7 +12,7 @@ import { join, basename } from 'path';
 import { MEDIA_DIR, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
-import { safePath } from './utils.ts';
+import { safePath, pruneApiRateLimits } from './utils.ts';
 
 const PUBLIC_DIR = './public';
 
@@ -27,6 +28,27 @@ export function createHonoServer(client: WhatsAppConnection) {
   }
 
   const app = new Hono();
+
+  // Security headers middleware
+  app.use('*', async (c, next) => {
+    await next();
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('X-Frame-Options', 'DENY');
+    c.header('X-XSS-Protection', '1; mode=block');
+    c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    c.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https://api.qrserver.com https://pps.whatsapp.net; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:;");
+  });
+
+  // CORS for cross-port development (e.g. Vite on 5173, Backend on 3001)
+  app.use('*', cors({
+    origin: (origin) => origin,
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Fingerprint', 'X-Auth-Token'],
+    exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+    maxAge: 600,
+  }));
+
   const wsClients = new Set<any>();
 
   // Logging Middleware
@@ -38,6 +60,13 @@ export function createHonoServer(client: WhatsAppConnection) {
       log('HTTP', `${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
     }
   });
+
+  // Periodic cleanup
+  setInterval(() => {
+    const db = getDb();
+    db.cleanExpiredSessions();
+    pruneApiRateLimits();
+  }, 600_000);
 
   // API Routes
   const api = new Hono();
@@ -73,6 +102,18 @@ export function createHonoServer(client: WhatsAppConnection) {
     });
   });
 
+  api.delete('/data', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    if (body.password !== password) {
+      log('API', 'Clear data rejected: wrong password');
+      return c.json({ error: 'Password required to confirm data deletion' }, 403);
+    }
+    const db = getDb();
+    await db.clearAllData();
+    log('API', 'All messages and chat data cleared');
+    return c.json({ ok: true });
+  });
+
   app.route('/api', api);
 
   // Static files and SPA fallback
@@ -88,6 +129,10 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
+    const count = wsClients.size;
+    if (count > 0 && event !== 'status') {
+      log('WS', `Broadcasting "${event}" to ${count} client(s)`);
+    }
     for (const ws of wsClients) {
       try {
         (ws as any).send(payload);
@@ -100,8 +145,23 @@ export function createHonoServer(client: WhatsAppConnection) {
 
     const bunServer = Bun.serve({
       port,
-      fetch: (req: Request, server: any) => {
-        if (new URL(req.url).pathname === '/ws') {
+      fetch: async (req: Request, server: any) => {
+        const url = new URL(req.url);
+        if (url.pathname === '/ws') {
+          const db = getDb();
+          const cookieHeader = req.headers.get('Cookie') || '';
+          const token = cookieHeader.match(/auth_token=([^;]+)/)?.[1] || req.headers.get('X-Auth-Token');
+          const fingerprint = req.headers.get('X-Fingerprint') || cookieHeader.match(/auth_fp=([^;]+)/)?.[1];
+
+          if (!token) return new Response('Unauthorized', { status: 401 });
+          
+          const session = db.getSession(token) as any;
+          if (!session) return new Response('Session expired', { status: 401 });
+          
+          if (session.fingerprint && fingerprint !== session.fingerprint) {
+            return new Response('Invalid fingerprint', { status: 401 });
+          }
+
           const upgraded = server.upgrade(req);
           if (upgraded) return undefined;
         }
@@ -119,6 +179,15 @@ export function createHonoServer(client: WhatsAppConnection) {
         message: () => { }
       }
     });
+
+    // WS Ping Interval
+    const WS_PING_INTERVAL = 25_000;
+    setInterval(() => {
+      const ping = JSON.stringify({ event: 'ping', data: Date.now() });
+      for (const ws of wsClients) {
+        try { (ws as any).send(ping); } catch { /* handled by close */ }
+      }
+    }, WS_PING_INTERVAL);
 
     log('SERVER', `Running on http://localhost:${port}`);
     return { bunServer, broadcast };

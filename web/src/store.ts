@@ -30,3 +30,10 @@ export const setShowOnlyDeleted = (val: boolean) => {
   localStorage.setItem("showOnlyDeleted", String(val));
   _setShowOnlyDeleted(val);
 };
+
+// When non-null, ChatView will scroll to the first message matching this query
+export const [jumpToQuery, setJumpToQuery] = createSignal<string | null>(null);
+
+// Global search state
+export const [searchQuery, setSearchQuery] = createSignal("");
+export const [searchResults, setSearchResults] = createSignal<Chat[] | null>(null);

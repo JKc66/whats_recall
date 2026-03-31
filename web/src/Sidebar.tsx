@@ -1,12 +1,13 @@
 import {
   createSignal,
   createMemo,
+  createEffect,
   For,
   Show,
   onMount,
   onCleanup,
 } from "solid-js";
-import { logout, fetchMessages, markChatAsRead } from "./api";
+import { logout, fetchMessages, markChatAsRead, fetchChatsSilent } from "./api";
 import {
   chats,
   setChats,
@@ -17,6 +18,11 @@ import {
   setView,
   setAuthenticated,
   setMessages,
+  setJumpToQuery,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  setSearchResults,
 } from "./store";
 import {
   avatarColor,
@@ -30,7 +36,6 @@ import type { Chat } from "./types";
 import { SettingsIcon, LogoutIcon, SearchIcon } from "./components/Icons";
 
 export default function Sidebar() {
-  const [search, setSearch] = createSignal("");
   const [isMobile, setIsMobile] = createSignal(window.innerWidth <= 768);
 
   onMount(() => {
@@ -46,20 +51,37 @@ export default function Sidebar() {
     return !!currentChatId() && view() === "chats";
   };
 
-  const filteredChats = createMemo(() => {
-    let list = chats();
-    const q = search().toLowerCase().trim();
-    if (q) {
-      list = list.filter(
-        (c) =>
-          (c.name || "").toLowerCase().includes(q) ||
-          (c.last_message_preview || "").toLowerCase().includes(q),
-      );
+  let searchTimeout: any;
+  createEffect(() => {
+    const q = searchQuery().trim();
+    clearTimeout(searchTimeout);
+
+    if (q.length >= 2) {
+      searchTimeout = setTimeout(async () => {
+        const results = await fetchChatsSilent(q);
+        // Store locally — never mutate the global chats store
+        setSearchResults(results ?? []);
+      }, 400);
+    } else {
+      // Clear local results; global chats are untouched
+      setSearchResults(null);
     }
-    return list;
   });
 
+  // What to display: local search results OR full global list
+  const filteredChats = createMemo(() => {
+    const results = searchResults();
+    if (results !== null) return results; // server-filtered
+    return chats();
+  });
+
+  const isSearchActive = () => searchQuery().trim().length >= 2;
+
   async function openChat(chatId: string) {
+    const q = searchQuery().trim();
+    // Set jump target BEFORE loading messages so ChatView picks it up
+    setJumpToQuery(q.length >= 2 ? q : null);
+
     setCurrentChatId(chatId);
     setView("chats");
 
@@ -112,12 +134,6 @@ export default function Sidebar() {
           </div>
           Monitor
           <span class="text-[8px] opacity-20 ml-1 font-mono tracking-widest">v4.0.1</span>
-          <Show when={stats().deletedMessages > 0}>
-            <div class="h-3 w-px bg-white/10 mx-2" />
-            <span class="text-red-500 text-[10px] font-bold tabular-nums">
-              {stats().deletedMessages} DELETED MESSAGES
-            </span>
-          </Show>
         </div>
         <nav class="flex gap-0.5" aria-label="Sidebar actions">
           <button
@@ -151,8 +167,8 @@ export default function Sidebar() {
           <input
             type="text"
             placeholder="Search chats…"
-            value={search()}
-            onInput={(e) => setSearch(e.currentTarget.value)}
+            value={searchQuery()}
+            onInput={(e) => setSearchQuery(e.currentTarget.value)}
             spellcheck={false}
             aria-label="Search chats"
             class="w-full p-[9px_14px_9px_36px] bg-bg-surface border border-white/6 rounded-lg text-zinc-100 font-inherit text-[13px] outline-none transition-all duration-300 focus-visible:border-accent focus-visible:shadow-[0_0_0_2px_rgba(16,185,129,0.08)] placeholder:text-text-3"
@@ -165,7 +181,11 @@ export default function Sidebar() {
           when={filteredChats().length > 0}
           fallback={
             <div class="flex flex-col items-center justify-center p-[48px_24px] text-text-3 text-[13px] text-center h-full gap-1">
-              No chats found
+              <Show when={isSearchActive()} fallback={<span>No chats found</span>}>
+                <span class="text-[20px] mb-1">🔍</span>
+                <span>No messages found for</span>
+                <span class="text-zinc-300 font-mono text-[12px] bg-white/5 px-2 py-0.5 rounded mt-0.5">"{searchQuery().trim()}"</span>
+              </Show>
             </div>
           }
         >

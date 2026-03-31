@@ -28,9 +28,9 @@ export default function ChatSelector(props: ChatSelectorProps) {
     <div class="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
       <Show when={props.type === "available"}>
         <div class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 border-b border-white/10 bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10 overflow-x-auto no-scrollbar">
-          <div class="flex bg-black/40 p-1 rounded-lg border border-white/5 shrink-0">
+          <div class="flex bg-black/40 p-1 rounded-full border border-white/5 shrink-0">
             <button
-              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.filterType === "all",
                 "text-zinc-500 hover:text-zinc-300": props.filterType !== "all",
@@ -40,7 +40,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               All
             </button>
             <button
-              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm":
                   props.filterType === "chats",
@@ -52,7 +52,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               Groups
             </button>
             <button
-              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm":
                   props.filterType === "contacts",
@@ -65,9 +65,9 @@ export default function ChatSelector(props: ChatSelectorProps) {
             </button>
           </div>
 
-          <div class="flex bg-black/40 p-1 rounded-lg border border-white/5 shrink-0 ml-auto">
+          <div class="flex bg-black/40 p-1 rounded-full border border-white/5 shrink-0 ml-auto">
             <button
-              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.sortBy === "recent",
                 "text-zinc-500 hover:text-zinc-300": props.sortBy !== "recent",
@@ -77,7 +77,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               Recent
             </button>
             <button
-              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-md transition-all uppercase tracking-wider"
+              class="px-2.5 md:px-3 py-1 text-[10px] md:text-[11px] font-bold rounded-full transition-all uppercase tracking-wider"
               classList={{
                 "bg-zinc-800 text-white shadow-sm": props.sortBy === "name",
                 "text-zinc-500 hover:text-zinc-300": props.sortBy !== "name",
@@ -105,9 +105,9 @@ export default function ChatSelector(props: ChatSelectorProps) {
         <Show when={props.loading}>
           <div class="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
             <div class="flex gap-1.5">
-              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse [animation-delay:0.2s]" />
-              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse [animation-delay:0.4s]" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-dot-pulse" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-dot-pulse [animation-delay:0.2s]" />
+              <div class="w-1.5 h-1.5 rounded-full bg-accent animate-dot-pulse [animation-delay:0.4s]" />
             </div>
             <span class="text-[12px] font-medium animate-pulse uppercase tracking-wider opacity-60">
               Scanning WhatsApp...

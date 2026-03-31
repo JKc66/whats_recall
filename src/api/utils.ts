@@ -22,8 +22,9 @@ export function getClientIp(c: any): string {
   if (process.env.TRUST_PROXY === 'true') {
     const forwarded = c.req.header('x-forwarded-for');
     if (forwarded) {
-      const firstForwarded = forwarded.split(',')[0].trim();
-      if (firstForwarded) return firstForwarded;
+      const ips = forwarded.split(',').map(ip => ip.trim());
+      const lastForwarded = ips[ips.length - 1];
+      if (lastForwarded) return lastForwarded;
     }
     const realIp = c.req.header('x-real-ip');
     if (realIp) return realIp.trim();

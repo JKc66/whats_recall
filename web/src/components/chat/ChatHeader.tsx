@@ -77,10 +77,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
                 </>
               }
             >
-              <span class="opacity-60 text-emerald-500/80">Group ·</span>
-              <span class="text-red-dim/80">
-                {props.chat?.total_deleted_count ?? 0} deleted
-              </span>
+              <span class="opacity-60 text-emerald-500/80">Group Chat</span>
             </Show>
           </div>
         </div>
@@ -88,13 +85,13 @@ export default function ChatHeader(props: ChatHeaderProps) {
 
       <div class="flex items-center gap-2 md:gap-4 ml-auto">
         <div
-          class="flex bg-black/30 p-1 rounded-lg border border-white/5"
+          class="flex bg-black/30 p-1 rounded-full border border-white/5"
           role="tablist"
         >
           <button
             role="tab"
             aria-selected={props.viewMode === "messages"}
-            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-md transition-all whitespace-nowrap"
+            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-full transition-all whitespace-nowrap"
             classList={{
               "bg-zinc-800 text-white shadow-sm": props.viewMode === "messages",
               "text-text-3 hover:text-zinc-200": props.viewMode !== "messages",
@@ -106,7 +103,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           <button
             role="tab"
             aria-selected={props.viewMode === "media"}
-            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-md transition-all whitespace-nowrap"
+            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-full transition-all whitespace-nowrap"
             classList={{
               "bg-zinc-800 text-white shadow-sm": props.viewMode === "media",
               "text-text-3 hover:text-zinc-200": props.viewMode !== "media",
