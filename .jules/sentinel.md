@@ -1,0 +1,4 @@
+## 2023-10-27 - Overly Permissive CORS Configuration
+**Vulnerability:** The server used an overly permissive CORS configuration (`origin: (origin) => origin` with `credentials: true`), which dynamically allowed any external domain to make authenticated requests and read sensitive data, bypassing Same-Origin Policy.
+**Learning:** Development conveniences (like allowing Vite on a different port to talk to the backend) often leak into production if environment variables are not strictly checked. Returning the requested origin indiscriminately when `credentials: true` is set completely negates CSRF and cross-origin isolation.
+**Prevention:** Always restrict CORS `origin` functions to explicitly trusted domains or bind permissive behavior tightly to `NODE_ENV === development`. In production, if the frontend and backend share the same origin, CORS headers should be omitted entirely by returning an empty string.
