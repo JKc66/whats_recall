@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { getDb } from '../db/database.ts';
-import { getClientIp } from './utils.ts';
+import { getClientIp, checkApiRateLimit, apiRateLimits } from './utils.ts';
 import { log } from '../logger.ts';
 
 const db = getDb();
@@ -12,19 +12,7 @@ const SESSION_DURATION_HOURS = 24 * 7; // 7 days
 
 // Login attempt tracking
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_LOGIN_ATTEMPTS = 3;
-const loginAttempts = new Map<string, { count: number, firstAttempt: number }>();
-
-const isExpired = (entry: { firstAttempt: number }, now = Date.now()) => now - entry.firstAttempt > LOGIN_WINDOW_MS;
-
-function pruneLoginAttempts() {
-  const now = Date.now();
-  for (const [ip, entry] of loginAttempts) {
-    if (isExpired(entry, now)) loginAttempts.delete(ip);
-  }
-}
-
-setInterval(pruneLoginAttempts, 60_000).unref();
+const MAX_LOGIN_ATTEMPTS = 5;
 
 auth.get('/uptime', (c) => {
   return c.json({ uptime: Math.floor((Date.now() - startTime) / 1000) });
@@ -32,30 +20,22 @@ auth.get('/uptime', (c) => {
 
 auth.post('/login', async (c) => {
   const ip = getClientIp(c);
-  const entry = loginAttempts.get(ip);
   
-  if (entry && !isExpired(entry) && entry.count >= MAX_LOGIN_ATTEMPTS) {
+  if (!checkApiRateLimit(ip, 'login', MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS)) {
     log('AUTH', `Login rate-limited for IP ${ip}`);
-    return c.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
+    return c.json({ error: 'Too many login attempts. Try again later.' }, 429);
   }
 
   const { password, fingerprint } = await c.req.json();
   const serverPassword = process.env.AUTH_PASSWORD;
 
   if (password !== serverPassword) {
-    if (!entry || isExpired(entry)) {
-      loginAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
-    } else {
-      entry.count++;
-    }
-    const currentCount = loginAttempts.get(ip)?.count || 0;
-    const remaining = MAX_LOGIN_ATTEMPTS - currentCount;
-    log('AUTH', `Login failed from ${ip} (${remaining} attempts remaining)`);
-    return c.json({ error: `Invalid password${remaining > 0 ? ` (${remaining} attempts remaining)` : ''}` }, 401);
+    log('AUTH', `Login failed from ${ip}`);
+    return c.json({ error: 'Invalid password' }, 401);
   }
 
-  // Success: reset attempts
-  loginAttempts.delete(ip);
+  // Success: reset attempts in central rate limiter
+  apiRateLimits.delete(`${ip}:login`);
 
   const token = crypto.randomUUID().replace(/-/g, '');
   const expiresAt = new Date(Date.now() + SESSION_DURATION_HOURS * 3600_000).toISOString();

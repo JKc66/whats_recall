@@ -1,5 +1,6 @@
 import { Database } from 'bun:sqlite';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, rmSync } from 'fs';
+import { unlink, rm } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';
@@ -393,7 +394,6 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
       if (mediaPathsToDelete.length > 0) {
         try {
-          const { unlink } = await import('fs/promises');
           await Promise.allSettled(mediaPathsToDelete.map(async (p) => {
             const fullPath = resolve(join(MEDIA_DIR, p));
             if (fullPath.startsWith(MEDIA_DIR) && existsSync(fullPath)) {
@@ -415,7 +415,6 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         db.query('DELETE FROM sessions').run();
       })();
       
-      const { rmSync, mkdirSync } = await import('fs');
       if (existsSync(MEDIA_DIR)) {
         rmSync(MEDIA_DIR, { recursive: true, force: true });
       }

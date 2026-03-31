@@ -103,3 +103,25 @@ function getExtension(type: string): string {
   };
   return map[type] || 'bin';
 }
+
+export async function downloadProfilePic(jid: string, sock: any): Promise<string | null> {
+  const existing = db.getChatProfilePic(jid);
+  if (existing) return existing;
+
+  try {
+    const url = await sock.profilePictureUrl(jid, 'image').catch(() => null);
+    if (!url) return null;
+
+    const filename = `dp_${jid.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+    const filepath = join(MEDIA_DIR, filename);
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
+    db.updateChatProfilePic(jid, filename);
+    return filename;
+  } catch (e: any) {
+    log('MEDIA', `Error downloading profile picture for ${jid}: ${e.message}`);
+    return null;
+  }
+}

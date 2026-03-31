@@ -19,21 +19,41 @@ export function safePath(baseDir: string, userPath: string): string | null {
 }
 
 export function getClientIp(c: any): string {
-  if (process.env.TRUST_PROXY === 'true') {
-    const forwarded = c.req.header('x-forwarded-for');
-    if (forwarded) {
-      const ips = forwarded.split(',').map(ip => ip.trim());
-      const lastForwarded = ips[ips.length - 1];
-      if (lastForwarded) return lastForwarded;
-    }
-    const realIp = c.req.header('x-real-ip');
-    if (realIp) return realIp.trim();
-  }
+  let remoteAddress = '127.0.0.1';
   try {
-    return c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
-  } catch {
+    const rawIp = c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
+    remoteAddress = rawIp.replace(/^::ffff:/, '');
+  } catch (_e) {
     return '127.0.0.1';
   }
+
+  if (process.env.TRUST_PROXY !== 'true') return remoteAddress;
+
+  const trustedProxiesStr = process.env.TRUSTED_PROXIES || '';
+  const trustedProxies = trustedProxiesStr.split(',').map((ip: string) => ip.trim()).filter(Boolean);
+
+  // Secure validation: Only trust headers if the direct caller is a known proxy
+  if (trustedProxies.length > 0 && !trustedProxies.includes(remoteAddress)) {
+    return remoteAddress;
+  }
+
+  const forwarded = c.req.header('x-forwarded-for');
+  if (forwarded) {
+    const ips = forwarded.split(',').map((ip: string) => ip.trim().replace(/^::ffff:/, ''));
+    
+    // Traverse from right to left, skipping trusted proxies
+    for (let i = ips.length - 1; i >= 0; i--) {
+      if (!trustedProxies.includes(ips[i])) {
+        return ips[i];
+      }
+    }
+    return ips[0] || remoteAddress;
+  }
+
+  const realIp = c.req.header('x-real-ip');
+  if (realIp) return realIp.trim().replace(/^::ffff:/, '');
+
+  return remoteAddress;
 }
 
 export const apiRateLimits = new Map<string, { count: number, firstAttempt: number }>();

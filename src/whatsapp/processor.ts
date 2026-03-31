@@ -2,7 +2,7 @@ import { extractMessageContent, getContentType, jidNormalizedUser, WAMessage } f
 import { log } from '../logger.js';
 import { getDb, MEDIA_DIR } from '../db/database.js';
 import { syncService } from './sync.ts';
-import { downloadMedia } from './media.ts';
+import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
 import { getChatNameAsync, isGroup } from './utils.ts';
@@ -444,24 +444,7 @@ export class MessageProcessor {
    * Fire-and-forget profile pic prefetch
    */
   private getProfilePicAsync(jid: string) {
-    // Delegate to the connection's getProfilePic — just check DB here
-    const existing = db.getChatProfilePic(jid);
-    if (existing) return;
-
-    // Fire and forget via the sock
-    if (this.sock) {
-      this.sock.profilePictureUrl?.(jid, 'image')
-        .then(async (url: string) => {
-          if (!url) return;
-          const { writeFile } = await import('fs/promises');
-          const filename = `dp_${jid.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
-          const filepath = join(MEDIA_DIR, filename);
-          const res = await fetch(url);
-          if (!res.ok) return;
-          await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
-          db.updateChatProfilePic(jid, filename);
-        })
-        .catch(() => {});
-    }
+    if (!jid || !this.sock) return;
+    downloadProfilePic(jid, this.sock).catch(() => {});
   }
 }
