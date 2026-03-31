@@ -1,138 +1,142 @@
+<div align="center">
+
 # WhatsApp Deleted Messages Monitor
 
-Monitors your WhatsApp for deleted messages, saves them, and shows them through a secure web dashboard. When someone deletes a message, you get a WhatsApp notification with the original content and can review everything on the web interface.
+[![Version](https://img.shields.io/badge/version-1.0.1-10B981)](https://github.com/your-repo)
+[![Runtime](https://img.shields.io/badge/Runtime-Bun-000?logo=bun&logoColor=white)](https://bun.sh)
+[![Frontend](https://img.shields.io/badge/Frontend-SolidJS-2c4f7c?logo=solid&logoColor=fff)](https://www.solidjs.com/)
+[![Backend](https://img.shields.io/badge/Backend-Hono-E36002?logo=hono&logoColor=white)](https://hono.dev/)
+[![License](https://img.shields.io/badge/License-MIT-10B981)](LICENSE)
 
-## Features
+**Never miss a message.** A secure, privacy-first archival system that captures deleted messages, saves view-once media, and provides a premium technical dashboard for real-time review.
 
-- **Selective monitoring** — only tracks the chats you explicitly add
-- **Media Deduplication** — SHA256 hashing prevents redundant storage of identical files
-- **Message Reactions** — tracks and displays real-time reactions to messages
-- **View-Once Support** — captures and preserves view-once media before it's gone
-- **Universal Search** — instant search across all archived messages and metadata
-- **Technical Precision** — metadata (timestamps, IDs) in monospaced typography
-- **Design Excellence** — Sleek, technical, glassmorphic interface with a refined dark theme
-- **Media Archival** — Images, videos, audio, stickers, and documents saved to disk
-- **Security First** — Device fingerprinting (ThumbmarkJS) + HttpOnly session cookies
-- **Real-time Updates** — Instant dashboard updates via WebSocket
-- **Flexible Pairing** — Support for both QR code and 8-digit Pairing Code
+[Explore Features](#-key-features) • [Quick Start](#-quick-start) • [Technical Architecture](#-technical-architecture) • [Security](#-security--privacy)
 
-## Tech Stack
+</div>
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | **SolidJS** + TypeScript + Vite |
-| Styling | **Vanilla CSS** (Technical Glassmorphic Theme) |
-| Fonts | **Geist** (Sans) + **JetBrains Mono** (Technical) |
-| Backend | **Hono** on Bun |
-| Database | SQLite (bun:sqlite) |
-| WhatsApp | @whiskeysockets/baileys |
-| Auth | ThumbmarkJS fingerprinting + session cookies |
+---
 
-## Requirements
+## ✨ Key Features
 
-- [Bun](https://bun.sh) runtime
-- (Optional) [PM2](https://pm2.io) for process management
-- (Optional) [Caddy](https://caddyserver.com) for HTTPS reverse proxy
+| | |
+| :--- | :--- |
+| 🕵️ **Selective Monitoring** | Precision control: only track the specific chats you choose. |
+| 📸 **View-Once Preservation** | Bypasses "View Once" restrictions by capturing and archiving media before it disappears. |
+| ♻️ **Smart Deduplication** | Global SHA-256 media hashing prevents redundant storage and saves disk space. |
+| ⚡ **Real-time Analytics** | Instant dashboard updates via high-performance WebSockets. |
+| 🎭 **Reaction Tracking** | Full support for real-time message reactions and emoji changes. |
+| 🧵 **Threaded Context** | Preserves and displays quoted messages (replies) to maintain conversation flow. |
+| 🔒 **Security-First** | Device fingerprinting via **ThumbmarkJS** + `HttpOnly` / `SameSite=Strict` session cookies. |
+| 💎 **Liquid Glass UI** | A premium, high-density dashboard featuring OLED-black themes and technical glassmorphism. |
 
-## Quick Start
+---
 
+## 🛠️ Technical Architecture
+
+> Built for performance, reliability, and extreme privacy.
+
+| Layer | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Runtime** | [Bun](https://bun.sh) | High-performance JS runtime with native SQLite and TS support. |
+| **Backend** | [Hono](https://hono.dev/) | Ultra-fast web framework with standard-compliant fetch API. |
+| **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and zero-overhead UI components. |
+| **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
+| **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
+| **Design** | Technical Glass | Deep OLED blacks, 32px blurs, and `JetBrains Mono` typography. |
+
+---
+
+## 🚀 Quick Start
+
+Ensure you have [Bun](https://bun.sh) installed on your system.
+
+### 1. Installation
 ```bash
-# Install backend and build frontend
+# Clone and enter the project
+git clone <your-repo-url>
+cd whatsapp_logger
+
+# Install all dependencies and build the UI
 bun install
 bun run build
+```
 
-# Copy and edit the config
+### 2. Configuration
+```bash
 cp .env.example .env
-# Set AUTH_PASSWORD to something strong
+# Open .env and set your AUTH_PASSWORD to something strong
+```
 
-# Start the server
+### 3. Launch
+```bash
+# Start the production server
 bun start
 ```
 
-On first run, follow the pairing instructions in the terminal. You can use your phone to scan the **QR Code** or enter the **Pairing Code** if a phone number is provided in `.env`.
+On first run, follow the terminal instructions to pair your account via **QR Code** or **Pairing Code**. Once paired, access the dashboard at `http://localhost:3001/whats/`.
 
-Open `http://localhost:3001/whats/`, log in with your password, and go to **Settings** (gear icon) to add the chats you want to monitor.
+---
 
-## Development
+## ⚙️ Configuration Variables
 
-Run the backend and frontend dev servers separately for the best experience:
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `WEB_PORT` | `3001` | The port the Hono server will listen on. |
+| `AUTH_PASSWORD` | `—` | **Required.** Password for dashboard access. |
+| `WHATSAPP_PHONE` | `—` | Your phone number (with country code) for Pairing Code mode. |
+| `NOTIFY_WHATSAPP` | `false` | Receive a WhatsApp alert whenever a message is deleted. |
+| `NODE_ENV` | `development` | Set to `production` to enable secure/https-only cookies. |
+| `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Cloudflare. |
 
-```bash
-# Terminal 1 — backend
-bun run dev
+---
 
-# Terminal 2 — frontend (with HMR)
-cd web && bun run dev
+## 🏗️ Project Structure
+
+```text
+├── 📂 data/               # Persistent storage (SQLite DB + Media files)
+├── 📂 public/             # Optimized frontend production assets
+├── 📂 src/                # Backend (Hono + Baileys)
+│   ├── database.js      # Advanced SQLite schema & migrations
+│   ├── index.js         # Entry point & bootstrapper
+│   ├── server.js        # API endpoints & WebSocket handlers
+│   └── whatsapp.js      # WhatsApp client & message monitor logic
+├── 📂 web/                # Frontend (SolidJS + Vite)
+│   ├── src/             # Application source code
+│   └── index.css        # Technical Design System (50KB+ CSS)
+├── ecosystem.config.cjs    # PM2 Process Configuration
+├── Caddyfile.example      # Example reverse proxy config
+└── package.json           # Global scripts & dependencies
 ```
 
-The Vite dev server proxies `/api` and `/ws` to the backend on port 3000.
+---
 
-## Production Deployment
+## 🛡️ Security & Privacy
 
-### PM2
+Privacy is a core design principle:
+- **Local Storage**: All messages and media are stored exclusively on *your* hardware.
+- **Session Fingerprinting**: Access tokens are cryptographically bound to the device's unique hardware fingerprint using ThumbmarkJS.
+- **Secure Auth**: Dashboards are protected by standard-compliant session management with secure cookie flags.
+- **Data Audit**: The project history is regularly audited for sensitive credential leaks.
 
+---
+
+## 📡 Deployment
+
+### Using PM2 (Recommended)
 ```bash
 bun run build
 pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-### Caddy
-
-Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`, replace the domain, then:
-
+### Reverse Proxy (Caddy)
+Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`, adjust your domain, and reload:
 ```bash
 sudo systemctl reload caddy
 ```
 
-Caddy auto-provisions HTTPS. Set `NODE_ENV=production` in `.env` so session cookies are marked `Secure`.
+---
 
-## Configuration
-
-| Variable | Default | Description |
-|---|---|---|
-| `WEB_PORT` | `3000` | Web server port |
-| `AUTH_PASSWORD` | `changeme` | Dashboard login password |
-| `NOTIFY_WHATSAPP` | `false` | Send deletion alerts to your own WhatsApp |
-| `WHATSAPP_PHONE` | — | Your phone number for pairing code (optional) |
-| `NODE_ENV` | — | Set to `production` for secure cookies |
-| `TRUST_PROXY` | `false` | Set to `true` when running behind a proxy (Caddy/Nginx) |
-
-## Project Structure
-
-```
-├── src/
-│   ├── index.js        # Entry point
-│   ├── whatsapp.js     # WhatsApp client + message monitoring
-│   ├── database.js     # SQLite database
-│   └── server.js       # Hono web server + API
-├── web/                # SolidJS frontend source
-│   └── src/
-│       ├── App.tsx     # Main application & routing
-│       ├── Dashboard.tsx # Message feed & chat view
-│       ├── Settings.tsx # Configuration & monitoring pulse
-│       └── ...
-├── tests/              # Security and unit tests (Bun:test)
-├── public/             # Built frontend (generated by `bun run build`)
-├── data/               # SQLite DB + media files (git-ignored)
-├── ecosystem.config.cjs
-├── Caddyfile.example
-└── .env.example
-```
-
-## Testing
-
-The project uses `bun:test` for unit testing critical components like security and IP detection:
-
-```bash
-# Run all tests
-bun test
-```
-
-## Security
-
-- **Authentication**: Password-protected dashboard with session-based access.
-- **Fingerprinting**: ThumbmarkJS validates tokens against the original device fingerprint.
-- **Data Protection**: All sensitive session cookies are `HttpOnly` and `SameSite=Strict`.
-- **Environment**: Sensitive credentials (phone, password) managed via `.env` (git-ignored).
-- **History Audit**: Project history has been audited to ensure no sensitive data is leaked.
+<div align="center">
+  MIT License • Created for educational and personal archival purposes.
+</div>
