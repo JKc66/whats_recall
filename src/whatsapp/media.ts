@@ -25,7 +25,7 @@ function getHashWorker() {
 }
 
 async function computeHash(buffer: Buffer): Promise<string> {
-  const id = Math.random().toString(36).slice(2);
+  const id = crypto.randomUUID();
   const worker = getHashWorker();
   return new Promise((resolve) => {
     hashPending.set(id, resolve);
@@ -79,7 +79,7 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
       }
     }
 
-    const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const filename = crypto.randomUUID();
     const extension = getExtension(type);
     const relativePath = `${filename}.${extension}`;
     const fullPath = join(MEDIA_DIR, relativePath);
