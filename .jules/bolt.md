@@ -1,0 +1,3 @@
+## 2026-03-31 - Missing covering index for dashboard queries
+**Learning:** The dashboard heavily queries the SQLite database to get chat lists and unread deleted message counts using a correlated subquery on the `messages` table filtering by `chat_id` and `is_deleted`, and checking the `timestamp`. The existing indexes on `(chat_id)` and `(chat_id, is_deleted)` required falling back to table scans to filter by timestamp, causing a performance bottleneck on large chat histories.
+**Action:** Always check for covering indexes on frequently queried combinations of columns in SQLite, especially those involving sorting or range queries like `timestamp DESC`. Added `idx_messages_chat_deleted_timestamp` to make the dashboard load faster.
