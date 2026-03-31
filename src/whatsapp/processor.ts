@@ -147,7 +147,6 @@ export class MessageProcessor {
     }
 
     const mType = getContentType(msg.message) || 'stub';
-    log('PROCESSOR', `Received [${mType}] from ${rawChatId} (normalized: ${chatId})`);
 
     // Automatically track and save metadata for any newly encountered chats
     if (!syncService.chats.has(chatId) && chatId) {
@@ -156,6 +155,8 @@ export class MessageProcessor {
     }
 
     if (!(await this.checkIsMonitored(chatId))) return;
+
+    log('PROCESSOR', `Received [${mType}] from ${rawChatId} (normalized: ${chatId})`);
 
     // Recursively unwrap message layers (Ephemeral, View-Once, Document wrappers) to reach the core content
     let tempMsg: any = msg.message;

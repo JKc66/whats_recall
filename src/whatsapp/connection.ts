@@ -388,25 +388,33 @@ export class WhatsAppConnection {
         }
 
         // Track lids
-        if (id.includes('@lid') && !existing.lids.includes(id)) {
-          existing.lids.push(id.split('@')[0]);
+        const lidPart = id.includes('@lid') ? id.split('@')[0] : null;
+        if (lidPart && !existing.lids.includes(lidPart)) {
+          existing.lids.push(lidPart);
         }
 
         // Also check mapped LID for this PN
         if (baseId.includes('@s.whatsapp.net')) {
           const m_lid = syncService.pnToLid.get(baseId) || null;
-          if (m_lid && !existing.lids.includes(m_lid)) {
-            existing.lids.push(m_lid.split('@')[0]);
+          if (m_lid) {
+            const m_lidPart = m_lid.split('@')[0];
+            if (!existing.lids.includes(m_lidPart)) {
+              existing.lids.push(m_lidPart);
+            }
           }
         }
 
         // Ensure LID and PN entries for the same contact are permanently merged under the PN
         if (id !== baseId) {
           syncService.chats.delete(id);
-          if (!syncService.chats.has(baseId)) {
+          const currentBaseChat = syncService.chats.get(baseId);
+          if (!currentBaseChat) {
             syncService.chats.set(baseId, existing);
           } else {
-            syncService.chats.set(baseId, safeMerge(syncService.chats.get(baseId), existing));
+            // Merge into the existing base entry
+            syncService.chats.set(baseId, safeMerge(currentBaseChat, existing));
+            // Update our local 'existing' to reflect the merge for the rest of this loop iteration
+            Object.assign(existing, syncService.chats.get(baseId));
           }
         }
 
