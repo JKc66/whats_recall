@@ -1,7 +1,20 @@
+export type MessageType =
+  | "chat"
+  | "image"
+  | "video"
+  | "audio"
+  | "ptt"
+  | "sticker"
+  | "document"
+  | "location"
+  | "contact"
+  | "revoked"
+  | "unknown";
+
 export interface Chat {
   chat_id: string;
   name: string;
-  is_group: number;
+  is_group: boolean | number;
   last_message_at: string | null;
   deleted_count: number;
   total_deleted_count: number;
@@ -12,39 +25,39 @@ export interface Chat {
   lid: string | null;
 }
 
-export interface Message {
-  message_id: string;
-  chat_id: string;
-  sender_id: string | null;
-  sender_name: string | null;
-  body: string | null;
-  type: string;
-  has_media: number;
-  media_type: string | null;
-  media_filename: string | null;
-  media_path: string | null;
-  timestamp: number;
-  is_from_me: number;
-  is_deleted: number;
-  deleted_at: string | null;
-  is_view_once: number;
-  original_id: string | null;
-  quoted_stanza_id: string | null;
-  quoted_sender: string | null;
-  quoted_preview: string | null;
-  reactions: Reaction[];
-}
-
 export interface Reaction {
   sender_id: string;
   sender_name: string;
   emoji: string;
 }
 
+export interface Message {
+  message_id: string;
+  chat_id: string;
+  sender_id: string | null;
+  sender_name: string | null;
+  body: string | null;
+  type: MessageType | string;
+  has_media: boolean | number;
+  media_type: string | null;
+  media_filename: string | null;
+  media_path: string | null;
+  timestamp: number;
+  is_from_me: boolean | number;
+  is_deleted: boolean | number;
+  deleted_at: string | null;
+  is_view_once: boolean | number;
+  original_id: string | null;
+  quoted_stanza_id: string | null;
+  quoted_sender: string | null;
+  quoted_preview: string | null;
+  reactions?: Reaction[];
+}
+
 export interface MonitoredChat {
   chat_id: string;
   name: string;
-  is_group: number;
+  is_group: boolean | number;
   added_at: string;
   lid?: string | null;
 }
@@ -57,6 +70,7 @@ export interface WhatsAppChat {
   isMonitored: boolean;
   profilePic?: string | null;
   lid?: string | null;
+  profile_pic?: string | null; // Unified with profilePic
 }
 
 export interface Stats {
@@ -69,7 +83,18 @@ export interface Stats {
   totalChats: number;
 }
 
-export interface WsEvent {
+export interface WsEvent<T = any> {
   event: string;
-  data: unknown;
+  data: T;
+}
+
+export interface AppSettings {
+  [key: string]: string;
+}
+
+export interface PairingStatus {
+  type: "qr" | "code" | null;
+  data: string | null;
+  connected: boolean;
+  authenticated: boolean;
 }

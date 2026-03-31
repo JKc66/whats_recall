@@ -8,15 +8,16 @@ process.env.DB_PATH = join(tempDir, "messages.db");
 
 import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 
-const { initDatabase } = await import("../src/database.js");
+const { getDb } = await import("../src/db/database.ts");
 
 describe("database searchMessages", () => {
-    let db;
+    let db: any;
     const chatId = "12345@c.us";
     const groupChatId = "group123@g.us";
 
     beforeAll(async () => {
-        db = initDatabase();
+        const dbPath = process.env.DB_PATH;
+        db = getDb(dbPath, tempDir);
         await db.clearAllData();
 
         // Setup initial data
@@ -50,9 +51,6 @@ describe("database searchMessages", () => {
     });
 
     afterAll(() => {
-        if (db) {
-            db.close();
-        }
         if (tempDir) {
             rmSync(tempDir, { recursive: true, force: true });
         }
@@ -104,7 +102,7 @@ describe("database searchMessages", () => {
     test("should be case-insensitive (standard SQLite behavior for ASCII)", () => {
         const results = db.searchMessages("case");
         expect(results.length).toBe(2);
-        const bodies = results.map(r => r.body);
+        const bodies = results.map((r: any) => r.body);
         expect(bodies).toContain("CASE SENSITIVE");
         expect(bodies).toContain("case sensitive");
     });

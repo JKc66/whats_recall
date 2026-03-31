@@ -95,17 +95,40 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 ```text
 ├── 📂 data/               # Persistent storage (SQLite DB + Media files)
 ├── 📂 public/             # Optimized frontend production assets
-├── 📂 src/                # Backend (Hono + Baileys)
-│   ├── database.js      # Advanced SQLite schema & migrations
-│   ├── index.js         # Entry point & bootstrapper
-│   ├── server.js        # API endpoints & WebSocket handlers
-│   └── whatsapp.js      # WhatsApp client & message monitor logic
-├── 📂 web/                # Frontend (SolidJS + Vite)
-│   ├── src/             # Application source code
-│   └── index.css        # Technical Design System (50KB+ CSS)
+├── 📂 src/                # Backend Architecture (Modular)
+│   ├── 📂 api/          # Hono routes, middleware & WebSocket server
+│   ├── 📂 db/           # Modular SQLite database layer
+│   ├── 📂 whatsapp/     # Baileys socket, handlers, & state management
+│   ├── index.js         # Application bootstrapper
+│   └── logger.js        # Standardized logging utility
+├── 📂 web/                # Frontend (SolidJS + Vite + Tailwind v4)
+│   ├── src/             # Application logic & UI components
+│   └── index.css        # Technical Design System (Optimized T4)
 ├── ecosystem.config.cjs    # PM2 Process Configuration
-├── Caddyfile.example      # Example reverse proxy config
+├── .env.example           # Configuration template
 └── package.json           # Global scripts & dependencies
+```
+
+---
+
+## 💎 Development & Maintenance
+
+To maintain the project's design consistency, we utilize **Tailwind Canonical Classes**. This ensures all arbitrary values (like `min-h-[72px]`) are mapped to standard Tailwind units (like `min-h-18`) whenever possible.
+
+### 🧩 Automated Formatting
+Keep the project's design consistent by automatically rewriting arbitrary Tailwind classes project-wide from the root.
+
+```bash
+# Fix all classes project-wide
+bun fix
+```
+
+### 🔍 Code Quality & Linting
+Check for styling or logic issues across the entire dashboard interface:
+
+```bash
+# Project-wide lint
+bun lint
 ```
 
 ---
@@ -114,9 +137,9 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 
 Privacy is a core design principle:
 - **Local Storage**: All messages and media are stored exclusively on *your* hardware.
-- **Session Fingerprinting**: Access tokens are cryptographically bound to the device's unique hardware fingerprint using ThumbmarkJS.
-- **Secure Auth**: Dashboards are protected by standard-compliant session management with secure cookie flags.
-- **Data Audit**: The project history is regularly audited for sensitive credential leaks.
+- **Session Fingerprinting**: Access tokens are cryptographically bound to the device's unique hardware fingerprint via **ThumbmarkJS**.
+- **Secure Auth**: Dashboards are protected by standard-compliant session management with `HttpOnly` and `SameSite=Strict` cookie flags.
+- **Zero Extinction**: Deleted messages are preserved in WAL mode, ensuring durability even during sudden restarts.
 
 ---
 

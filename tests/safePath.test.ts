@@ -1,15 +1,11 @@
 import { expect, test, describe, mock, beforeEach } from "bun:test";
 
 describe("safePath", () => {
-    let safePath;
-    let resolve, join;
+    let safePath: any;
+    let resolve: any, join: any;
 
     beforeEach(async () => {
-        mock.module("hono", () => ({ Hono: class { } }));
-        mock.module("hono/cookie", () => ({ getCookie: () => { }, setCookie: () => { }, deleteCookie: () => { } }));
-        mock.module("./database.js", () => ({ MEDIA_DIR: "/tmp" }));
-
-        const server = await import("../src/server.js");
+        const server = await import("../src/api/utils.ts");
         safePath = server.safePath;
         const path = await import("path");
         resolve = path.resolve;

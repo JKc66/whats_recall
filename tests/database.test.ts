@@ -8,7 +8,7 @@ process.env.DB_PATH = join(tempDir, "messages.db");
 
 import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 
-const { initDatabase, MEDIA_DIR } = await import("../src/database.js");
+const { getDb, MEDIA_DIR } = await import("../src/db/database.ts");
 
 afterAll(() => {
     if (tempDir) {
@@ -17,16 +17,15 @@ afterAll(() => {
 });
 
 describe("database clearAllData", () => {
-    let db;
+    let db: any;
 
     beforeAll(() => {
-        db = initDatabase();
+        const dbPath = process.env.DB_PATH;
+        db = getDb(dbPath, tempDir);
     });
 
     afterAll(() => {
-        if (db) {
-            db.close();
-        }
+        // We don't close the singleton in tests to avoid RangeError in subsequent describes
     });
 
     test("should clear messages, chats, reactions, and media", async () => {
@@ -87,16 +86,15 @@ describe("database clearAllData", () => {
 });
 
 describe("database deleteChatsAndMessages", () => {
-    let db;
+    let db: any;
 
     beforeAll(() => {
-        db = initDatabase();
+        const dbPath = process.env.DB_PATH;
+        db = getDb(dbPath, tempDir);
     });
 
     afterAll(() => {
-        if (db) {
-            db.close();
-        }
+        // Do not close db singleton
     });
 
     test("should delete chat, messages, reactions, exclusive media, and profile pic, but preserve shared media", async () => {
@@ -179,7 +177,7 @@ describe("database deleteChatsAndMessages", () => {
 
         // Verify reaction
         const msgs = db.getMessages(chat1);
-        const msg1 = msgs.find(m => m.message_id === "MSG1_CHAT1");
+        const msg1 = msgs.find((m: any) => m.message_id === "MSG1_CHAT1");
         expect(msg1.reactions.length).toBe(1);
 
         // Delete chat1

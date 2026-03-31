@@ -1,18 +1,16 @@
 import { expect, test, describe, afterEach, mock, beforeEach } from "bun:test";
 
-mock.module("hono", () => ({ Hono: class { } }));
-mock.module("hono/cookie", () => ({ getCookie: () => { }, setCookie: () => { }, deleteCookie: () => { } }));
-mock.module("./database.js", () => ({ MEDIA_DIR: "/tmp" }));
-
 describe("Rate Limiting", () => {
-    let apiRateLimits, checkApiRateLimit, pruneApiRateLimits;
-    let originalDateNow;
+    let apiRateLimits: Map<string, any>;
+    let checkApiRateLimit: Function;
+    let pruneApiRateLimits: Function;
+    let originalDateNow: any;
 
     beforeEach(async () => {
-        const server = await import("../src/server.js");
-        apiRateLimits = server.apiRateLimits;
-        checkApiRateLimit = server.checkApiRateLimit;
-        pruneApiRateLimits = server.pruneApiRateLimits;
+        const utils = await import("../src/api/utils.ts");
+        apiRateLimits = utils.apiRateLimits;
+        checkApiRateLimit = utils.checkApiRateLimit;
+        pruneApiRateLimits = utils.pruneApiRateLimits;
 
         apiRateLimits.clear();
         originalDateNow = Date.now;

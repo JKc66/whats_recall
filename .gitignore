@@ -10,3 +10,10 @@ nohup.out
 skills-lock.json
 .agents/
 .agent/
+
+*.tsbuildinfo
+dist/
+build/
+coverage/
+.DS_Store
+.vscode/

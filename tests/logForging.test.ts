@@ -1,5 +1,5 @@
 import { expect, test, describe, spyOn } from "bun:test";
-import { log } from "../src/logger.js";
+import { log } from "../src/logger.ts";
 
 describe("Log Forging Mitigation", () => {
     test("should prevent log forging by sanitizing newline characters", () => {

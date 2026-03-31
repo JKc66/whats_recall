@@ -1,15 +1,24 @@
-import { createEffect, onMount, onCleanup, Show } from 'solid-js';
-import { Toaster } from 'solid-toast';
-import { verifyAuth, fetchStatsSilent, fetchChatsSilent, fetchMessagesSilent, createWs } from './api';
+import { createEffect, onMount, onCleanup, Show } from "solid-js";
+import { Toaster } from "solid-toast";
 import {
-  authenticated, setAuthenticated,
-  setChats, setStats, stats,
-  currentChatId, setMessages,
-} from './store';
-import { notify } from './notify';
-import type { Message, Chat } from './types';
-import Login from './Login';
-import Dashboard from './Dashboard';
+  verifyAuth,
+  fetchStatsSilent,
+  fetchChatsSilent,
+  fetchMessagesSilent,
+  createWs,
+} from "./api";
+import {
+  authenticated,
+  setAuthenticated,
+  setChats,
+  setStats,
+  currentChatId,
+  setMessages,
+} from "./store";
+import { notify } from "./notify";
+import type { Message, Chat } from "./types";
+import Login from "./Login";
+import Dashboard from "./Dashboard";
 
 export default function App() {
   let bootstrapped = false;
@@ -47,20 +56,20 @@ export default function App() {
 
   function startFocusRefresh() {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && authenticated() === true) {
+      if (document.visibilityState === "visible" && authenticated() === true) {
         silentRefresh();
       }
     };
 
-    document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener("visibilitychange", onVisible);
     onCleanup(() => {
-      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
     });
   }
 
   function connectWs() {
     createWs((event, data) => {
-      if (event === 'status') {
+      if (event === "status") {
         const d = data as { connected: boolean; authenticated?: boolean };
         setStats((s) => ({
           ...s,
@@ -69,7 +78,7 @@ export default function App() {
         }));
       }
 
-      if (event === 'new_message') {
+      if (event === "new_message") {
         const msg = data as any;
         const chatId = msg.chat_id;
         const chatName = msg.chat_name;
@@ -92,18 +101,21 @@ export default function App() {
             };
             return updated;
           }
-          return [{
-            chat_id: chatId,
-            name: chatName,
-            is_group: isGroup ? 1 : 0,
-            last_message_at: new Date().toISOString(),
-            last_message_preview: (msg.body as string) || `[${msg.type}]`,
-            last_message_sender: senderName,
-            deleted_count: 0,
-            total_deleted_count: 0,
-            total_messages: 1,
-            profile_pic: profilePic,
-          } as Chat, ...prev];
+          return [
+            {
+              chat_id: chatId,
+              name: chatName,
+              is_group: isGroup ? 1 : 0,
+              last_message_at: new Date().toISOString(),
+              last_message_preview: (msg.body as string) || `[${msg.type}]`,
+              last_message_sender: senderName,
+              deleted_count: 0,
+              total_deleted_count: 0,
+              total_messages: 1,
+              profile_pic: profilePic,
+            } as Chat,
+            ...prev,
+          ];
         });
 
         if (currentChatId() === chatId) {
@@ -119,12 +131,12 @@ export default function App() {
         }
       }
 
-      if (event === 'message_deleted') {
+      if (event === "message_deleted") {
         const msg = data as Message & { chatName: string; isGroup: number };
 
         notify.deleted(
-          msg.sender_name || 'Unknown',
-          msg.body ? msg.body.slice(0, 80) : '[Media]'
+          msg.sender_name || "Unknown",
+          msg.body ? msg.body.slice(0, 80) : "[Media]",
         );
 
         if (currentChatId() === msg.chat_id) {
@@ -132,8 +144,8 @@ export default function App() {
             prev.map((m) =>
               m.message_id === msg.message_id
                 ? { ...m, is_deleted: 1, deleted_at: msg.deleted_at }
-                : m
-            )
+                : m,
+            ),
           );
         }
 
@@ -148,18 +160,21 @@ export default function App() {
             };
             return updated;
           }
-          return [{
-            chat_id: msg.chat_id,
-            name: msg.chatName || msg.sender_name || msg.chat_id,
-            is_group: msg.isGroup || 0,
-            last_message_at: new Date().toISOString(),
-            last_message_preview: msg.body || '[Deleted message]',
-            last_message_sender: msg.sender_name || null,
-            deleted_count: 1,
-            total_deleted_count: 1,
-            total_messages: 1,
-            profile_pic: null,
-          } as Chat, ...prev];
+          return [
+            {
+              chat_id: msg.chat_id,
+              name: msg.chatName || msg.sender_name || msg.chat_id,
+              is_group: msg.isGroup || 0,
+              last_message_at: new Date().toISOString(),
+              last_message_preview: msg.body || "[Deleted message]",
+              last_message_sender: msg.sender_name || null,
+              deleted_count: 1,
+              total_deleted_count: 1,
+              total_messages: 1,
+              profile_pic: null,
+            } as Chat,
+            ...prev,
+          ];
         });
 
         setStats((s) => ({
@@ -168,18 +183,30 @@ export default function App() {
         }));
       }
 
-      if (event === 'message_reaction') {
-        const r = data as { chat_id: string; message_id: string; sender_id: string; sender_name: string; emoji: string };
+      if (event === "message_reaction") {
+        const r = data as {
+          chat_id: string;
+          message_id: string;
+          sender_id: string;
+          sender_name: string;
+          emoji: string;
+        };
         if (currentChatId() === r.chat_id) {
           setMessages((prev) =>
             prev.map((m) => {
               if (m.message_id !== r.message_id) return m;
-              const existing = (m.reactions || []).filter(rx => rx.sender_id !== r.sender_id);
+              const existing = (m.reactions || []).filter(
+                (rx) => rx.sender_id !== r.sender_id,
+              );
               if (r.emoji) {
-                existing.push({ sender_id: r.sender_id, sender_name: r.sender_name, emoji: r.emoji });
+                existing.push({
+                  sender_id: r.sender_id,
+                  sender_name: r.sender_name,
+                  emoji: r.emoji,
+                });
               }
               return { ...m, reactions: existing };
-            })
+            }),
           );
         }
       }
@@ -194,8 +221,22 @@ export default function App() {
 
   return (
     <>
-      <div class="bg-pattern" aria-hidden="true" />
-      <Show when={authenticated() !== null} fallback={<div class="loading-screen"><div class="spinner" /></div>}>
+      <div
+        class="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-accent-dim)_0%,transparent_70%),radial-gradient(ellipse_50%_60%_at_100%_80%,var(--color-accent-muted)_0%,transparent_60%)] after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1px)] after:bg-size-[40px_40px] after:mask-[radial-gradient(ellipse_at_center,black_30%,transparent_80%)]"
+        aria-hidden="true"
+      />
+      <Show
+        when={authenticated() !== null}
+        fallback={
+          <div class="flex flex-col items-center justify-center min-h-dvh gap-4 animate-entrance">
+            <div class="flex gap-1.5">
+              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse [animation-delay:0.2s]" />
+              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse [animation-delay:0.4s]" />
+            </div>
+          </div>
+        }
+      >
         <Show when={authenticated()} fallback={<Login />}>
           <Dashboard />
         </Show>
@@ -203,16 +244,16 @@ export default function App() {
       <Toaster
         position="top-right"
         gutter={8}
-        containerStyle={{ 'z-index': '2100' }}
+        containerStyle={{ "z-index": "2100" }}
         toastOptions={{
           style: {
-            background: 'var(--bg-elevated)',
-            color: 'var(--text)',
-            border: '1px solid var(--border-strong)',
-            'border-radius': 'var(--radius)',
-            'font-family': 'inherit',
-            'font-size': '13px',
-            'box-shadow': 'var(--shadow-lg)',
+            background: "var(--color-bg-elevated)",
+            color: "var(--color-zinc-100)",
+            border: "1px solid var(--color-border-strong)",
+            "border-radius": "var(--radius-lg)",
+            "font-family": "inherit",
+            "font-size": "13px",
+            "box-shadow": "0 20px 60px -15px rgba(0, 0, 0, 0.8)",
           },
           duration: 4000,
         }}

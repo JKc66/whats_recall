@@ -1,16 +1,12 @@
 import { expect, test, describe, afterEach, mock, beforeEach } from "bun:test";
 
 describe("getClientIp", () => {
-    let getClientIp;
+    let getClientIp: any;
     const originalEnv = process.env.TRUST_PROXY;
 
     beforeEach(async () => {
-        mock.module("hono", () => ({ Hono: class { } }));
-        mock.module("hono/cookie", () => ({ getCookie: () => { }, setCookie: () => { }, deleteCookie: () => { } }));
-        mock.module("./database.js", () => ({ MEDIA_DIR: "/tmp" }));
-
         // Reset process.env before import might not work if bun caches, but we'll try
-        const module = await import("../src/server.js");
+        const module = await import("../src/api/utils.ts");
         getClientIp = module.getClientIp;
     });
 
@@ -22,9 +18,9 @@ describe("getClientIp", () => {
         }
     });
 
-    const mockContext = (headers = {}, remoteAddress = "127.0.0.1") => ({
+    const mockContext = (headers: Record<string, string> = {}, remoteAddress = "127.0.0.1") => ({
         req: {
-            header: (name) => headers[name.toLowerCase()],
+            header: (name: string) => headers[name.toLowerCase()],
             raw: {
                 socket: {
                     remoteAddress

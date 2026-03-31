@@ -1,4 +1,4 @@
-import { JSX, splitProps } from 'solid-js';
+import { JSX, splitProps } from "solid-js";
 
 export interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
   size?: number | string;
@@ -7,8 +7,17 @@ export interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
   fill?: string;
 }
 
-const IconBase = (props: IconProps & { children: JSX.Element; viewBox?: string }) => {
-  const [local, others] = splitProps(props, ['size', 'children', 'class', 'color', 'viewBox', 'fill']);
+const IconBase = (
+  props: IconProps & { children: JSX.Element; viewBox?: string },
+) => {
+  const [local, others] = splitProps(props, [
+    "size",
+    "children",
+    "class",
+    "color",
+    "viewBox",
+    "fill",
+  ]);
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

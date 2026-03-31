@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { safeMerge } from "../src/whatsapp.js";
+import { safeMerge } from "../src/whatsapp/utils.ts";
 
 describe("safeMerge", () => {
     test("should merge two objects correctly", () => {

@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'msg-monitor',
-    script: 'src/index.js',
+    script: 'src/index.ts',
     interpreter: 'bun',
     env: {
       NODE_ENV: 'production',

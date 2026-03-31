@@ -1,37 +1,25 @@
-import { expect, test, describe, spyOn, afterEach, beforeEach } from "bun:test";
-import { log } from "../src/logger.js";
+import { expect, test, describe, spyOn, afterEach, beforeEach, setSystemTime } from "bun:test";
+import { log } from "../src/logger.ts";
 
 describe("logger", () => {
-    let consoleSpy;
-    let OriginalDate;
+    let consoleSpy: any;
 
     beforeEach(() => {
         consoleSpy = spyOn(console, "log").mockImplementation(() => {});
-        OriginalDate = global.Date;
     });
 
     afterEach(() => {
-        consoleSpy.mockRestore();
-        global.Date = OriginalDate;
+        if (consoleSpy) consoleSpy.mockRestore();
+        setSystemTime(); // Reset system time to normal clock
     });
 
-    function mockSystemDate(isoString) {
-        const fixedDate = new OriginalDate(isoString);
-        global.Date = class extends OriginalDate {
-            constructor(arg) {
-                if (arg) {
-                    return new OriginalDate(arg);
-                }
-                return fixedDate;
-            }
-            static now() {
-                return fixedDate.getTime();
-            }
-        };
+    function mockSystemDate(isoString: string) {
+        setSystemTime(new Date(isoString));
     }
 
+
     // Helper to strip ANSI codes for testing the text content
-    const stripAnsi = (str) => str.replace(/\x1b\[[0-9;]*m/g, "");
+    const stripAnsi = (str: string) => str.replace(/\x1b\[[0-9;]*m/g, "");
 
     test("should log message with correct format and timestamp", () => {
         mockSystemDate("2023-10-27T10:20:30");
