@@ -2,9 +2,8 @@ import { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { getDb } from '../db/database.ts';
 
-const db = getDb();
-
 export async function authMiddleware(c: Context, next: Next) {
+  const db = getDb();
   const path = c.req.path;
   if (path.includes('/api/auth/login') || path.includes('/api/auth/verify')) {
     return await next();
