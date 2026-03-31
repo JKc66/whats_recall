@@ -66,7 +66,7 @@ export function createHonoServer(client: WhatsAppConnection) {
     const db = getDb();
     db.cleanExpiredSessions();
     pruneApiRateLimits();
-  }, 600_000);
+  }, 600_000).unref();
 
   // API Routes
   const api = new Hono();

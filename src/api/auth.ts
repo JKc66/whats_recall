@@ -24,7 +24,7 @@ function pruneLoginAttempts() {
   }
 }
 
-setInterval(pruneLoginAttempts, 60_000);
+setInterval(pruneLoginAttempts, 60_000).unref();
 
 auth.get('/uptime', (c) => {
   return c.json({ uptime: Math.floor((Date.now() - startTime) / 1000) });

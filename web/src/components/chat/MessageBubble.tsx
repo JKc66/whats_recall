@@ -1,4 +1,4 @@
-import { Show, For } from "solid-js";
+import { Show, For, createMemo } from "solid-js";
 import type { Message, Reaction } from "../../types";
 import { avatarColor, formatTime, extractPhone } from "../../utils";
 import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon } from "../Icons";
@@ -15,21 +15,26 @@ interface MessageBubbleProps {
 }
 
 function HighlightedText(props: { text: string; query?: string }) {
-  if (!props.query || props.query.trim().length === 0) return <span>{props.text}</span>;
+  const query = createMemo(() => props.query?.trim() || "");
   
-  const query = props.query.trim();
-  const parts = props.text.split(new RegExp(`(${query})`, 'gi'));
+  const parts = createMemo(() => {
+    const q = query();
+    if (!q) return [props.text];
+    return props.text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  });
   
   return (
-    <span>
-      <For each={parts}>
-        {(part) => (
-          part.toLowerCase() === query.toLowerCase() 
-            ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark> 
-            : part
-        )}
-      </For>
-    </span>
+    <Show when={query()} fallback={<span>{props.text}</span>}>
+      <span>
+        <For each={parts()}>
+          {(part) => (
+            part.toLowerCase() === query().toLowerCase() 
+              ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark> 
+              : part
+          )}
+        </For>
+      </span>
+    </Show>
   );
 }
 
