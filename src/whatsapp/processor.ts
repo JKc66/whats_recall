@@ -3,7 +3,6 @@ import { log } from '../logger.js';
 import { getDb, MEDIA_DIR } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { downloadMedia } from './media.ts';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
 import { getChatNameAsync, isGroup } from './utils.ts';
@@ -370,7 +369,7 @@ export class MessageProcessor {
 
       if (msg.has_media && msg.media_path) {
         const fullPath = join(MEDIA_DIR, msg.media_path);
-        if (existsSync(fullPath)) {
+        if (await Bun.file(fullPath).exists()) {
           const content: any = { caption: text };
           if (msg.type === 'image') content.image = { url: fullPath };
           else if (msg.type === 'video') content.video = { url: fullPath };
@@ -404,7 +403,7 @@ export class MessageProcessor {
 
       if (msg.has_media && msg.media_path) {
         const fullPath = join(MEDIA_DIR, msg.media_path);
-        if (existsSync(fullPath)) {
+        if (await Bun.file(fullPath).exists()) {
           const mediaType = msg.type;
           const content: any = { caption: text };
 
