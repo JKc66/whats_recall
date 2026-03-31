@@ -83,9 +83,6 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 | :--- | :--- | :--- |
 | `WEB_PORT` | `3001` | The port the Hono server will listen on. |
 | `AUTH_PASSWORD` | `—` | **Required.** Password for dashboard access. |
-| `WHATSAPP_PHONE` | `—` | Phone number for Pairing Code mode. |
-| `WHATSAPP_PAIRING_METHOD` | `code` | Pairing method: `code` or `qr`. |
-| `NOTIFY_WHATSAPP` | `false` | Receive a WhatsApp alert for deleted messages. |
 | `NODE_ENV` | `development` | Set to `production` for secure/https-only cookies. |
 | `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Proxy. |
 | `DB_PATH` | `./data/...` | Optional custom SQLite database path. |

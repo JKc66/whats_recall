@@ -110,9 +110,9 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
   const seed = (key: string, val: string) => {
     db.query('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run(key, val);
   };
-  seed('whatsapp_phone', process.env.WHATSAPP_PHONE || '');
-  seed('whatsapp_notify', process.env.NOTIFY_WHATSAPP || 'false');
-  seed('whatsapp_pairing_method', process.env.WHATSAPP_PAIRING_METHOD || 'code');
+  seed('whatsapp_phone', '');
+  seed('whatsapp_notify', 'false');
+  seed('whatsapp_pairing_method', 'code');
 
   const dbMethods = {
     // Chat Operations
