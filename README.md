@@ -37,9 +37,9 @@
 
 | Layer | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Runtime** | [Bun](https://bun.sh) | High-performance JS runtime with native SQLite and TS support. |
+| **Runtime** | [Bun](https://bun.sh) | High-performance JS runtime with native TS support. |
 | **Backend** | [Hono](https://hono.dev/) | Ultra-fast web framework with standard-compliant fetch API. |
-| **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and zero-overhead UI components. |
+| **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
 | **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
 | **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
 | **Design** | Technical Glass | Deep OLED blacks, 32px blurs, and `JetBrains Mono` typography. |
@@ -56,7 +56,7 @@ Ensure you have [Bun](https://bun.sh) installed on your system.
 git clone <your-repo-url>
 cd whatsapp_logger
 
-# Install all dependencies and build the UI
+# Install and build the frontend
 bun install
 bun run build
 ```
@@ -83,10 +83,13 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 | :--- | :--- | :--- |
 | `WEB_PORT` | `3001` | The port the Hono server will listen on. |
 | `AUTH_PASSWORD` | `—` | **Required.** Password for dashboard access. |
-| `WHATSAPP_PHONE` | `—` | Your phone number (with country code) for Pairing Code mode. |
-| `NOTIFY_WHATSAPP` | `false` | Receive a WhatsApp alert whenever a message is deleted. |
-| `NODE_ENV` | `development` | Set to `production` to enable secure/https-only cookies. |
-| `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Cloudflare. |
+| `WHATSAPP_PHONE` | `—` | Phone number for Pairing Code mode. |
+| `WHATSAPP_PAIRING_METHOD` | `code` | Pairing method: `code` or `qr`. |
+| `NOTIFY_WHATSAPP` | `false` | Receive a WhatsApp alert for deleted messages. |
+| `NODE_ENV` | `development` | Set to `production` for secure/https-only cookies. |
+| `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Proxy. |
+| `DB_PATH` | `./data/...` | Optional custom SQLite database path. |
+| `MEDIA_DIR` | `./data/media`| Optional custom directory for media storage. |
 
 ---
 
@@ -95,15 +98,19 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 ```text
 ├── 📂 data/               # Persistent storage (SQLite DB + Media files)
 ├── 📂 public/             # Optimized frontend production assets
-├── 📂 src/                # Backend Architecture (Modular)
+├── 📂 src/                # Backend Architecture (TypeScript)
 │   ├── 📂 api/          # Hono routes, middleware & WebSocket server
 │   ├── 📂 db/           # Modular SQLite database layer
 │   ├── 📂 whatsapp/     # Baileys socket, handlers, & state management
-│   ├── index.js         # Application bootstrapper
-│   └── logger.js        # Standardized logging utility
+│   ├── 📂 workers/      # Multi-threaded background tasks
+│   ├── index.ts         # Application bootstrapper
+│   ├── logger.ts        # Standardized logging utility
+│   └── types.ts         # Shared TypeScript definitions
 ├── 📂 web/                # Frontend (SolidJS + Vite + Tailwind v4)
-│   ├── src/             # Application logic & UI components
-│   └── index.css        # Technical Design System (Optimized T4)
+│   ├── 📂 src/          # Application logic & UI components
+│   │   ├── index.css    # Technical Design System (Optimized T4)
+│   │   └── ...
+│   └── index.html       # Web entry point
 ├── ecosystem.config.cjs    # PM2 Process Configuration
 ├── .env.example           # Configuration template
 └── package.json           # Global scripts & dependencies
@@ -130,6 +137,11 @@ Check for styling or logic issues across the entire dashboard interface:
 # Project-wide lint
 bun lint
 ```
+
+### 🛠️ Advanced Tools
+- `bun dev`: Start development server with hot-reloading.
+- `bun test`: Run test suite.
+- `bun run typecheck`: Validate TypeScript types across the backend.
 
 ---
 

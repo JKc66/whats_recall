@@ -11,7 +11,7 @@ describe("Log Forging Mitigation", () => {
         const elapsed = 50;
 
         // The sanitization logic from src/server.js
-        const sanitize = (p) => p.replace(/[\n\r]/g, '');
+        const sanitize = (p: string) => p.replace(/[\n\r]/g, '');
         const safePath = sanitize(maliciousPath);
 
         log('HTTP', `${method} ${safePath} → ${status} (${elapsed}ms)`);

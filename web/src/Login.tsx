@@ -1,7 +1,6 @@
 import { createSignal, Show, onMount, onCleanup } from "solid-js";
 import { login, fetchUptime } from "./api";
 import { setAuthenticated } from "./store";
-import { LockIcon, ShieldIcon, UserIcon } from "./components/Icons";
 import { notify } from "./notify";
 
 export default function Login() {
@@ -88,7 +87,7 @@ export default function Login() {
       {/* CRT Scanline Effect */}
       <div 
         class="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
-        style="background: repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px);"
+        style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
       />
       
       {/* Technical Background Grid */}
