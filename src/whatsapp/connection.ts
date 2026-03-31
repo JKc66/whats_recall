@@ -465,7 +465,8 @@ export class WhatsAppConnection {
 
       // Refresh profile pictures for all monitored chats in the background
       const monitoredChatsToFetch = results.filter(c => c.isMonitored).slice(0, 30);
-      Promise.all(monitoredChatsToFetch.map(c => this.getProfilePic(c.id))).catch(() => {});
+      Promise.all(monitoredChatsToFetch.map(c => this.getProfilePic(c.id)))
+        .catch((e: any) => log('CONN', `Error refreshing monitored profile pictures: ${e.message}`));
 
       return results.sort((a, b) => b.timestamp - a.timestamp);
     } catch (e: any) {
@@ -492,7 +493,10 @@ export class WhatsAppConnection {
       await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
       db.updateChatProfilePic(jid, filename);
       return filename;
-    } catch { return null; }
+    } catch (e: any) {
+      log('CONN', `Error getting profile picture for ${jid}: ${e.message}`);
+      return null;
+    }
   }
 
   public async reset(requestPairing = true) {
