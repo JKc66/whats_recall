@@ -8,7 +8,10 @@ process.env.DB_PATH = join(tempDir, "messages.db");
 
 import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 
-const { getDb, MEDIA_DIR } = await import("../src/db/database.ts");
+const testMediaDir = join(tempDir, "media");
+if (!existsSync(testMediaDir)) mkdirSync(testMediaDir, { recursive: true });
+
+const { getDb } = await import("../src/db/database.ts");
 
 afterAll(() => {
     if (tempDir) {
@@ -21,7 +24,7 @@ describe("database clearAllData", () => {
 
     beforeAll(() => {
         const dbPath = process.env.DB_PATH;
-        db = getDb(dbPath, tempDir);
+        db = getDb(dbPath, testMediaDir);
     });
 
     afterAll(() => {
@@ -53,7 +56,7 @@ describe("database clearAllData", () => {
         db.addReaction(messageId, senderId, "Test Sender", "👍");
 
         // 2. Create a dummy media file
-        const testMediaFile = join(MEDIA_DIR, "test-media.jpg");
+        const testMediaFile = join(testMediaDir, "test-media.jpg");
         writeFileSync(testMediaFile, "dummy content");
 
         // Verify data was inserted
@@ -80,7 +83,7 @@ describe("database clearAllData", () => {
         expect(messagesAfter.length).toBe(0);
 
         // Verify media directory is recreated but empty
-        expect(existsSync(MEDIA_DIR)).toBe(true);
+        expect(existsSync(testMediaDir)).toBe(true);
         expect(existsSync(testMediaFile)).toBe(false);
     });
 });
@@ -90,7 +93,7 @@ describe("database deleteChatsAndMessages", () => {
 
     beforeAll(() => {
         const dbPath = process.env.DB_PATH;
-        db = getDb(dbPath, tempDir);
+        db = getDb(dbPath, testMediaDir);
     });
 
     afterAll(() => {
@@ -107,13 +110,13 @@ describe("database deleteChatsAndMessages", () => {
         const exclusiveMedia = "exclusive.jpg";
         const profilePic = "profile.jpg";
 
-        if (!existsSync(MEDIA_DIR)) {
-            mkdirSync(MEDIA_DIR, { recursive: true });
+        if (!existsSync(testMediaDir)) {
+            mkdirSync(testMediaDir, { recursive: true });
         }
 
-        writeFileSync(join(MEDIA_DIR, sharedMedia), "shared");
-        writeFileSync(join(MEDIA_DIR, exclusiveMedia), "exclusive");
-        writeFileSync(join(MEDIA_DIR, profilePic), "profile");
+        writeFileSync(join(testMediaDir, sharedMedia), "shared");
+        writeFileSync(join(testMediaDir, exclusiveMedia), "exclusive");
+        writeFileSync(join(testMediaDir, profilePic), "profile");
 
         db.upsertChat(chat1, "Chat 1", false);
         db.updateChatProfilePic(chat1, profilePic);
@@ -171,9 +174,9 @@ describe("database deleteChatsAndMessages", () => {
         // Verify initial state
         expect(db.getChats().length).toBe(2);
         expect(db.getMessages(chat1).length).toBe(2);
-        expect(existsSync(join(MEDIA_DIR, sharedMedia))).toBe(true);
-        expect(existsSync(join(MEDIA_DIR, exclusiveMedia))).toBe(true);
-        expect(existsSync(join(MEDIA_DIR, profilePic))).toBe(true);
+        expect(existsSync(join(testMediaDir, sharedMedia))).toBe(true);
+        expect(existsSync(join(testMediaDir, exclusiveMedia))).toBe(true);
+        expect(existsSync(join(testMediaDir, profilePic))).toBe(true);
 
         // Verify reaction
         const msgs = db.getMessages(chat1);
@@ -192,10 +195,10 @@ describe("database deleteChatsAndMessages", () => {
         expect(db.getMessages(chat1).length).toBe(0);
 
         // Verify exclusive media and profile pic are deleted
-        expect(existsSync(join(MEDIA_DIR, exclusiveMedia))).toBe(false);
-        expect(existsSync(join(MEDIA_DIR, profilePic))).toBe(false);
+        expect(existsSync(join(testMediaDir, exclusiveMedia))).toBe(false);
+        expect(existsSync(join(testMediaDir, profilePic))).toBe(false);
 
         // Verify shared media is preserved
-        expect(existsSync(join(MEDIA_DIR, sharedMedia))).toBe(true);
+        expect(existsSync(join(testMediaDir, sharedMedia))).toBe(true);
     });
 });

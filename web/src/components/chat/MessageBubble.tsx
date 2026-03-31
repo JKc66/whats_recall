@@ -1,7 +1,8 @@
-import { Show, For, createMemo } from "solid-js";
+import { Show, For, createMemo, createSignal } from "solid-js";
 import type { Message, Reaction } from "../../types";
 import { avatarColor, formatTime, extractPhone } from "../../utils";
-import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon } from "../Icons";
+import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon, CheckIcon } from "../Icons";
+import { notify } from "../../notify";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -177,7 +178,8 @@ export function MessageBubble(props: MessageBubbleProps) {
             <a
               href={src}
               download={msg.media_filename || "download"}
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-accent border border-white/10 backdrop-blur-md"
+              aria-label="Download image"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/10 backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -198,7 +200,8 @@ export function MessageBubble(props: MessageBubbleProps) {
           <a
             href={src}
             download={msg.media_filename || "download"}
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-accent border border-white/10 backdrop-blur-md"
+            aria-label="Download video"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/10 backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -228,7 +231,8 @@ export function MessageBubble(props: MessageBubbleProps) {
         <a
           href={src}
           download={msg.media_filename || "download"}
-          class="ml-auto w-7 h-7 rounded-sm bg-white/10 flex items-center justify-center hover:bg-white/20"
+          aria-label="Download file"
+          class="ml-auto w-7 h-7 rounded-sm bg-white/10 flex items-center justify-center hover:bg-white/20 focus-visible:bg-accent focus-visible:text-white outline-none"
         >
           <DownloadIcon size={14} stroke-width={2.5} />
         </a>
@@ -279,8 +283,17 @@ export function MessageBubble(props: MessageBubbleProps) {
 
       <Show when={formattedReply()}>
         <div
-          class="relative bg-zinc-900/60 rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-zinc-400 overflow-hidden transition-all hover:bg-zinc-800/80 cursor-pointer group/reply border border-white/5"
+          class="relative bg-zinc-900/60 rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-zinc-400 overflow-hidden transition-all hover:bg-zinc-800/80 cursor-pointer group/reply border border-white/5 outline-none focus-visible:ring-1 ring-accent/50"
           onClick={handleQuoteClick}
+          role="button"
+          tabindex="0"
+          aria-label={`Reply to ${formattedReply()?.sender || 'message'}`}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleQuoteClick();
+            }
+          }}
         >
           <div 
             class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg"
@@ -386,7 +399,12 @@ export function ImageGroup(props: {
     props.messages.filter((m) => m.has_media && m.media_path);
   const imageCount = () => imageMessages().length;
 
+  const [isDownloading, setIsDownloading] = createSignal(false);
   function downloadAll() {
+    if (isDownloading()) return;
+    setIsDownloading(true);
+    notify.info("Starting download...", `${imageCount()} photos`);
+    
     imageMessages().forEach((msg, index) => {
       setTimeout(() => {
         const link = document.createElement("a");
@@ -395,6 +413,10 @@ export function ImageGroup(props: {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        if (index === imageMessages().length - 1) {
+          setTimeout(() => setIsDownloading(false), 2000);
+        }
       }, index * 200);
     });
   }
@@ -452,7 +474,8 @@ export function ImageGroup(props: {
               <a
                 href={mediaUrl(msg.media_path!)}
                 download={msg.media_filename || "download"}
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-accent border border-white/5 backdrop-blur-sm z-10"
+                aria-label="Download photo"
+                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/5 backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
               >
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
@@ -481,10 +504,15 @@ export function ImageGroup(props: {
           </span>
           <Show when={imageCount() > 1}>
             <button
-              class="inline-flex items-center gap-1 bg-white/5 hover:bg-accent-muted border border-white/10 rounded-full px-2 py-0.5 text-[9px] font-bold text-zinc-400 hover:text-accent transition-all uppercase tracking-wide"
+              class="inline-flex items-center gap-1 bg-white/5 hover:bg-accent-muted border border-white/10 rounded-full px-2 py-0.5 text-[9px] font-bold text-zinc-400 hover:text-accent transition-all uppercase tracking-wide outline-none focus-visible:ring-1 ring-accent"
               onClick={downloadAll}
+              aria-label={`Download all ${imageCount()} photos`}
+              disabled={isDownloading()}
             >
-              <DownloadIcon size={10} stroke-width={2.5} /> Album
+              <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} />}>
+                <CheckIcon size={10} class="text-emerald-500 animate-in zoom-in duration-300" />
+              </Show> 
+              {isDownloading() ? "Downloaded" : "Album"}
             </button>
           </Show>
         </div>

@@ -123,6 +123,11 @@ export default function ChatHeader(props: ChatHeaderProps) {
               !props.showOnlyDeleted,
           }}
           onClick={() => props.onShowOnlyDeletedChange(!props.showOnlyDeleted)}
+          aria-label={
+            props.showOnlyDeleted
+              ? "Showing only deleted messages"
+              : "Showing all messages"
+          }
           title={
             props.showOnlyDeleted
               ? "Showing ONLY deleted messages"

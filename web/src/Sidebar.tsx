@@ -184,7 +184,13 @@ export default function Sidebar() {
               <Show when={isSearchActive()} fallback={<span>No chats found</span>}>
                 <span class="text-[20px] mb-1">🔍</span>
                 <span>No messages found for</span>
-                <span class="text-zinc-300 font-mono text-[12px] bg-white/5 px-2 py-0.5 rounded mt-0.5">"{searchQuery().trim()}"</span>
+                <span class="text-zinc-300 font-mono text-[12px] bg-white/5 px-2 py-0.5 rounded mt-0.5 max-w-48 truncate">"{searchQuery().trim()}"</span>
+                <button
+                  class="mt-2 text-[11px] font-bold text-accent uppercase tracking-wider hover:bg-accent/10 py-1 px-2.5 rounded transition-colors"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear search
+                </button>
               </Show>
             </div>
           }

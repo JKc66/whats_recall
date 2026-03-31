@@ -5,7 +5,7 @@ import { getDb } from '../db/database.ts';
 export async function authMiddleware(c: Context, next: Next) {
   const db = getDb();
   const path = c.req.path;
-  if (path.includes('/api/auth/login') || path.includes('/api/auth/verify')) {
+  if (path === '/api/auth/login' || path === '/api/auth/verify') {
     return await next();
   }
 

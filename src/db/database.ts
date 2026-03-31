@@ -6,8 +6,8 @@ import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', '..', 'data');
-const MEDIA_DIR_DEFAULT = resolve(join(DATA_DIR, 'media'));
+const DATA_DIR = process.env.DATA_DIR ? resolve(process.env.DATA_DIR) : join(__dirname, '..', '..', 'data');
+const MEDIA_DIR_DEFAULT = process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(DATA_DIR, 'media'));
 
 export const MEDIA_DIR = MEDIA_DIR_DEFAULT;
 export { DATA_DIR };
@@ -396,8 +396,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       if (mediaPathsToDelete.length > 0) {
         try {
           await Promise.allSettled(mediaPathsToDelete.map(async (p) => {
-            const fullPath = resolve(join(MEDIA_DIR, p));
-            if (fullPath.startsWith(MEDIA_DIR) && existsSync(fullPath)) {
+            const fullPath = resolve(join(currentMediaDir, p));
+            if (fullPath.startsWith(currentMediaDir) && existsSync(fullPath)) {
               await unlink(fullPath);
             }
           }));
@@ -416,10 +416,10 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         db.query('DELETE FROM sessions').run();
       })();
       
-      if (existsSync(MEDIA_DIR)) {
-        rmSync(MEDIA_DIR, { recursive: true, force: true });
+      if (existsSync(currentMediaDir)) {
+        rmSync(currentMediaDir, { recursive: true, force: true });
       }
-      mkdirSync(MEDIA_DIR, { recursive: true });
+      mkdirSync(currentMediaDir, { recursive: true });
     },
 
     // Settings
