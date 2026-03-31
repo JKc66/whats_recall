@@ -2,11 +2,13 @@ import { createSignal, Show, onMount, onCleanup } from "solid-js";
 import { login, fetchUptime } from "./api";
 import { setAuthenticated } from "./store";
 import { notify } from "./notify";
+import { EyeIcon } from "./components/Icons";
 
 export default function Login() {
   const [username, setUsername] = createSignal("whatsapp-monitor");
   const [password, setPassword] = createSignal("");
   const [loading, setLoading] = createSignal(false);
+  const [showPassword, setShowPassword] = createSignal(false);
   const [uptimeSeconds, setUptimeSeconds] = createSignal(0);
 
   onMount(async () => {
@@ -119,10 +121,14 @@ export default function Login() {
         <form onSubmit={handleSubmit} class="p-0">
           {/* Input Section - Username */}
           <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors">
-            <div class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase">
+            <label 
+              for="username-field"
+              class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase cursor-pointer"
+            >
               Identity
-            </div>
+            </label>
             <input
+              id="username-field"
               type="text"
               name="username"
               autocomplete="username"
@@ -134,21 +140,35 @@ export default function Login() {
           </div>
 
           {/* Input Section - Password */}
-          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors">
-            <div class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase">
+          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors relative">
+            <label 
+              for="password-field"
+              class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase cursor-pointer"
+            >
               Access_Key
+            </label>
+            <div class="relative flex items-center grow">
+              <input
+                id="password-field"
+                type={showPassword() ? "text" : "password"}
+                name="password"
+                autocomplete="current-password"
+                placeholder="/// **********"
+                value={password()}
+                onInput={(e) => setPassword(e.currentTarget.value)}
+                required
+                autofocus
+                class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.5em] placeholder:opacity-20 font-mono pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword())}
+                class="absolute right-4 p-2 text-white/20 hover:text-white/60 transition-colors cursor-pointer"
+                aria-label={showPassword() ? "Hide password" : "Show password"}
+              >
+                <EyeIcon size={16} classList={{ "text-red-500/60": showPassword() }} />
+              </button>
             </div>
-            <input
-              type="password"
-              name="password"
-              autocomplete="current-password"
-              placeholder="/// **********"
-              value={password()}
-              onInput={(e) => setPassword(e.currentTarget.value)}
-              required
-              autofocus
-              class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.5em] placeholder:opacity-20 font-mono"
-            />
           </div>
 
           {/* Action Section */}
