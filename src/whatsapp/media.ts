@@ -104,9 +104,10 @@ function getExtension(type: string): string {
   return map[type] || 'bin';
 }
 
-export async function downloadProfilePic(jid: string, sock: any): Promise<string | null> {
+export async function downloadProfilePic(jid: string, sock: any): Promise<{ filename: string, isNew: boolean } | null> {
+  // Check if we already have it (this helper handles DB check, disk check, and self-healing)
   const existing = db.getChatProfilePic(jid);
-  if (existing) return existing;
+  if (existing) return { filename: existing, isNew: false };
 
   try {
     const url = await sock.profilePictureUrl(jid, 'image').catch(() => null);
@@ -119,7 +120,7 @@ export async function downloadProfilePic(jid: string, sock: any): Promise<string
 
     await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
     db.updateChatProfilePic(jid, filename);
-    return filename;
+    return { filename, isNew: true };
   } catch (e: any) {
     log('MEDIA', `Error downloading profile picture for ${jid}: ${e.message}`);
     return null;

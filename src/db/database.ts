@@ -180,11 +180,10 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         FROM (
           SELECT * FROM chats
           UNION
-          SELECT mc.chat_id, mc.name, c.lid, mc.is_group, c.profile_pic, 
-                 c.last_message_at, c.last_seen_deleted_at,
+          SELECT mc.chat_id, mc.name, NULL as lid, mc.is_group, NULL as profile_pic, 
+                 NULL as last_message_at, NULL as last_seen_deleted_at,
                  mc.added_at as created_at, mc.added_at as updated_at
           FROM monitored_chats mc
-          LEFT JOIN chats c ON mc.chat_id = c.chat_id
           WHERE mc.chat_id NOT IN (SELECT chat_id FROM chats)
         ) c
         ${query ? `WHERE c.chat_id IN (
@@ -197,7 +196,11 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         ORDER BY c.last_message_at DESC
       `;
       
-      return (query ? db.query(sql).all(query, query, query) : db.query(sql).all()) as WhatsAppChat[];
+      const rows = (query ? db.query(sql).all(query, query, query) : db.query(sql).all()) as any[];
+      return rows.map(row => ({
+        ...row,
+        profile_pic: row.profile_pic || dbMethods.getChatProfilePic(row.chat_id)
+      }));
     },
 
     // Message Operations
@@ -346,12 +349,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     },
 
     getMonitoredChats() {
-      return db.query(`
+      const rows = db.query(`
         SELECT mc.*, c.lid, c.profile_pic 
         FROM monitored_chats mc 
         LEFT JOIN chats c ON mc.chat_id = c.chat_id 
         ORDER BY mc.added_at DESC
-      `).all();
+      `).all() as any[];
+
+      return rows.map(row => ({
+        ...row,
+        profile_pic: row.profile_pic || dbMethods.getChatProfilePic(row.chat_id)
+      }));
     },
 
     isMonitored(chatId: string): boolean {
@@ -384,7 +392,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
     getChatProfilePic(chatId: string): string | null {
       const res = dbMethods.getChatProfilePics([chatId]);
-      return res[chatId] || null;
+      if (res[chatId]) return res[chatId];
+      
+      // Fallback: Check if the standard filename exists on disk
+      const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+      if (existsSync(join(currentMediaDir, filename))) {
+        // Self-heal the DB if we found it
+        dbMethods.updateChatProfilePic(chatId, filename);
+        return filename;
+      }
+      
+      return null;
     },
 
     updateChatProfilePic(chatId: string, profilePic: string) {

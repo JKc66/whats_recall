@@ -396,7 +396,7 @@ export class WhatsAppConnection {
           isGroup: isGrp,
           timestamp: ts,
           isMonitored: monitored.has(c.id),
-          profilePic: (profilePics as any)[c.id] || null,
+          profilePic: (profilePics as any)[c.id] || db.getChatProfilePic(c.id),
           lid: c.lids && c.lids.length > 0 ? c.lids[0].split('@')[0] : (c.id.includes('@lid') ? c.id.split('@')[0] : null)
         };
       }));
@@ -415,14 +415,14 @@ export class WhatsAppConnection {
 
   public async getProfilePic(jid: string) {
     if (!jid || !this.sock) return null;
-    const filename = await downloadProfilePic(jid, this.sock);
-    if (filename) {
+    const res = await downloadProfilePic(jid, this.sock);
+    if (res?.isNew) {
       this.broadcast('profile_pic_updated', {
         chat_id: jid,
-        profile_pic: filename
+        profile_pic: res.filename
       });
     }
-    return filename;
+    return res?.filename || null;
   }
 
   public async reset(requestPairing = true) {

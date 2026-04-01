@@ -492,6 +492,13 @@ export class MessageProcessor {
    */
   private getProfilePicAsync(jid: string) {
     if (!jid || !this.sock) return;
-    downloadProfilePic(jid, this.sock).catch(() => {});
+    downloadProfilePic(jid, this.sock).then(res => {
+      if (res?.isNew) {
+        this.broadcast('profile_pic_updated', {
+          chat_id: jid,
+          profile_pic: res.filename
+        });
+      }
+    }).catch(() => {});
   }
 }
