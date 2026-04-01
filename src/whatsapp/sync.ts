@@ -52,27 +52,24 @@ export class WhatsAppSync {
     }
   }
 
-  public syncContacts(newContacts: any[]) {
-    if (!newContacts?.length) return;
-    for (const contact of newContacts) {
-      if (contact.id) {
-        const old = this.contacts.get(contact.id) || {};
-        this.contacts.set(contact.id, safeMerge(old, contact));
+  private syncItems(newItems: any[], map: Map<string, any>, updateMap = false) {
+    if (!newItems?.length) return;
+    for (const item of newItems) {
+      if (item.id) {
+        const old = map.get(item.id) || {};
+        map.set(item.id, safeMerge(old, item));
       }
     }
-    this.updateMappings(newContacts);
+    if (updateMap) this.updateMappings(newItems);
     this.save();
   }
 
+  public syncContacts(newContacts: any[]) {
+    this.syncItems(newContacts, this.contacts, true);
+  }
+
   public syncChats(newChats: any[]) {
-    if (!newChats?.length) return;
-    for (const chat of newChats) {
-      if (chat.id) {
-        const old = this.chats.get(chat.id) || {};
-        this.chats.set(chat.id, safeMerge(old, chat));
-      }
-    }
-    this.save();
+    this.syncItems(newChats, this.chats);
   }
 
   public save() {

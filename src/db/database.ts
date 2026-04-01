@@ -372,8 +372,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     },
 
     getChatProfilePic(chatId: string): string | null {
-      const row = db.query('SELECT profile_pic FROM chats WHERE chat_id = ?').get(chatId) as any;
-      return row?.profile_pic || null;
+      const res = dbMethods.getChatProfilePics([chatId]);
+      return res[chatId] || null;
     },
 
     updateChatProfilePic(chatId: string, profilePic: string) {
