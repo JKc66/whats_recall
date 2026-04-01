@@ -19,6 +19,11 @@ function escapeLike(query: string): string {
 }
 
 export function getDb(testDbPath?: string, testMediaDir?: string) {
+  // Safeguard: In test environment, discourage using default production path
+  if (process.env.NODE_ENV === 'test' && !testDbPath && !process.env.DATA_DIR) {
+    console.warn('WARNING: getDb() called in test mode without explicit path. This may affect production data.');
+  }
+
   const currentDbPath = testDbPath || join(DATA_DIR, 'messages.db');
   const currentMediaDir = testMediaDir || MEDIA_DIR_DEFAULT;
 
@@ -175,10 +180,11 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         FROM (
           SELECT * FROM chats
           UNION
-          SELECT mc.chat_id, mc.name, NULL as lid, mc.is_group, NULL as profile_pic, 
-                 NULL as last_message_at, NULL as last_seen_deleted_at,
+          SELECT mc.chat_id, mc.name, c.lid, mc.is_group, c.profile_pic, 
+                 c.last_message_at, c.last_seen_deleted_at,
                  mc.added_at as created_at, mc.added_at as updated_at
           FROM monitored_chats mc
+          LEFT JOIN chats c ON mc.chat_id = c.chat_id
           WHERE mc.chat_id NOT IN (SELECT chat_id FROM chats)
         ) c
         ${query ? `WHERE c.chat_id IN (
@@ -445,7 +451,10 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       }
     },
 
-    async clearAllData() {
+    async clearAllData(confirm = false) {
+      if (!confirm && process.env.NODE_ENV !== 'test') {
+        throw new Error('Confirmation required to clear all data in non-test environment');
+      }
       db.transaction(() => {
         db.query('DELETE FROM messages').run();
         db.query('DELETE FROM chats').run();

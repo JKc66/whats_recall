@@ -5,6 +5,7 @@ import {
   getInitials,
   extractPhone,
   profilePicUrl,
+  getDisplayName,
 } from "../../utils";
 import { RefreshIcon } from "../Icons";
 
@@ -203,7 +204,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                 {/* Content Section */}
                 <div class="flex-1 p-3 md:p-6 min-w-0 flex flex-col justify-center gap-1">
                   <div class="text-[12px] md:text-[14px] font-bold text-[#EAEAEA] truncate uppercase tracking-[0.05em] font-mono">
-                    {chat.name}
+                    {getDisplayName(chat)}
                   </div>
                   <div class="flex items-center gap-2 md:gap-3 no-scrollbar overflow-x-auto">
                     <Show when={phone() && chat.name !== phone()}>

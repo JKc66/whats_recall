@@ -287,18 +287,8 @@ export class WhatsAppConnection {
           }
         }
 
-        // Resolve LID to Phone Number (PN) using the internal signal repository
-        let targetId = id;
-        if (id.includes('@lid') && this.sock?.signalRepository?.lidMapping) {
-          try {
-            const pn = await this.sock.signalRepository.lidMapping.getPNForLID(id);
-            if (pn) {
-              targetId = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
-            }
-          } catch (e: any) {
-            log('CONN', `Failed to get PN for LID ${id} during chat sync: ${e.message}`);
-          }
-        }
+        // Resolve LID to Phone Number (PN) using syncService
+        const targetId = await syncService.resolvePN(id, this.sock);
 
         if (!syncService.chats.has(targetId)) {
           syncService.chats.set(targetId, { id: targetId, name: preferredName });
@@ -317,10 +307,7 @@ export class WhatsAppConnection {
       for (const [id, c] of syncService.chats.entries()) {
         if (!id || chatBlockedDomains.some(domain => id.endsWith(domain))) continue;
 
-        let baseId = id;
-        if (id.includes('@lid')) {
-          baseId = syncService.lidToPn.get(id) || id;
-        }
+        const baseId = await syncService.resolvePN(id, this.sock);
 
         const existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
 
@@ -428,7 +415,14 @@ export class WhatsAppConnection {
 
   public async getProfilePic(jid: string) {
     if (!jid || !this.sock) return null;
-    return downloadProfilePic(jid, this.sock);
+    const filename = await downloadProfilePic(jid, this.sock);
+    if (filename) {
+      this.broadcast('profile_pic_updated', {
+        chat_id: jid,
+        profile_pic: filename
+      });
+    }
+    return filename;
   }
 
   public async reset(requestPairing = true) {
@@ -477,14 +471,5 @@ export class WhatsAppConnection {
 
   public getPairingData(): PairingStatus {
     return this.pairingData;
-  }
-
-  public getNotifyEnabled(): boolean {
-    return this.notifyWhatsApp;
-  }
-
-  public setNotifyEnabled(enabled: boolean) {
-    this.notifyWhatsApp = !!enabled;
-    log('CONN', `Notification forwarding ${this.notifyWhatsApp ? 'enabled' : 'disabled'}`);
   }
 }

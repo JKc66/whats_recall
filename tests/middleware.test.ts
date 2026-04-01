@@ -1,5 +1,14 @@
-import { expect, test, describe, mock, beforeEach } from "bun:test";
-import { getDb } from "../src/db/database.ts";
+process.env.NODE_ENV = "test"; // Must be FIRST
+import { expect, test, describe, mock, beforeEach, beforeAll, afterAll } from "bun:test";
+import { mkdtempSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+
+// Setup temporary directory for test database/media
+const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-middleware-test-"));
+process.env.DATA_DIR = tempDir;
+
+const { getDb } = await import("../src/db/database.ts");
 
 const mockGetCookie = mock();
 
@@ -10,7 +19,7 @@ mock.module("hono/cookie", () => ({
   deleteCookie: () => {}
 }));
 
-import { authMiddleware } from "../src/api/middleware.ts";
+const { authMiddleware } = await import("../src/api/middleware.ts");
 
 describe("authMiddleware", () => {
   let mockContext: any;
@@ -28,6 +37,12 @@ describe("authMiddleware", () => {
       json: mock((data: any, status: number) => ({ data, status }))
     };
     mockGetCookie.mockReset();
+  });
+
+  afterAll(() => {
+    if (tempDir) {
+        rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   test("should allow login and verify paths without token", async () => {
@@ -60,7 +75,7 @@ describe("authMiddleware", () => {
     });
 
     await authMiddleware(mockContext, mockNext);
-    expect(mockContext.json).toHaveBeenCalledWith({ error: 'Fingerprint mismatch or missing' }, 401);
+    expect(mockContext.json).toHaveBeenCalledWith({ error: "Fingerprint mismatch or missing" }, 401);
   });
 
   test("should call next() if session is valid and fingerprint matches", async () => {

@@ -31,6 +31,7 @@ import {
   truncate,
   extractPhone,
   profilePicUrl,
+  getDisplayName,
 } from "./utils";
 import type { Chat } from "./types";
 import { SettingsIcon, LogoutIcon, SearchIcon } from "./components/Icons";
@@ -211,8 +212,7 @@ export default function Sidebar() {
 }
 
 function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
-  const displayName = () =>
-    props.chat.name || extractPhone(props.chat.chat_id) || props.chat.chat_id;
+  const displayName = () => getDisplayName(props.chat);
   const phone = () =>
     !props.chat.is_group ? extractPhone(props.chat.chat_id) : "";
   const color = () => avatarColor(displayName());

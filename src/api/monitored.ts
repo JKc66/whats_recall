@@ -14,6 +14,12 @@ const monitoredRouter = (client: WhatsAppConnection) => {
   monitored.post('/', async (c) => {
     const { chatId, name, isGroup } = await c.req.json();
     db.addMonitoredChat(chatId, name, isGroup);
+    
+    // Trigger background DP fetch to ensure it shows in UI immediately
+    if (chatId) {
+      client.getProfilePic(chatId).catch(() => {});
+    }
+    
     return c.json({ success: true });
   });
 

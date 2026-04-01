@@ -40,7 +40,7 @@ export class MessageProcessor {
     return senderId;
   }
 
-  public async handleRevoke(currentKey: any, revokedKey: any) {
+  private async handleRevoke(currentKey: any, revokedKey: any) {
     const chatId = currentKey.remoteJid;
     if (!(await this.checkIsMonitored(chatId))) return;
 
@@ -98,7 +98,7 @@ export class MessageProcessor {
   /**
    * Processes an edited message, updates the local database, and broadcasts the event.
    */
-  public async handleEdit(key: any, editedMessage: any) {
+  private async handleEdit(key: any, editedMessage: any) {
     const messageId = key.id;
     const rawChatId = key.remoteJid;
     if (!rawChatId || !messageId) return;

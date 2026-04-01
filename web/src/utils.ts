@@ -61,6 +61,12 @@ export function extractPhone(id: string): string {
   return id.replace(/@[cgs]\..+$/, "").replace(/@newsletter$/, "");
 }
 
+export function getDisplayName(chat: { name?: string | null; chat_id?: string; id?: string } | undefined, fallbackId?: string): string {
+  if (!chat && !fallbackId) return "Unknown";
+  const id = chat?.chat_id || chat?.id || fallbackId || "";
+  return chat?.name || extractPhone(id) || id;
+}
+
 export const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function mediaUrl(path: string): string {

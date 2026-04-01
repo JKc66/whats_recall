@@ -1,7 +1,16 @@
-import { expect, test, describe, beforeEach, afterEach, spyOn, mock } from "bun:test";
-import { getDb } from "../src/db/database.ts";
-import { createHonoServer } from "../src/api/server.ts";
-import { authMiddleware } from "../src/api/middleware.ts";
+process.env.NODE_ENV = "test"; // Must be FIRST
+import { expect, test, describe, beforeEach, afterEach, spyOn, mock, beforeAll, afterAll } from "bun:test";
+import { mkdtempSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+
+// Setup temporary directory for test database/media
+const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-auth-test-"));
+process.env.DATA_DIR = tempDir;
+
+const { getDb } = await import("../src/db/database.ts");
+const { createHonoServer } = await import("../src/api/server.ts");
+const { authMiddleware } = await import("../src/api/middleware.ts");
 
 describe("AUTH_PASSWORD Security", () => {
     let originalAuthPassword: string | undefined;
@@ -18,7 +27,13 @@ describe("AUTH_PASSWORD Security", () => {
 
     afterEach(() => {
         process.env.AUTH_PASSWORD = originalAuthPassword;
-        exitSpy.mockRestore();
+        if (exitSpy) exitSpy.mockRestore();
+    });
+
+    afterAll(() => {
+        if (tempDir) {
+            rmSync(tempDir, { recursive: true, force: true });
+        }
     });
 
     test("should exit if AUTH_PASSWORD is not set", () => {

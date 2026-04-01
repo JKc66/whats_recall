@@ -249,6 +249,19 @@ export default function App() {
           return prev;
         });
       }
+
+      if (event === "profile_pic_updated") {
+        const update = data as { chat_id: string; profile_pic: string };
+        setChats((prev) => {
+          const idx = prev.findIndex((c) => c.chat_id === update.chat_id);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = { ...updated[idx], profile_pic: update.profile_pic };
+            return updated;
+          }
+          return prev;
+        });
+      }
     });
   }
 

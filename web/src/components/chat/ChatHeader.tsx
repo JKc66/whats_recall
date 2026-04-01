@@ -5,6 +5,7 @@ import {
   getInitials,
   extractPhone,
   profilePicUrl,
+  getDisplayName,
 } from "../../utils";
 import { ArrowLeftIcon, TrashIcon } from "../Icons";
 
@@ -19,7 +20,7 @@ interface ChatHeaderProps {
 }
 
 export default function ChatHeader(props: ChatHeaderProps) {
-  const displayName = () => props.chat?.name || props.chatId;
+  const displayName = () => getDisplayName(props.chat, props.chatId);
   const profileUrl = () => profilePicUrl(props.chat?.profile_pic);
 
   return (
