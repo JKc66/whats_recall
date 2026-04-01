@@ -12,45 +12,9 @@ import { BASE_URL } from "./utils";
 
 const fp = () => localStorage.getItem("fingerprint") || "";
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const fingerprint = fp();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(init?.headers as Record<string, string>),
-  };
-  
-  if (fingerprint) headers["X-Fingerprint"] = fingerprint;
-
-  const res = await fetch(url, { 
-    ...init, 
-    headers,
-    credentials: "include" // REQUIRED for cross-port/cross-origin cookies
-  });
-
-  if (res.status === 401) {
-    if (!window.location.pathname.endsWith("/login")) {
-      // Clear invalid state on 401
-      localStorage.removeItem("fingerprint");
-      window.location.href = BASE_URL + "/";
-    }
-    throw new Error("Unauthorized");
-  }
-
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
-
-  if (!res.ok)
-    throw new Error(
-      data.error || data.message || `Request failed with status ${res.status}`,
-    );
-
-  return data as T;
-}
-
-async function silentRequest<T>(
-  url: string,
-  init?: RequestInit,
-): Promise<T | null> {
+async function request<T>(url: string, init?: RequestInit, silent?: false): Promise<T>;
+async function request<T>(url: string, init: RequestInit | undefined, silent: true): Promise<T | null>;
+async function request<T>(url: string, init?: RequestInit, silent = false): Promise<T | null> {
   const fingerprint = fp();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -63,12 +27,29 @@ async function silentRequest<T>(
     const res = await fetch(url, { 
       ...init, 
       headers,
-      credentials: "include" 
+      credentials: "include"
     });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
+
+    if (res.status === 401) {
+      if (!window.location.pathname.endsWith("/login")) {
+        localStorage.removeItem("fingerprint");
+        window.location.href = BASE_URL + "/";
+      }
+      if (silent) return null;
+      throw new Error("Unauthorized");
+    }
+
+    if (!res.ok) {
+      if (silent) return null;
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+    }
+
+    const text = await res.text();
+    return (text ? JSON.parse(text) : {}) as T;
+  } catch (err) {
+    if (silent) return null;
+    throw err;
   }
 }
 
@@ -91,7 +72,7 @@ export async function verifyAuth(): Promise<boolean> {
     const data = await request<{ authenticated: boolean }>(
       `${BASE_URL}/api/auth/verify`,
     );
-    return data.authenticated;
+    return !!data?.authenticated;
   } catch {
     return false;
   }
@@ -107,19 +88,19 @@ export async function fetchStats(): Promise<Stats> {
 }
 
 export async function fetchStatsSilent(): Promise<Stats | null> {
-  return silentRequest<Stats>(`${BASE_URL}/api/status`);
+  return request<Stats>(`${BASE_URL}/api/status`, undefined, true);
 }
 
 export async function fetchChats(q?: string): Promise<Chat[]> {
   const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
   const data = await request<{ chats: Chat[] }>(url);
-  return data.chats;
+  return data?.chats || [];
 }
 
 export async function fetchChatsSilent(q?: string): Promise<Chat[] | null> {
   const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
-  const data = await silentRequest<{ chats: Chat[] }>(url);
-  return data?.chats ?? null;
+  const data = await request<{ chats: Chat[] }>(url, undefined, true);
+  return data?.chats || null;
 }
 
 export async function markChatAsRead(chatId: string): Promise<void> {
@@ -135,17 +116,19 @@ export async function fetchMessages(
   const data = await request<{ messages: Message[] }>(
     `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
   );
-  return data.messages;
+  return data?.messages || [];
 }
 
 export async function fetchMessagesSilent(
   chatId: string,
   limit = 200,
 ): Promise<Message[] | null> {
-  const data = await silentRequest<{ messages: Message[] }>(
+  const data = await request<{ messages: Message[] }>(
     `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
+    undefined,
+    true
   );
-  return data?.messages ?? null;
+  return data?.messages || null;
 }
 
 export async function fetchMonitored(): Promise<MonitoredChat[]> {

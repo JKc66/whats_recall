@@ -3,6 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { log } from '../logger.js';
 import { DATA_DIR } from '../db/database.js';
+import { safeMerge } from './utils.ts';
 
 const CACHE_FILE = join(DATA_DIR, 'baileys_auth', 'store_cache.json');
 
@@ -49,6 +50,29 @@ export class WhatsAppSync {
         this.lidToPn.set(lid, item.id);
       }
     }
+  }
+
+  public syncContacts(newContacts: any[]) {
+    if (!newContacts?.length) return;
+    for (const contact of newContacts) {
+      if (contact.id) {
+        const old = this.contacts.get(contact.id) || {};
+        this.contacts.set(contact.id, safeMerge(old, contact));
+      }
+    }
+    this.updateMappings(newContacts);
+    this.save();
+  }
+
+  public syncChats(newChats: any[]) {
+    if (!newChats?.length) return;
+    for (const chat of newChats) {
+      if (chat.id) {
+        const old = this.chats.get(chat.id) || {};
+        this.chats.set(chat.id, safeMerge(old, chat));
+      }
+    }
+    this.save();
   }
 
   public save() {
@@ -132,6 +156,30 @@ export class WhatsAppSync {
     }
 
     return null;
+  }
+
+  public async getRelatedJids(jid: string, sock: any = null): Promise<string[]> {
+    const related = new Set<string>([jid]);
+    
+    if (jid.includes('@lid')) {
+      const pn = await this.resolvePN(jid, sock);
+      if (pn && pn !== jid) related.add(pn);
+    } else if (jid.includes('@s.whatsapp.net')) {
+      const lid = await this.resolveLID(jid, sock);
+      if (lid) related.add(lid);
+    }
+
+    // Also check contacts for any other linked IDs
+    for (const [c_jid, c_info] of this.contacts.entries()) {
+      if (jid.includes('@lid') && c_info.lid && (c_info.lid === jid || c_info.lid.includes(jid.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
+        related.add(c_jid);
+      }
+      if (c_jid === jid && c_info.phoneNumber) {
+        related.add(c_info.phoneNumber + '@s.whatsapp.net');
+      }
+    }
+
+    return Array.from(related);
   }
 }
 

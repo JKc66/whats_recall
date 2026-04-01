@@ -18,17 +18,8 @@ export class MessageProcessor {
    */
   private async checkIsMonitored(jid: string): Promise<boolean> {
     if (!jid) return false;
-    if (db.isMonitored(jid)) return true;
-
-    if (jid.includes('@lid')) {
-      const pn = await syncService.resolvePN(jid, this.sock);
-      if (pn !== jid && db.isMonitored(pn)) return true;
-    } else if (jid.includes('@s.whatsapp.net')) {
-      const lid = await syncService.resolveLID(jid, this.sock);
-      if (lid && db.isMonitored(lid)) return true;
-    }
-
-    return false;
+    const ids = await syncService.getRelatedJids(jid, this.sock);
+    return ids.some(id => db.isMonitored(id));
   }
 
   /**
@@ -90,9 +81,15 @@ export class MessageProcessor {
   public async handleMessageUpdate(event: any) {
     const protocolMsg = event.update?.message?.protocolMessage;
     if (!protocolMsg) return;
+    await this.handleProtocolMessage(event.key, protocolMsg);
+  }
 
+  /**
+   * Centralized handler for protocol messages (Revoke/Edit).
+   */
+  private async handleProtocolMessage(key: any, protocolMsg: any) {
     if (protocolMsg.type === 0 || protocolMsg.type === 'REVOKE') {
-      await this.handleRevoke(event.key, protocolMsg.key);
+      await this.handleRevoke(key, protocolMsg.key);
     } else if (protocolMsg.type === 14 || protocolMsg.type === 'MESSAGE_EDIT') {
       await this.handleEdit(protocolMsg.key, protocolMsg.editedMessage);
     }
@@ -254,11 +251,7 @@ export class MessageProcessor {
     const content = tempMsg[messageType];
 
     if (messageType === 'protocolMessage') {
-      if (content.type === 0 || content.type === 'REVOKE') {
-        await this.handleRevoke(msg.key, content.key);
-      } else if (content.type === 14 || content.type === 'MESSAGE_EDIT') {
-        await this.handleEdit(content.key, content.editedMessage);
-      }
+      await this.handleProtocolMessage(msg.key, content);
       return;
     }
 

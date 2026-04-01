@@ -128,105 +128,47 @@ export class WhatsAppConnection {
       if (chats?.length || contacts?.length) {
         log('CONN', `History sync: ${chats?.length || 0} chats, ${contacts?.length || 0} contacts (isLatest: ${isLatest})`);
       }
-      for (const contact of (contacts || [])) {
-        if (contact.id) {
-          const old = syncService.contacts.get(contact.id) || {};
-          syncService.contacts.set(contact.id, safeMerge(old, contact));
-        }
-      }
-      syncService.updateMappings(contacts || []);
-      for (const chat of (chats || [])) {
-        if (chat.id) {
-          const old = syncService.chats.get(chat.id) || {};
-          syncService.chats.set(chat.id, safeMerge(old, chat));
-        }
-      }
-      syncService.save();
+      syncService.syncContacts(contacts || []);
+      syncService.syncChats(chats || []);
     });
 
     this.sock.ev.on('contacts.upsert', (newContacts: any[]) => {
       log('CONN', `Contacts upsert: ${newContacts.length} contacts`);
-      for (const contact of newContacts) {
-        if (contact.id) {
-          const old = syncService.contacts.get(contact.id) || {};
-          syncService.contacts.set(contact.id, safeMerge(old, contact));
-        }
-      }
-      syncService.updateMappings(newContacts);
-      syncService.save();
+      syncService.syncContacts(newContacts);
     });
 
     this.sock.ev.on('contacts.set', ({ contacts }: any) => {
       if (!contacts) return;
       log('CONN', `Contacts set: ${contacts.length} contacts`);
-      for (const contact of contacts) {
-        if (contact.id) {
-          const old = syncService.contacts.get(contact.id) || {};
-          syncService.contacts.set(contact.id, safeMerge(old, contact));
-        }
-      }
-      syncService.updateMappings(contacts);
-      syncService.save();
+      syncService.syncContacts(contacts);
     });
 
     this.sock.ev.on('chats.set', ({ chats }: any) => {
       if (!chats) return;
       log('CONN', `Chats set: ${chats.length} chats`);
-      for (const chat of chats) {
-        if (chat.id) {
-          const old = syncService.chats.get(chat.id) || {};
-          syncService.chats.set(chat.id, safeMerge(old, chat));
-        }
-      }
-      syncService.save();
+      syncService.syncChats(chats);
     });
 
     this.sock.ev.on('groups.upsert', (newGroups: any[]) => {
-      for (const group of newGroups) {
-        if (group.id) {
-          const existing = syncService.chats.get(group.id) || {};
-          syncService.chats.set(group.id, safeMerge(existing, { id: group.id, name: group.subject }));
-        }
-      }
-      syncService.save();
+      const mapped = newGroups.map(g => ({ id: g.id, name: g.subject }));
+      syncService.syncChats(mapped);
     });
 
     this.sock.ev.on('groups.update', (updates: any[]) => {
-      for (const update of updates) {
-        if (update.id && update.subject) {
-          const existing = syncService.chats.get(update.id) || {};
-          syncService.chats.set(update.id, { ...existing, id: update.id, name: update.subject });
-        }
-      }
-      syncService.save();
+      const mapped = updates.filter(u => u.id && u.subject).map(u => ({ id: u.id, name: u.subject }));
+      syncService.syncChats(mapped);
     });
 
     this.sock.ev.on('contacts.update', (updates: any[]) => {
-      for (const update of updates) {
-        if (update.id) {
-          const old = syncService.contacts.get(update.id) || {};
-          syncService.contacts.set(update.id, safeMerge(old, update));
-        }
-      }
-      syncService.updateMappings(updates);
-      syncService.save();
+      syncService.syncContacts(updates);
     });
 
     this.sock.ev.on('chats.upsert', (newChats: any[]) => {
-      for (const chat of newChats) {
-        if (chat.id) syncService.chats.set(chat.id, chat);
-      }
-      syncService.save();
+      syncService.syncChats(newChats);
     });
 
     this.sock.ev.on('chats.update', (updates: any[]) => {
-      for (const update of updates) {
-        if (update.id) {
-          const old = syncService.chats.get(update.id) || {};
-          syncService.chats.set(update.id, safeMerge(old, update));
-        }
-      }
-      syncService.save();
+      syncService.syncChats(updates);
     });
 
     this.sock.ev.on('connection.update', async (update: any) => {
@@ -522,43 +464,7 @@ export class WhatsAppConnection {
    * Completely purges a chat from the local system, including all linked JID variants (LID and PN).
    */
   public async deleteChatFully(chatId: string) {
-    const relatedIds = new Set([chatId]);
-
-    // Check mapping caches
-    if (chatId.includes('@lid')) {
-      const pn = syncService.lidToPn.get(chatId);
-      if (pn && pn !== chatId) relatedIds.add(pn);
-    } else {
-      const lid = syncService.pnToLid.get(chatId);
-      if (lid) relatedIds.add(lid);
-    }
-
-    // Check Baileys repository
-    if (this.sock?.signalRepository?.lidMapping) {
-      try {
-        if (chatId.includes('@lid')) {
-          const pn = await this.sock.signalRepository.lidMapping.getPNForLID(chatId);
-          if (pn) relatedIds.add(pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net');
-        } else if (chatId.includes('@s.whatsapp.net')) {
-          const lid = await this.sock.signalRepository.lidMapping.getLIDForPN(chatId);
-          if (lid) relatedIds.add(lid.includes('@lid') ? lid : lid + '@lid');
-        }
-      } catch (e: any) {
-        log('CONN', `Failed to get LID/PN mapping during chat deletion for ${chatId}: ${e.message}`);
-      }
-    }
-
-    // Fallbacks from contacts
-    for (const [c_jid, c_info] of syncService.contacts.entries()) {
-      if (chatId.includes('@lid') && c_info.lid && (c_info.lid === chatId || c_info.lid.includes(chatId.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
-        relatedIds.add(c_jid);
-      }
-      if (c_jid === chatId && c_info.phoneNumber) {
-        relatedIds.add(c_info.phoneNumber + '@s.whatsapp.net');
-      }
-    }
-
-    const ids = Array.from(relatedIds);
+    const ids = await syncService.getRelatedJids(chatId, this.sock);
     log('CONN', `Purging local data for IDs: ${ids.join(', ')}`);
 
     if (ids.length > 0) {

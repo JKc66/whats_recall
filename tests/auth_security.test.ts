@@ -78,7 +78,7 @@ describe("Fingerprint Enforcement", () => {
 
     test("should allow if fingerprints match", async () => {
         db.raw.query("INSERT INTO sessions (token, fingerprint, expires_at) VALUES (?, ?, datetime('now', '+1 hour'))").run("valid-token", "secure-fp-123");
-        const next = mock(() => {});
+        const next = mock(async () => {});
         const c = createMockContext({ 
             "X-Auth-Token": "valid-token",
             "X-Fingerprint": "secure-fp-123"

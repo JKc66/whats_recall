@@ -12,7 +12,7 @@ import { join, basename } from 'path';
 import { MEDIA_DIR, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
-import { safePath, pruneApiRateLimits } from './utils.ts';
+import { safePath, pruneApiRateLimits, verifySession } from './utils.ts';
 
 const PUBLIC_DIR = './public';
 
@@ -150,17 +150,11 @@ export function createHonoServer(client: WhatsAppConnection) {
         if (url.pathname === '/ws') {
           const db = getDb();
           const cookieHeader = req.headers.get('Cookie') || '';
-          const token = cookieHeader.match(/auth_token=([^;]+)/)?.[1] || req.headers.get('X-Auth-Token');
-          const fingerprint = req.headers.get('X-Fingerprint') || cookieHeader.match(/auth_fp=([^;]+)/)?.[1];
+          const token = cookieHeader.match(/auth_token=([^;]+)/)?.[1] || req.headers.get('X-Auth-Token') || undefined;
+          const fingerprint = req.headers.get('X-Fingerprint') || cookieHeader.match(/auth_fp=([^;]+)/)?.[1] || undefined;
 
-          if (!token) return new Response('Unauthorized', { status: 401 });
-
-          const session = db.getSession(token) as any;
-          if (!session) return new Response('Session expired', { status: 401 });
-
-          if (session.fingerprint && fingerprint !== session.fingerprint) {
-            return new Response('Invalid fingerprint', { status: 401 });
-          }
+          const { authenticated, error } = verifySession(db, token, fingerprint);
+          if (!authenticated) return new Response(error, { status: 401 });
 
           const upgraded = server.upgrade(req);
           if (upgraded) return undefined;

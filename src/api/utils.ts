@@ -77,3 +77,19 @@ export const pruneApiRateLimits = () => {
     if (now - entry.firstAttempt > 600_000) apiRateLimits.delete(key);
   }
 };
+
+export function verifySession(db: any, token: string | undefined, fingerprint: string | undefined): { authenticated: boolean, error?: string, session?: any } {
+  if (!token) return { authenticated: false, error: 'Unauthorized' };
+
+  const session = db.getSession(token) as any;
+  if (!session) {
+    return { authenticated: false, error: 'Session expired or invalid' };
+  }
+
+  // Stricter fingerprint check: if session has a fingerprint, it MUST match
+  if (session.fingerprint && fingerprint !== session.fingerprint) {
+    return { authenticated: false, error: 'Fingerprint mismatch or missing' };
+  }
+
+  return { authenticated: true, session };
+}

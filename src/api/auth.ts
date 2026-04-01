@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { getDb } from '../db/database.ts';
-import { getClientIp, checkApiRateLimit, apiRateLimits } from './utils.ts';
+import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
 
 const db = getDb();
@@ -71,16 +71,11 @@ auth.get('/verify', async (c) => {
   const token = getCookie(c, 'auth_token') || c.req.header('X-Auth-Token');
   const fingerprint = c.req.header('X-Fingerprint') || getCookie(c, 'auth_fp');
 
-  if (!token) return c.json({ authenticated: false });
-
-  const session = db.getSession(token) as any;
-  if (!session || (session.fingerprint && session.fingerprint !== fingerprint)) {
-    return c.json({ authenticated: false });
-  }
+  const { authenticated, session } = verifySession(db, token, fingerprint);
 
   return c.json({ 
-    authenticated: true,
-    fingerprint: session.fingerprint 
+    authenticated,
+    fingerprint: session?.fingerprint 
   });
 });
 
