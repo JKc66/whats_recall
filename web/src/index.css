@@ -195,6 +195,7 @@
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   h1,
@@ -205,6 +206,13 @@
   h6 {
     font-family: var(--font-outfit);
     letter-spacing: -0.02em;
+  }
+
+  button, 
+  [role="button"],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer;
   }
 
   /* Custom transitions and states */

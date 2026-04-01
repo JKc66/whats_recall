@@ -99,7 +99,7 @@ export default function Sidebar() {
 
     try {
       const msgs = await fetchMessages(chatId);
-      setMessages(msgs);
+      if (msgs) setMessages(msgs);
     } catch {
       /* handled */
     }
@@ -134,7 +134,7 @@ export default function Sidebar() {
             />
           </div>
           Monitor
-          <span class="text-[8px] opacity-20 ml-1 font-mono tracking-widest">v4.0.1</span>
+          <span class="text-[8px] opacity-40 ml-1 font-mono tracking-widest font-bold">V4.0.1</span>
         </div>
         <nav class="flex gap-0.5" aria-label="Sidebar actions">
           <button
@@ -183,7 +183,9 @@ export default function Sidebar() {
           fallback={
             <div class="flex flex-col items-center justify-center p-[48px_24px] text-text-3 text-[13px] text-center h-full gap-1">
               <Show when={isSearchActive()} fallback={<span>No chats found</span>}>
-                <span class="text-[20px] mb-1">🔍</span>
+                <div class="mb-2 text-zinc-600/50">
+                  <SearchIcon size={32} />
+                </div>
                 <span>No messages found for</span>
                 <span class="text-zinc-300 font-mono text-[12px] bg-white/5 px-2 py-0.5 rounded mt-0.5 max-w-48 truncate">"{searchQuery().trim()}"</span>
                 <button

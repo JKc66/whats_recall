@@ -112,7 +112,7 @@ export function createHonoServer(client: WhatsAppConnection) {
     await db.clearAllData(true);
     log('API', 'All messages and chat data cleared');
     return c.json({ ok: true });
-    });
+  });
 
   app.route('/api', api);
 

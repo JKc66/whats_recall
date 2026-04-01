@@ -10,6 +10,7 @@ nohup.out
 skills-lock.json
 .agents/
 .agent/
+AGENTS.md
 
 *.tsbuildinfo
 dist/

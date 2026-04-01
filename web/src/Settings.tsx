@@ -230,10 +230,14 @@ export default function Settings() {
       <div 
         class="absolute inset-0 pointer-events-none z-50 opacity-[0.03]"
         style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
+        aria-hidden="true"
       />
       
       {/* Technical Background Grid */}
-      <div class="absolute inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" />
+      <div 
+        class="absolute inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" 
+        aria-hidden="true"
+      />
 
       <SettingsHeader
         onBack={() => setView("chats")}

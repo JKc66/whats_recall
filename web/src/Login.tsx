@@ -91,10 +91,14 @@ export default function Login() {
       <div 
         class="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
         style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
+        aria-hidden="true"
       />
       
       {/* Technical Background Grid */}
-      <div class="fixed inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" />
+      <div 
+        class="fixed inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" 
+        aria-hidden="true"
+      />
 
       <div class="relative z-10 w-full max-w-lg border-x border-white/10 animate-reveal">
         {/* Top Header Bar */}
@@ -108,7 +112,7 @@ export default function Login() {
 
         {/* Macro Typography Title Section */}
         <div class="px-8 py-16 border-b border-white/10">
-          <h1 class="text-6xl font-black font-sans leading-[0.8] tracking-[-0.05em] uppercase mb-4">
+          <h1 class="text-5xl font-black font-mono leading-none tracking-[-0.05em] uppercase mb-4">
             Security<br/>Access
           </h1>
           <div class="flex items-center gap-4 text-[10px] opacity-40 tracking-[0.3em]">
