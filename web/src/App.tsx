@@ -2,9 +2,9 @@ import { createEffect, onMount, onCleanup, Show } from "solid-js";
 import { Toaster } from "solid-toast";
 import {
   verifyAuth,
-  fetchStatsSilent,
-  fetchChatsSilent,
-  fetchMessagesSilent,
+  fetchStats,
+  fetchChats,
+  fetchMessages,
   createWs,
 } from "./api";
 import {
@@ -43,13 +43,13 @@ export default function App() {
     if (now - lastRefresh < REFRESH_COOLDOWN) return;
     lastRefresh = now;
 
-    const [c, s] = await Promise.all([fetchChatsSilent(), fetchStatsSilent()]);
+    const [c, s] = await Promise.all([fetchChats(undefined, true), fetchStats(true)]);
     if (c) setChats(c);
     if (s) setStats(s);
 
     const chatId = currentChatId();
     if (chatId) {
-      const msgs = await fetchMessagesSilent(chatId);
+      const msgs = await fetchMessages(chatId, 200, true);
       if (msgs) setMessages(msgs);
     }
   }

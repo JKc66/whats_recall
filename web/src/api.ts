@@ -83,24 +83,14 @@ export async function logout(): Promise<void> {
   localStorage.removeItem("fingerprint");
 }
 
-export async function fetchStats(): Promise<Stats> {
-  return request<Stats>(`${BASE_URL}/api/status`);
+export async function fetchStats(silent = false): Promise<Stats | null> {
+  return request<Stats>(`${BASE_URL}/api/status`, undefined, silent as any);
 }
 
-export async function fetchStatsSilent(): Promise<Stats | null> {
-  return request<Stats>(`${BASE_URL}/api/status`, undefined, true);
-}
-
-export async function fetchChats(q?: string): Promise<Chat[]> {
+export async function fetchChats(q?: string, silent = false): Promise<Chat[] | null> {
   const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
-  const data = await request<{ chats: Chat[] }>(url);
-  return data?.chats || [];
-}
-
-export async function fetchChatsSilent(q?: string): Promise<Chat[] | null> {
-  const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
-  const data = await request<{ chats: Chat[] }>(url, undefined, true);
-  return data?.chats || null;
+  const data = await request<{ chats: Chat[] }>(url, undefined, silent as any);
+  return data?.chats || (silent ? null : []);
 }
 
 export async function markChatAsRead(chatId: string): Promise<void> {
@@ -112,23 +102,14 @@ export async function markChatAsRead(chatId: string): Promise<void> {
 export async function fetchMessages(
   chatId: string,
   limit = 200,
-): Promise<Message[]> {
-  const data = await request<{ messages: Message[] }>(
-    `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
-  );
-  return data?.messages || [];
-}
-
-export async function fetchMessagesSilent(
-  chatId: string,
-  limit = 200,
+  silent = false
 ): Promise<Message[] | null> {
   const data = await request<{ messages: Message[] }>(
     `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
     undefined,
-    true
+    silent as any
   );
-  return data?.messages || null;
+  return data?.messages || (silent ? null : []);
 }
 
 export async function fetchMonitored(): Promise<MonitoredChat[]> {
@@ -171,10 +152,6 @@ export async function updateSetting(key: string, value: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ key, value }),
   });
-}
-
-export async function setNotifyEnabled(enabled: boolean): Promise<void> {
-  await updateSetting("whatsapp_notify", enabled.toString());
 }
 
 export async function clearData(password: string): Promise<void> {

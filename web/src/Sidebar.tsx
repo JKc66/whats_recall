@@ -7,7 +7,7 @@ import {
   onMount,
   onCleanup,
 } from "solid-js";
-import { logout, fetchMessages, markChatAsRead, fetchChatsSilent } from "./api";
+import { logout, fetchMessages, markChatAsRead, fetchChats } from "./api";
 import {
   chats,
   setChats,
@@ -58,7 +58,7 @@ export default function Sidebar() {
 
     if (q.length >= 2) {
       searchTimeout = setTimeout(async () => {
-        const results = await fetchChatsSilent(q);
+        const results = await fetchChats(q, true);
         // Store locally — never mutate the global chats store
         setSearchResults(results ?? []);
       }, 400);

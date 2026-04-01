@@ -83,7 +83,3 @@ export function safeMerge(oldObj: any, newObj: any) {
   }
   return merged;
 }
-
-export function isGroup(jid: string): boolean {
-  return !!isJidGroup(jid);
-}

@@ -1,11 +1,11 @@
-import { extractMessageContent, getContentType, jidNormalizedUser, WAMessage } from '@whiskeysockets/baileys';
+import { extractMessageContent, getContentType, jidNormalizedUser, WAMessage, isJidGroup } from '@whiskeysockets/baileys';
 import { log } from '../logger.js';
 import { getDb, MEDIA_DIR } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
-import { getChatNameAsync, isGroup } from './utils.ts';
+import { getChatNameAsync } from './utils.ts';
 
 const db = getDb();
 
@@ -153,7 +153,7 @@ export class MessageProcessor {
         if (!(await this.checkIsMonitored(chatId))) return;
         
         log('PROCESSOR', `📸 View-Once STUB detected from ${chatId}`);
-        const isGrp = isGroup(chatId);
+        const isGrp = !!isJidGroup(chatId);
         const senderId = await this.resolveSender(msg, chatId, isGrp);
         const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
         const chatName = await getChatNameAsync(chatId, null, this.sock);
@@ -263,7 +263,7 @@ export class MessageProcessor {
 
       const targetId = targetKey.id;
       const emoji = reaction.text || '';
-      const isGrp = isGroup(chatId);
+      const isGrp = !!isJidGroup(chatId);
       const senderId = await this.resolveSender(msg, chatId, isGrp);
       const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
 
@@ -278,7 +278,7 @@ export class MessageProcessor {
       return;
     }
 
-    const isGrp = isGroup(chatId);
+    const isGrp = !!isJidGroup(chatId);
     const senderId = await this.resolveSender(msg, chatId, isGrp);
     const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
     const chatName = await getChatNameAsync(chatId, null, this.sock);
