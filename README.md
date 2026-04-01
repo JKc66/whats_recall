@@ -136,7 +136,8 @@ bun lint
 
 ### 🛠️ Advanced Tools
 - `bun dev`: Start development server with hot-reloading.
-- `bun test`: Run test suite.
+- `bun t`: Run test suite in **quiet diagnostic mode** (shows only failures).
+- `bun test`: Run full test suite with verbose output.
 - `bun run typecheck`: Validate TypeScript types across the backend.
 
 ---
