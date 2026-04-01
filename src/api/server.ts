@@ -41,7 +41,12 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   // CORS for cross-port development (e.g. Vite on 5173, Backend on 3001)
   app.use('*', cors({
-    origin: (origin) => origin,
+    origin: (origin) => {
+      // Allow development environment origins to connect
+      if (process.env.NODE_ENV === 'development') return origin || '*';
+      // Disallow overly permissive CORS in production by default
+      return '';
+    },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-Fingerprint', 'X-Auth-Token'],
