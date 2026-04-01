@@ -56,31 +56,18 @@ export function truncate(str: string, max: number): string {
   return str.slice(0, max) + "…";
 }
 
-export function escapeHtml(str: string): string {
-  if (!str) return "";
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-export function mediaIcon(type: string): string {
-  const icons: Record<string, string> = {
-    image: "🖼️",
-    video: "🎬",
-    audio: "🎵",
-    ptt: "🎙️",
-    document: "📄",
-    sticker: "🏷️",
-  };
-  return icons[type] || "📎";
-}
-
 export function extractPhone(id: string): string {
   if (!id) return "";
   return id.replace(/@[cgs]\..+$/, "").replace(/@newsletter$/, "");
 }
 
-const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
+export const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+export function mediaUrl(path: string): string {
+  return `${BASE_URL}/api/media/${encodeURIComponent(path)}`;
+}
 
 export function profilePicUrl(path: string | null | undefined): string | null {
   if (!path) return null;
-  return `${BASE_URL}/api/media/${encodeURIComponent(path)}`;
+  return mediaUrl(path);
 }

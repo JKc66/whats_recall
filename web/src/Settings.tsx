@@ -37,6 +37,7 @@ export default function Settings() {
   const [tab, setTab] = createSignal<"monitored" | "available" | "config">(
     "config",
   );
+  // eslint-disable-next-line no-unassigned-vars
   let scrollContainer: HTMLDivElement | undefined;
 
   createEffect(() => {

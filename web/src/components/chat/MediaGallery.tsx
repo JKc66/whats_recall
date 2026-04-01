@@ -1,9 +1,7 @@
 import { For, Show } from "solid-js";
 import type { Message } from "../../types";
-import { formatTime } from "../../utils";
+import { formatTime, mediaUrl } from "../../utils";
 import { PlayIcon, MusicIcon, FileIcon } from "../Icons";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface MediaGalleryProps {
   messages: Message[];
@@ -12,10 +10,6 @@ interface MediaGalleryProps {
 }
 
 export default function MediaGallery(props: MediaGalleryProps) {
-  function mediaUrl(path: string) {
-    return `${BASE}/api/media/${encodeURIComponent(path)}`;
-  }
-
   return (
     <div class="flex-1 p-6 pb-24">
       <Show

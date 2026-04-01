@@ -84,11 +84,6 @@ export function safeMerge(oldObj: any, newObj: any) {
   return merged;
 }
 
-export function extractPhone(jid: string): string {
-  if (!jid) return "";
-  return jid.replace(/@[cgs]\..+$/, "").replace(/@newsletter$/, "").replace(/@lid$/, "");
-}
-
 export function isGroup(jid: string): boolean {
   return !!isJidGroup(jid);
 }

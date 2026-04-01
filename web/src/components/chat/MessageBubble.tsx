@@ -1,10 +1,8 @@
 import { Show, For, createMemo, createSignal } from "solid-js";
 import type { Message, Reaction } from "../../types";
-import { avatarColor, formatTime, extractPhone } from "../../utils";
+import { avatarColor, formatTime, extractPhone, mediaUrl } from "../../utils";
 import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon, CheckIcon } from "../Icons";
 import { notify } from "../../notify";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface MessageBubbleProps {
   msg: Message;
@@ -59,11 +57,6 @@ function groupReactions(reactions: Reaction[]) {
   }
   return Array.from(map.values());
 }
-
-function mediaUrl(path: string) {
-  return `${BASE}/api/media/${encodeURIComponent(path)}`;
-}
-
 export function MessageBubble(props: MessageBubbleProps) {
   const m = () => props.msg;
   const isMe = () => !!m().is_from_me;

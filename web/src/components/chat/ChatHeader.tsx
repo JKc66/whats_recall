@@ -20,6 +20,7 @@ interface ChatHeaderProps {
 
 export default function ChatHeader(props: ChatHeaderProps) {
   const displayName = () => props.chat?.name || props.chatId;
+  const profileUrl = () => profilePicUrl(props.chat?.profile_pic);
 
   return (
     <header class="flex items-center gap-3 px-3 md:px-5 py-2.5 md:py-3.5 bg-zinc-900/40 backdrop-blur-md border-b border-white/5 min-h-16 md:min-h-18 z-20 shrink-0">
@@ -33,7 +34,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
 
       <div class="flex items-center gap-3 flex-1 min-w-0">
         <Show
-          when={profilePicUrl(props.chat?.profile_pic)}
+          when={profileUrl()}
           fallback={
             <div
               class="w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-xl flex items-center justify-center text-[13px] md:text-sm font-bold text-white uppercase shadow-sm"
@@ -50,7 +51,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
             <span class="relative z-1">{getInitials(displayName())}</span>
             <img
               class="absolute inset-0 w-full h-full object-cover z-10"
-              src={profilePicUrl(props.chat?.profile_pic)!}
+              src={profileUrl()!}
               alt=""
               width="40"
               height="40"

@@ -8,7 +8,7 @@ import type {
   PairingStatus,
 } from "./types";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { BASE_URL } from "./utils";
 
 const fp = () => localStorage.getItem("fingerprint") || "";
 
@@ -31,7 +31,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     if (!window.location.pathname.endsWith("/login")) {
       // Clear invalid state on 401
       localStorage.removeItem("fingerprint");
-      window.location.href = BASE + "/";
+      window.location.href = BASE_URL + "/";
     }
     throw new Error("Unauthorized");
   }
@@ -76,20 +76,20 @@ export async function login(
   password: string,
   fingerprint: string,
 ): Promise<{ success: boolean; token?: string }> {
-  return request(`${BASE}/api/auth/login`, {
+  return request(`${BASE_URL}/api/auth/login`, {
     method: "POST",
     body: JSON.stringify({ password, fingerprint }),
   });
 }
 
 export async function fetchUptime(): Promise<{ uptime: number }> {
-  return request<{ uptime: number }>(`${BASE}/api/auth/uptime`);
+  return request<{ uptime: number }>(`${BASE_URL}/api/auth/uptime`);
 }
 
 export async function verifyAuth(): Promise<boolean> {
   try {
     const data = await request<{ authenticated: boolean }>(
-      `${BASE}/api/auth/verify`,
+      `${BASE_URL}/api/auth/verify`,
     );
     return data.authenticated;
   } catch {
@@ -98,32 +98,32 @@ export async function verifyAuth(): Promise<boolean> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${BASE}/api/auth/logout`, { method: "POST" });
+  await fetch(`${BASE_URL}/api/auth/logout`, { method: "POST" });
   localStorage.removeItem("fingerprint");
 }
 
 export async function fetchStats(): Promise<Stats> {
-  return request<Stats>(`${BASE}/api/status`);
+  return request<Stats>(`${BASE_URL}/api/status`);
 }
 
 export async function fetchStatsSilent(): Promise<Stats | null> {
-  return silentRequest<Stats>(`${BASE}/api/status`);
+  return silentRequest<Stats>(`${BASE_URL}/api/status`);
 }
 
 export async function fetchChats(q?: string): Promise<Chat[]> {
-  const url = q ? `${BASE}/api/chats?q=${encodeURIComponent(q)}` : `${BASE}/api/chats`;
+  const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
   const data = await request<{ chats: Chat[] }>(url);
   return data.chats;
 }
 
 export async function fetchChatsSilent(q?: string): Promise<Chat[] | null> {
-  const url = q ? `${BASE}/api/chats?q=${encodeURIComponent(q)}` : `${BASE}/api/chats`;
+  const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
   const data = await silentRequest<{ chats: Chat[] }>(url);
   return data?.chats ?? null;
 }
 
 export async function markChatAsRead(chatId: string): Promise<void> {
-  await request(`${BASE}/api/chats/${encodeURIComponent(chatId)}/read`, {
+  await request(`${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/read`, {
     method: "POST",
   });
 }
@@ -133,7 +133,7 @@ export async function fetchMessages(
   limit = 200,
 ): Promise<Message[]> {
   const data = await request<{ messages: Message[] }>(
-    `${BASE}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
+    `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
   );
   return data.messages;
 }
@@ -143,14 +143,14 @@ export async function fetchMessagesSilent(
   limit = 200,
 ): Promise<Message[] | null> {
   const data = await silentRequest<{ messages: Message[] }>(
-    `${BASE}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
+    `${BASE_URL}/api/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`,
   );
   return data?.messages ?? null;
 }
 
 export async function fetchMonitored(): Promise<MonitoredChat[]> {
   const data = await request<{ monitored: MonitoredChat[] }>(
-    `${BASE}/api/monitored`,
+    `${BASE_URL}/api/monitored`,
   );
   return data.monitored;
 }
@@ -160,31 +160,31 @@ export async function addMonitored(
   name: string,
   isGroup: boolean,
 ): Promise<void> {
-  await request(`${BASE}/api/monitored`, {
+  await request(`${BASE_URL}/api/monitored`, {
     method: "POST",
     body: JSON.stringify({ chatId, name, isGroup }),
   });
 }
 
 export async function removeMonitored(chatId: string): Promise<void> {
-  await request(`${BASE}/api/monitored/${encodeURIComponent(chatId)}`, {
+  await request(`${BASE_URL}/api/monitored/${encodeURIComponent(chatId)}`, {
     method: "DELETE",
   });
 }
 
 export async function fetchWhatsAppChats(): Promise<WhatsAppChat[]> {
   const data = await request<{ chats: WhatsAppChat[] }>(
-    `${BASE}/api/whatsapp/chats`,
+    `${BASE_URL}/api/whatsapp/chats`,
   );
   return data.chats;
 }
 
 export async function fetchSettings(): Promise<AppSettings> {
-  return request<AppSettings>(`${BASE}/api/settings`);
+  return request<AppSettings>(`${BASE_URL}/api/settings`);
 }
 
 export async function updateSetting(key: string, value: string): Promise<void> {
-  await request(`${BASE}/api/settings/update`, {
+  await request(`${BASE_URL}/api/settings/update`, {
     method: "POST",
     body: JSON.stringify({ key, value }),
   });
@@ -195,18 +195,18 @@ export async function setNotifyEnabled(enabled: boolean): Promise<void> {
 }
 
 export async function clearData(password: string): Promise<void> {
-  await request(`${BASE}/api/data`, {
+  await request(`${BASE_URL}/api/data`, {
     method: "DELETE",
     body: JSON.stringify({ password }),
   });
 }
 
 export async function fetchPairingStatus(): Promise<PairingStatus> {
-  return request<PairingStatus>(`${BASE}/api/whatsapp/pairing`);
+  return request<PairingStatus>(`${BASE_URL}/api/whatsapp/pairing`);
 }
 
 export async function resetWhatsApp(requestPairing = true): Promise<void> {
-  await request(`${BASE}/api/whatsapp/reset`, {
+  await request(`${BASE_URL}/api/whatsapp/reset`, {
     method: "POST",
     body: JSON.stringify({ requestPairing }),
   });
@@ -228,7 +228,7 @@ export function createWs(onEvent: (_event: string, _data: any) => void): {
     if (stopped) return;
 
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${proto}//${location.host}${BASE}/ws`;
+    const wsUrl = `${proto}//${location.host}${BASE_URL}/ws`;
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
