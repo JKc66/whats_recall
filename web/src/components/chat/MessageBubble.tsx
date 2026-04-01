@@ -1,6 +1,6 @@
 import { Show, For, createMemo, createSignal } from "solid-js";
 import type { Message, Reaction } from "../../types";
-import { avatarColor, formatTime, extractPhone, mediaUrl } from "../../utils";
+import { avatarColor, formatTime, extractJidId, mediaUrl } from "../../utils";
 import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon, CheckIcon } from "../Icons";
 import { notify } from "../../notify";
 
@@ -63,7 +63,7 @@ export function MessageBubble(props: MessageBubbleProps) {
   const time = () => formatTime(new Date(m().timestamp * 1000));
   const isDeleted = () => !!m().is_deleted;
   const isViewOnce = () => !!m().is_view_once;
-  const phone = () => (m().sender_id ? extractPhone(m().sender_id!) : "");
+  const phone = () => (m().sender_id ? extractJidId(m().sender_id!) : "");
   const [showHistory, setShowHistory] = createSignal(false);
 
   const replyData = () => {
@@ -298,7 +298,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               class="text-[11px] font-bold text-accent-bright mb-0.5 uppercase tracking-wider opacity-90 group-hover/reply:opacity-100"
               classList={{ "text-accent": isMe() }}
             >
-              {formattedReply()!.sender.split("@")[0]}
+              {extractJidId(formattedReply()!.sender)}
             </div>
           </Show>
           <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis opacity-80 group-hover/reply:opacity-100 transition-opacity">
@@ -419,7 +419,7 @@ export function ImageGroup(props: {
       new Date(props.messages[props.messages.length - 1].timestamp * 1000),
     );
   const phone = () =>
-    first().sender_id ? extractPhone(first().sender_id!) : "";
+    first().sender_id ? extractJidId(first().sender_id!) : "";
   const imageMessages = () =>
     props.messages.filter((m) => m.has_media && m.media_path);
   const imageCount = () => imageMessages().length;

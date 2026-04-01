@@ -56,15 +56,15 @@ export function truncate(str: string, max: number): string {
   return str.slice(0, max) + "…";
 }
 
-export function extractPhone(id: string): string {
+export function extractJidId(id: string | null | undefined): string {
   if (!id) return "";
   return id.replace(/@[cgs]\..+$/, "").replace(/@newsletter$/, "");
 }
 
 export function getDisplayName(chat: { name?: string | null; chat_id?: string; id?: string } | undefined, fallbackId?: string): string {
-  if (!chat && !fallbackId) return "Unknown";
   const id = chat?.chat_id || chat?.id || fallbackId || "";
-  return chat?.name || extractPhone(id) || id;
+  if (!chat && !id) return "Unknown";
+  return chat?.name || extractJidId(id) || id;
 }
 
 export const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");

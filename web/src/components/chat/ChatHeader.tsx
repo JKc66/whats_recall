@@ -3,7 +3,7 @@ import type { Chat } from "../../types";
 import {
   avatarColor,
   getInitials,
-  extractPhone,
+  extractJidId,
   profilePicUrl,
   getDisplayName,
 } from "../../utils";
@@ -74,7 +74,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
                 <>
                   <span class="max-md:hidden opacity-60">Private ·</span>
                   <span class="text-zinc-400">
-                    {extractPhone(props.chatId)}
+                    {extractJidId(props.chatId)}
                   </span>
                 </>
               }

@@ -3,6 +3,14 @@ import { log } from '../logger.ts';
 import { syncService } from './sync.ts';
 
 /**
+ * Extracts the numerical or ID portion of a WhatsApp JID.
+ */
+export function extractJidId(jid: string | null | undefined): string {
+  if (!jid) return '';
+  return jid.split('@')[0];
+}
+
+/**
  * Resolves a human-readable name for a JID using locally cached contact and chat data.
  * This function is strictly synchronous to ensure high performance during list rendering.
  */
@@ -30,8 +38,9 @@ export function getChatName(jid: string, pushName: string | null = null): string
   if (altContact.verifiedName) return altContact.verifiedName;
 
   // 2. Chat name (group subject or synced name)
-  if (chat.name && !chat.name.includes(jid.split('@')[0])) return chat.name;
-  if (altJid && altChat.name && !altChat.name.includes(altJid.split('@')[0])) return altChat.name;
+  const jidId = extractJidId(jid);
+  if (chat.name && !chat.name.includes(jidId)) return chat.name;
+  if (altJid && altChat.name && !altChat.name.includes(extractJidId(altJid))) return altChat.name;
 
   // 3. Push name (real-time or stored)
   if (pushName) return pushName;
@@ -42,7 +51,7 @@ export function getChatName(jid: string, pushName: string | null = null): string
 
   // NOTE: We avoid async network calls (like sock.groupMetadata) here to keep the function pure and fast.
 
-  return jid.split('@')[0];
+  return jidId;
 }
 
 /**
@@ -53,7 +62,7 @@ export async function getChatNameAsync(jid: string, pushName: string | null = nu
   const name = getChatName(jid, pushName);
   
   // If we got a real name, return it
-  if (name !== jid.split('@')[0]) return name;
+  if (name !== extractJidId(jid)) return name;
 
   // Try group metadata as last resort
   if (sock && isJidGroup(jid)) {

@@ -15,7 +15,7 @@ import { getDb, DATA_DIR } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { MessageProcessor } from './processor.ts';
 import { downloadProfilePic } from './media.ts';
-import { getChatName, safeMerge } from './utils.ts';
+import { getChatName, safeMerge, extractJidId } from './utils.ts';
 import { BroadcastFn, PairingStatus } from '../types.ts';
 
 const db = getDb();
@@ -294,7 +294,7 @@ export class WhatsAppConnection {
           syncService.chats.set(targetId, { id: targetId, name: preferredName });
         } else {
           const c = syncService.chats.get(targetId);
-          if (preferredName && (!c.name || c.name === targetId.split('@')[0] || c.name.includes(targetId.split('@')[0]))) {
+          if (preferredName && (!c.name || c.name === extractJidId(targetId) || c.name.includes(extractJidId(targetId)))) {
             syncService.chats.set(targetId, { ...c, name: preferredName });
           }
         }
@@ -312,12 +312,12 @@ export class WhatsAppConnection {
         const existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
 
         // Retain meaningful names
-        if (c.name && (!existing.name || existing.name === existing.id.split('@')[0])) {
+        if (c.name && (!existing.name || existing.name === extractJidId(existing.id))) {
           existing.name = c.name;
         }
 
         // Track lids
-        const lidPart = id.includes('@lid') ? id.split('@')[0] : null;
+        const lidPart = id.includes('@lid') ? extractJidId(id) : null;
         if (lidPart && !existing.lids.includes(lidPart)) {
           existing.lids.push(lidPart);
         }
@@ -326,7 +326,7 @@ export class WhatsAppConnection {
         if (baseId.includes('@s.whatsapp.net')) {
           const m_lid = syncService.pnToLid.get(baseId) || null;
           if (m_lid) {
-            const m_lidPart = m_lid.split('@')[0];
+            const m_lidPart = extractJidId(m_lid);
             if (!existing.lids.includes(m_lidPart)) {
               existing.lids.push(m_lidPart);
             }
@@ -385,7 +385,7 @@ export class WhatsAppConnection {
         const isGrp = isJidGroup(c.id);
         let name = c.name || c.notify || '';
 
-        if (!name || name === c.id.split('@')[0]) {
+        if (!name || name === extractJidId(c.id)) {
           name = getChatName(c.id);
         }
 
@@ -397,7 +397,7 @@ export class WhatsAppConnection {
           timestamp: ts,
           isMonitored: monitored.has(c.id),
           profilePic: (profilePics as any)[c.id] || db.getChatProfilePic(c.id),
-          lid: c.lids && c.lids.length > 0 ? c.lids[0].split('@')[0] : (c.id.includes('@lid') ? c.id.split('@')[0] : null)
+          lid: c.lids && c.lids.length > 0 ? extractJidId(c.lids[0]) : (c.id.includes('@lid') ? extractJidId(c.id) : null)
         };
       }));
 

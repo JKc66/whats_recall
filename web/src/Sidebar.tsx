@@ -29,7 +29,7 @@ import {
   getInitials,
   formatRelativeDate,
   truncate,
-  extractPhone,
+  extractJidId,
   profilePicUrl,
   getDisplayName,
 } from "./utils";
@@ -214,7 +214,7 @@ export default function Sidebar() {
 function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
   const displayName = () => getDisplayName(props.chat);
   const phone = () =>
-    !props.chat.is_group ? extractPhone(props.chat.chat_id) : "";
+    !props.chat.is_group ? extractJidId(props.chat.chat_id) : "";
   const color = () => avatarColor(displayName());
   const initials = () => getInitials(displayName());
   const time = () =>

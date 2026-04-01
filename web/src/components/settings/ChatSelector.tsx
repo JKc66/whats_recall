@@ -3,7 +3,7 @@ import type { WhatsAppChat } from "../../types";
 import {
   avatarColor,
   getInitials,
-  extractPhone,
+  extractJidId,
   profilePicUrl,
   getDisplayName,
 } from "../../utils";
@@ -129,7 +129,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
             const id = chat.chat_id || chat.id;
             const isAdded = () => props.monitoredIds?.has(id);
             const phone = () =>
-              !(chat.isGroup ?? chat.is_group) ? extractPhone(id) : "";
+              !(chat.isGroup ?? chat.is_group) ? extractJidId(id) : "";
             const isBusy = () => props.busy === id;
             const isConfirming = () => confirming() === id;
             const profileUrl = () => profilePicUrl(chat.profilePic || chat.profile_pic);
@@ -197,7 +197,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     </div>
                   </Show>
                   <span class="text-[6px] md:text-[7px] font-mono opacity-30 text-center truncate w-full tracking-tighter">
-                    {id.split("@")[0]}
+                    {extractJidId(id)}
                   </span>
                 </div>
 

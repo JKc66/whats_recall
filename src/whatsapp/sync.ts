@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { log } from '../logger.js';
 import { DATA_DIR } from '../db/database.js';
-import { safeMerge } from './utils.ts';
+import { safeMerge, extractJidId } from './utils.ts';
 
 const CACHE_FILE = join(DATA_DIR, 'baileys_auth', 'store_cache.json');
 
@@ -115,7 +115,7 @@ export class WhatsAppSync {
 
     // 3. Fallback: search contacts
     for (const [c_jid, c_info] of this.contacts.entries()) {
-      if (c_info.lid && (c_info.lid === jid || c_info.lid.includes(jid.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
+      if (c_info.lid && (c_info.lid === jid || c_info.lid.includes(extractJidId(jid))) && c_jid.includes('@s.whatsapp.net')) {
         this.lidToPn.set(jid, c_jid);
         this.pnToLid.set(c_jid, jid);
         return c_jid;
@@ -168,7 +168,7 @@ export class WhatsAppSync {
 
     // Also check contacts for any other linked IDs
     for (const [c_jid, c_info] of this.contacts.entries()) {
-      if (jid.includes('@lid') && c_info.lid && (c_info.lid === jid || c_info.lid.includes(jid.split('@')[0])) && c_jid.includes('@s.whatsapp.net')) {
+      if (jid.includes('@lid') && c_info.lid && (c_info.lid === jid || c_info.lid.includes(extractJidId(jid))) && c_jid.includes('@s.whatsapp.net')) {
         related.add(c_jid);
       }
       if (c_jid === jid && c_info.phoneNumber) {
