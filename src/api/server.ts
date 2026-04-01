@@ -73,7 +73,7 @@ export function createHonoServer(client: WhatsAppConnection) {
   api.route('/auth', auth);
   api.use('*', authMiddleware as any);
   api.route('/chats', chats);
-  api.route('/monitored', monitored);
+  api.route('/monitored', monitored(client));
   api.route('/settings', settings);
   api.route('/whatsapp', whatsappRouter(client));
 
@@ -154,10 +154,10 @@ export function createHonoServer(client: WhatsAppConnection) {
           const fingerprint = req.headers.get('X-Fingerprint') || cookieHeader.match(/auth_fp=([^;]+)/)?.[1];
 
           if (!token) return new Response('Unauthorized', { status: 401 });
-          
+
           const session = db.getSession(token) as any;
           if (!session) return new Response('Session expired', { status: 401 });
-          
+
           if (session.fingerprint && fingerprint !== session.fingerprint) {
             return new Response('Invalid fingerprint', { status: 401 });
           }
