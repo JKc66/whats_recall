@@ -1,9 +1,8 @@
 import { Hono } from 'hono';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
-const whatsapp = new Hono();
-
 export default function (client: WhatsAppConnection) {
+  const whatsapp = new Hono();
   whatsapp.get('/pairing', async (c) => {
     return c.json(client.getPairingData());
   });

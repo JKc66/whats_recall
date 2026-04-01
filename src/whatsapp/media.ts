@@ -1,11 +1,14 @@
 import { downloadMediaMessage, WAMessage } from '@whiskeysockets/baileys';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getDb, MEDIA_DIR } from '../db/database.js';
+import { getDb, getDataDir } from '../db/database.js';
 import { log } from '../logger.js';
 
+function getMediaDir() {
+  return process.env.MEDIA_DIR || join(getDataDir(), 'media');
+}
 
-const db = getDb();
+
 let hashWorker: Worker | null = null;
 const hashPending = new Map<string, (hash: string) => void>();
 
@@ -34,6 +37,7 @@ async function computeHash(buffer: Buffer): Promise<string> {
 }
 
 export async function downloadMedia(message: WAMessage, type: string, sock?: any): Promise<{ path: string, sha256hex: string | null } | null> {
+  const db = getDb();
   try {
     const mType = type + 'Message';
     const msg = message.message as any;
@@ -82,7 +86,7 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
     const filename = crypto.randomUUID();
     const extension = getExtension(type);
     const relativePath = `${filename}.${extension}`;
-    const fullPath = join(MEDIA_DIR, relativePath);
+    const fullPath = join(getMediaDir(), relativePath);
 
     await writeFile(fullPath, buffer);
     return { path: relativePath, sha256hex };
@@ -105,6 +109,7 @@ function getExtension(type: string): string {
 }
 
 export async function downloadProfilePic(jid: string, sock: any): Promise<{ filename: string, isNew: boolean } | null> {
+  const db = getDb();
   // Check if we already have it (this helper handles DB check, disk check, and self-healing)
   const existing = db.getChatProfilePic(jid);
   if (existing) return { filename: existing, isNew: false };
@@ -114,7 +119,7 @@ export async function downloadProfilePic(jid: string, sock: any): Promise<{ file
     if (!url) return null;
 
     const filename = `dp_${jid.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
-    const filepath = join(MEDIA_DIR, filename);
+    const filepath = join(getMediaDir(), filename);
     const res = await fetch(url);
     if (!res.ok) return null;
 

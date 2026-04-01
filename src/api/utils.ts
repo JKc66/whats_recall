@@ -3,9 +3,14 @@ import { resolve } from 'path';
 export function safePath(baseDir: string, userPath: string): string | null {
   if (!userPath || userPath === '.' || userPath === '..') return null;
   if (userPath.includes('\0')) return null;
+  
+  // Block any path traversal attempts
+  if (userPath.includes('..') || userPath.includes('\\')) return null;
+
   try {
     const decodedPath = decodeURIComponent(userPath);
-    if (decodedPath.includes('\0')) return null;
+    if (decodedPath.includes('\0') || decodedPath.includes('..') || decodedPath.includes('\\')) return null;
+    
     const base = resolve(baseDir);
     const resolved = resolve(base, decodedPath.replace(/^\/+/, ''));
 

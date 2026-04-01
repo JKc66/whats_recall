@@ -8,8 +8,8 @@ import chats from './chats.ts';
 import monitored from './monitored.ts';
 import settings from './settings.ts';
 import whatsappRouter from './whatsapp.ts';
-import { join, basename } from 'path';
-import { MEDIA_DIR, getDb } from '../db/database.ts';
+import { join, basename, dirname } from 'path';
+import { getMediaDir, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
 import { safePath, pruneApiRateLimits, verifySession } from './utils.ts';
@@ -77,10 +77,13 @@ export function createHonoServer(client: WhatsAppConnection) {
   api.route('/settings', settings);
   api.route('/whatsapp', whatsappRouter(client));
 
-  api.get('/media/:filename', async (c) => {
-    const filename = basename(c.req.param('filename'));
-    const filepath = safePath(MEDIA_DIR, filename);
-    if (!filepath) return c.json({ error: 'Invalid path' }, 400);
+  api.get('/media/:filename{.*}', async (c) => {
+    const filename = c.req.param('filename');
+    const mediaDir = getMediaDir();
+    const filepath = safePath(mediaDir, filename);
+    if (!filepath) {
+      return c.json({ error: 'Invalid path' }, 400);
+    }
 
     const file = Bun.file(filepath);
     if (!(await file.exists())) return c.notFound();
@@ -116,16 +119,18 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   app.route('/api', api);
 
-  // Static files and SPA fallback
-  app.use('/*', serveStatic({ root: './public' }));
   app.get('*', async (c, next) => {
     if (c.req.path.startsWith('/api') || c.req.path.startsWith('/ws')) return next();
-    const indexFile = Bun.file(join(PUBLIC_DIR, 'index.html'));
+    const publicDir = process.env.PUBLIC_DIR || './public';
+    const indexFile = Bun.file(join(publicDir, 'index.html'));
     if (await indexFile.exists()) {
       return c.html(await indexFile.text());
     }
     return c.text('Not Found', 404);
   });
+
+  // Static files
+  app.use('/*', serveStatic({ root: './public' }));
 
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
@@ -187,5 +192,5 @@ export function createHonoServer(client: WhatsAppConnection) {
     return { bunServer, broadcast };
   }
 
-  return { start, broadcast };
+  return { start, broadcast, app };
 }

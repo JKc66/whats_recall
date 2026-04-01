@@ -11,15 +11,14 @@ import { rm } from 'fs/promises';
 import { join } from 'path';
 import pino from 'pino';
 import { log } from '../logger.js';
-import { getDb, DATA_DIR } from '../db/database.js';
+import { getDb, getDataDir } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { MessageProcessor } from './processor.ts';
 import { downloadProfilePic } from './media.ts';
 import { getChatName, safeMerge, extractJidId } from './utils.ts';
 import { BroadcastFn, PairingStatus } from '../types.ts';
 
-const db = getDb();
-const AUTH_DIR = join(DATA_DIR, 'baileys_auth');
+const getAuthDir = () => join(getDataDir(), 'baileys_auth');
 
 export class WhatsAppConnection {
   private sock: any = null;
@@ -35,13 +34,13 @@ export class WhatsAppConnection {
   private notifyWhatsApp = false;
 
   constructor(private broadcast: BroadcastFn) {
-    if (!existsSync(AUTH_DIR)) mkdirSync(AUTH_DIR, { recursive: true });
+    if (!existsSync(getAuthDir())) mkdirSync(getAuthDir(), { recursive: true });
 
     // Continuously poll the 'whatsapp_notify' setting from the database to stay in sync
-    const s = db.getSettings();
+    const s = getDb().getSettings();
     this.notifyWhatsApp = s.whatsapp_notify === 'true';
     setInterval(() => {
-      const s = db.getSettings();
+      const s = getDb().getSettings();
       this.notifyWhatsApp = s.whatsapp_notify === 'true';
     }, 10000);
   }
@@ -59,7 +58,7 @@ export class WhatsAppConnection {
       }
 
       log('CONN', 'Initializing Baileys Socket...');
-      const { state: authState, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+      const { state: authState, saveCreds } = await useMultiFileAuthState(getAuthDir());
       
       let version: [number, number, number];
       try {
@@ -69,7 +68,7 @@ export class WhatsAppConnection {
         version = [2, 3000, 1015901307];
       }
 
-      const s = db.getSettings();
+      const s = getDb().getSettings();
       const isRegistered = authState?.creds?.registered;
       const printQR = !isRegistered && s.whatsapp_pairing_method === 'qr' && this.pairingRequested;
 
@@ -176,7 +175,7 @@ export class WhatsAppConnection {
 
       if (qr) {
         if (!this.pairingRequested) return;
-        const s = db.getSettings();
+        const s = getDb().getSettings();
         if (s.whatsapp_pairing_method === 'qr') {
           this.pairingData = { type: 'qr', data: qr, connected: false, authenticated: false };
           log('CONN', 'QR Code generated');
@@ -205,8 +204,8 @@ export class WhatsAppConnection {
         if (isTerminal) {
           log('CONN', `Terminal disconnect (code ${statusCode}). Clearing auth state and restarting...`);
           try {
-            await rm(AUTH_DIR, { recursive: true, force: true });
-            mkdirSync(AUTH_DIR, { recursive: true });
+            await rm(getAuthDir(), { recursive: true, force: true });
+            mkdirSync(getAuthDir(), { recursive: true });
             syncService.chats.clear();
             syncService.contacts.clear();
             log('CONN', 'Auth state and cache cleared.');
@@ -356,10 +355,10 @@ export class WhatsAppConnection {
       }
 
       const allChats = Array.from(dedupedMap.values());
-      const monitored = new Set<string>(db.getMonitoredChats().map((m: any) => m.chat_id));
+      const monitored = new Set<string>(getDb().getMonitoredChats().map((m: any) => m.chat_id));
 
       // Batch fetch profile pics
-      const profilePics = db.getChatProfilePics ? db.getChatProfilePics(allChats.map((c: any) => c.id)) : {};
+      const profilePics = getDb().getChatProfilePics ? getDb().getChatProfilePics(allChats.map((c: any) => c.id)) : {};
 
       // Expand monitored set with LID<->PN mappings
       if (this.sock?.signalRepository?.lidMapping) {
@@ -396,7 +395,7 @@ export class WhatsAppConnection {
           isGroup: isGrp,
           timestamp: ts,
           isMonitored: monitored.has(c.id),
-          profilePic: (profilePics as any)[c.id] || db.getChatProfilePic(c.id),
+          profilePic: (profilePics as any)[c.id] || getDb().getChatProfilePic(c.id),
           lid: c.lids && c.lids.length > 0 ? extractJidId(c.lids[0]) : (c.id.includes('@lid') ? extractJidId(c.id) : null)
         };
       }));
@@ -437,8 +436,8 @@ export class WhatsAppConnection {
       this.sock = null;
     }
 
-    await rm(AUTH_DIR, { recursive: true, force: true });
-    mkdirSync(AUTH_DIR, { recursive: true });
+    await rm(getAuthDir(), { recursive: true, force: true });
+    mkdirSync(getAuthDir(), { recursive: true });
 
     this.pairingData = { type: null, data: null, connected: false, authenticated: false };
     this.isReady = false;
@@ -462,9 +461,9 @@ export class WhatsAppConnection {
     log('CONN', `Purging local data for IDs: ${ids.join(', ')}`);
 
     if (ids.length > 0) {
-      db.deleteChatsAndMessages(ids);
+      getDb().deleteChatsAndMessages(ids);
       for (const id of ids) {
-        db.removeMonitoredChat(id);
+        getDb().removeMonitoredChat(id);
       }
     }
   }

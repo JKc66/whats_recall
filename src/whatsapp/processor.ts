@@ -1,13 +1,11 @@
 import { extractMessageContent, getContentType, jidNormalizedUser, WAMessage, isJidGroup } from '@whiskeysockets/baileys';
 import { log } from '../logger.js';
-import { getDb, MEDIA_DIR } from '../db/database.js';
+import { getDb, getMediaDir } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
 import { getChatNameAsync, extractJidId } from './utils.ts';
-
-const db = getDb();
 
 export class MessageProcessor {
   constructor(private sock: any, private broadcast: BroadcastFn) {}
@@ -19,7 +17,7 @@ export class MessageProcessor {
   private async checkIsMonitored(jid: string): Promise<boolean> {
     if (!jid) return false;
     const ids = await syncService.getRelatedJids(jid, this.sock);
-    return ids.some(id => db.isMonitored(id));
+    return ids.some(id => getDb().isMonitored(id));
   }
 
   /**
@@ -48,15 +46,15 @@ export class MessageProcessor {
     const origId = revokedKey?.id;
 
     let messageId = origId || revokeId;
-    const cached = db.getMessage(messageId) || db.getMessage(revokeId) || (origId ? db.getMessageByOriginalId(origId) : null);
+    const cached = getDb().getMessage(messageId) || getDb().getMessage(revokeId) || (origId ? getDb().getMessageByOriginalId(origId) : null);
     if (cached) messageId = cached.message_id;
 
-    db.markDeleted(messageId);
-    if (origId && origId !== revokeId) db.markDeleted(revokeId);
+    getDb().markDeleted(messageId);
+    if (origId && origId !== revokeId) getDb().markDeleted(revokeId);
 
-    const deleted = db.getMessage(messageId);
+    const deleted = getDb().getMessage(messageId);
     if (deleted) {
-      const chat = db.getChat(deleted.chat_id);
+      const chat = getDb().getChat(deleted.chat_id);
       const chatName = chat?.name || deleted.chat_id;
 
       log('PROCESSOR', `Message deleted in ${chatName} by ${deleted.sender_name || 'unknown'}`);
@@ -67,7 +65,7 @@ export class MessageProcessor {
         deleted_at: new Date().toISOString()
       });
 
-      const settings = db.getSettings();
+      const settings = getDb().getSettings();
       if (settings.whatsapp_notify === 'true' && !deleted.is_from_me) {
         await this.sendDeletionNotification(deleted, chatName);
       }
@@ -119,13 +117,13 @@ export class MessageProcessor {
     else if (inner && inner.caption) body = inner.caption;
 
     if (body !== undefined) {
-      const oldMsg = db.getMessage(messageId);
+      const oldMsg = getDb().getMessage(messageId);
       const oldBody = oldMsg?.body;
       
-      db.updateMessageBody(messageId, body);
+      getDb().updateMessageBody(messageId, body);
       
       if (oldBody !== undefined && oldBody !== null && oldBody !== body) {
-        db.addMessageEdit(messageId, oldBody, body);
+        getDb().addMessageEdit(messageId, oldBody, body);
       }
       
       log('PROCESSOR', `Message edited: ${messageId} in ${chatId}`);
@@ -159,7 +157,7 @@ export class MessageProcessor {
         const chatName = await getChatNameAsync(chatId, null, this.sock);
         const lid = rawChatId.includes('@lid') ? rawChatId : await syncService.resolveLID(rawChatId, this.sock);
         
-        db.upsertChat(chatId, chatName, isGrp, lid);
+        getDb().upsertChat(chatId, chatName, isGrp, lid);
 
         const msgData = {
           message_id: msg.key.id!,
@@ -183,12 +181,12 @@ export class MessageProcessor {
           quoted_preview: null as string | null,
         };
 
-        db.saveMessage(msgData);
+        getDb().saveMessage(msgData);
         this.broadcast('new_message', {
           ...msgData,
           chat_name: chatName,
           is_group: isGrp ? 1 : 0,
-          profile_pic: db.getChatProfilePic(chatId),
+          profile_pic: getDb().getChatProfilePic(chatId),
         });
       }
       return;
@@ -267,7 +265,7 @@ export class MessageProcessor {
       const senderId = await this.resolveSender(msg, chatId, isGrp);
       const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
 
-      db.addReaction(targetId, senderId, senderName, emoji);
+      getDb().addReaction(targetId, senderId, senderName, emoji);
       this.broadcast('message_reaction', {
         chat_id: chatId,
         message_id: targetId,
@@ -284,7 +282,7 @@ export class MessageProcessor {
     const chatName = await getChatNameAsync(chatId, null, this.sock);
     const lid = rawChatId.includes('@lid') ? rawChatId : await syncService.resolveLID(rawChatId, this.sock);
 
-    db.upsertChat(chatId, chatName, isGrp, lid);
+    getDb().upsertChat(chatId, chatName, isGrp, lid);
 
     // Asynchronously fetch and cache the profile picture if not already stored
     this.getProfilePicAsync(chatId);
@@ -370,7 +368,7 @@ export class MessageProcessor {
 
     // If replying to a view-once message, save the recovered media to the original message
     if (quotedViewOnceMedia && quotedStanzaId) {
-      db.updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
+      getDb().updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
     }
 
     const msgData: WhatsAppMessage = {
@@ -395,18 +393,18 @@ export class MessageProcessor {
       quoted_preview: quotedPreview || undefined,
     };
 
-    db.saveMessage(msgData);
+    getDb().saveMessage(msgData);
     if (isViewOnce) log('PROCESSOR', `Message cached: ${msgData.type} (view-once) in ${chatName} from ${senderName}`);
 
     this.broadcast('new_message', {
       ...msgData,
       chat_name: chatName,
       is_group: isGrp ? 1 : 0,
-      profile_pic: db.getChatProfilePic(chatId),
+      profile_pic: getDb().getChatProfilePic(chatId),
     });
 
     // Forward a private notification copy if a View-Once message is detected and notifications are enabled
-    const settings = db.getSettings();
+    const settings = getDb().getSettings();
     if (isViewOnce && settings.whatsapp_notify === 'true' && !msgData.is_from_me) {
       await this.sendViewOnceNotification(msgData, chatName);
     }
@@ -425,7 +423,7 @@ export class MessageProcessor {
       const text = `👁️ *View-Once* from *${from}* (${chatName}) [${mType}]`;
 
       if (msg.has_media && msg.media_path) {
-        const fullPath = join(MEDIA_DIR, msg.media_path);
+        const fullPath = join(getMediaDir(), msg.media_path);
         if (await Bun.file(fullPath).exists()) {
           const content: any = { caption: text };
           if (msg.type === 'image') content.image = { url: fullPath };
@@ -459,7 +457,7 @@ export class MessageProcessor {
       ].filter((r: string) => r !== '').join('\n');
 
       if (msg.has_media && msg.media_path) {
-        const fullPath = join(MEDIA_DIR, msg.media_path);
+        const fullPath = join(getMediaDir(), msg.media_path);
         if (await Bun.file(fullPath).exists()) {
           const mediaType = msg.type;
           const content: any = { caption: text };

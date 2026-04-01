@@ -2,10 +2,10 @@ import { existsSync, readFileSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { log } from '../logger.js';
-import { DATA_DIR } from '../db/database.js';
+import { getDataDir } from '../db/database.js';
 import { safeMerge, extractJidId } from './utils.ts';
 
-const CACHE_FILE = join(DATA_DIR, 'baileys_auth', 'store_cache.json');
+const getCacheFile = () => join(getDataDir(), 'baileys_auth', 'store_cache.json');
 
 export class WhatsAppSync {
   public contacts = new Map<string, any>();
@@ -20,8 +20,8 @@ export class WhatsAppSync {
 
   private load() {
     try {
-      if (existsSync(CACHE_FILE)) {
-        const cache = JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
+      if (existsSync(getCacheFile())) {
+        const cache = JSON.parse(readFileSync(getCacheFile(), 'utf8'));
         if (cache.contacts) {
           cache.contacts.forEach((c: any) => this.contacts.set(c.id, c));
           this.updateMappings(cache.contacts);
@@ -80,7 +80,7 @@ export class WhatsAppSync {
           contacts: Array.from(this.contacts.values()),
           chats: Array.from(this.chats.values())
         };
-        await writeFile(CACHE_FILE, JSON.stringify(data));
+        await writeFile(getCacheFile(), JSON.stringify(data));
       } catch (e: any) {
         log('SYNC', `Failed to save sync cache: ${e.message}`);
       }

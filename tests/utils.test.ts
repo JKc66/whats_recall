@@ -1,8 +1,40 @@
 import { expect, test, describe } from "bun:test";
-import { extractJidId, getChatName, safeMerge } from "../src/whatsapp/utils.ts";
+import { extractJidId, getChatName, safeMerge, getChatNameAsync } from "../src/whatsapp/utils.ts";
 import { syncService } from "../src/whatsapp/sync.ts";
 
 describe("WhatsApp Utils", () => {
+  describe("getChatNameAsync", () => {
+    test("should return immediate name if available", async () => {
+      const jid = "immediate@s.whatsapp.net";
+      syncService.contacts.set(jid, { id: jid, name: "Immediate" });
+      expect(await getChatNameAsync(jid)).toBe("Immediate");
+      syncService.contacts.delete(jid);
+    });
+
+    test("should fetch group metadata as last resort", async () => {
+      const jid = "12345@g.us";
+      const mockSock = {
+        groupMetadata: async (id: string) => ({ subject: "Group Subject" })
+      };
+      
+      const name = await getChatNameAsync(jid, null, mockSock);
+      expect(name).toBe("Group Subject");
+      expect(syncService.chats.get(jid)?.name).toBe("Group Subject");
+      
+      syncService.chats.delete(jid);
+    });
+
+    test("should handle group metadata failure gracefully", async () => {
+      const jid = "fail@g.us";
+      const mockSock = {
+        groupMetadata: async () => { throw new Error("Network error"); }
+      };
+      
+      const name = await getChatNameAsync(jid, null, mockSock);
+      expect(name).toBe("fail"); // Fallback to ID
+    });
+  });
+
   describe("extractJidId", () => {
     test("should extract ID from standard JID", () => {
       expect(extractJidId("1234567890@s.whatsapp.net")).toBe("1234567890");

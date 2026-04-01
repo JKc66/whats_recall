@@ -13,8 +13,9 @@ const getDynamicMediaDir = () => {
   return process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(dataDir, 'media'));
 };
 
-export const DATA_DIR = getDynamicDataDir();
-export const MEDIA_DIR = getDynamicMediaDir();
+export const getDataDir = () => getDynamicDataDir();
+export const getMediaDir = () => getDynamicMediaDir();
+
 
 export const dbInstances: Map<string, any> = new Map();
 
@@ -23,11 +24,13 @@ function escapeLike(query: string): string {
 }
 
 export function getDb(testDbPath?: string, testMediaDir?: string) {
-  const currentDataDir = getDynamicDataDir();
+  const currentDataDir = testDbPath ? dirname(testDbPath) : getDynamicDataDir();
   const currentMediaDir = testMediaDir || (process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(currentDataDir, 'media')));
   const currentDbPath = testDbPath || process.env.DB_PATH || join(currentDataDir, 'messages.db');
 
-
+  if (testDbPath || testMediaDir) {
+    dbInstances.delete(currentDbPath);
+  }
 
   if (dbInstances.has(currentDbPath)) return dbInstances.get(currentDbPath);
 
@@ -400,7 +403,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       
       // Fallback: Check if the standard filename exists on disk
       const filename = `dp_${chatId.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
-      if (existsSync(join(currentMediaDir, filename))) {
+      const fullPath = join(currentMediaDir, filename);
+      if (existsSync(fullPath)) {
         // Self-heal the DB if we found it
         dbMethods.updateChatProfilePic(chatId, filename);
         return filename;
