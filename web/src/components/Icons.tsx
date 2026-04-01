@@ -26,6 +26,7 @@ const IconBase = (
       viewBox={local.viewBox || "0 0 256 256"}
       fill={local.fill || local.color || "currentColor"}
       class={local.class}
+      aria-hidden="true"
       {...others}
     >
       {local.children}
