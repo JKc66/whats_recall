@@ -37,6 +37,15 @@ export default function Settings() {
   const [tab, setTab] = createSignal<"monitored" | "available" | "config">(
     "config",
   );
+  let scrollContainer: HTMLDivElement | undefined;
+
+  createEffect(() => {
+    tab(); // Track tab change
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+    }
+  });
+
   const [monitored, { refetch: refetchMonitored }] =
     createResource(fetchMonitored);
   const [available, { refetch: refetchAvailable }] =
@@ -215,50 +224,59 @@ export default function Settings() {
   }
 
   return (
-    <div class="flex-1 flex flex-col h-full bg-bg-surface/20">
+    <div class="flex-1 flex flex-col h-full bg-[#0A0A0A] relative overflow-hidden">
+      {/* CRT Scanline Effect */}
+      <div 
+        class="absolute inset-0 pointer-events-none z-50 opacity-[0.03]"
+        style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
+      />
+      
+      {/* Technical Background Grid */}
+      <div class="absolute inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" />
+
       <SettingsHeader
         onBack={() => setView("chats")}
         search={search()}
         onSearchChange={setSearch}
       />
 
-      <div class="flex gap-0 p-3 md:p-6 pb-0 overflow-x-auto no-scrollbar border-b border-white/10 bg-white/2">
+      <div class="flex items-stretch overflow-x-auto no-scrollbar border-b border-white/10 bg-white/2 relative z-10">
         <button
-          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
+          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
           classList={{
-            "border-red-600 text-red-600 bg-red-600/5": tab() === "config",
-            "border-transparent text-zinc-500 hover:text-zinc-300":
-              tab() !== "config",
+            "bg-white/5 text-red-600": tab() === "config",
+            "text-zinc-600 hover:text-zinc-300": tab() !== "config",
           }}
           onClick={() => setTab("config")}
         >
-          CONFIGURATION
+          [ CORE_CFG ]
         </button>
         <button
-          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
+          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
           classList={{
-            "border-red-600 text-red-600 bg-red-600/5": tab() === "monitored",
-            "border-transparent text-zinc-500 hover:text-zinc-300":
-              tab() !== "monitored",
+            "bg-white/5 text-red-600": tab() === "monitored",
+            "text-zinc-600 hover:text-zinc-300": tab() !== "monitored",
           }}
           onClick={() => setTab("monitored")}
         >
-          MONITORED [{(monitored() || []).length}]
+          [ ACTIVE: {(monitored() || []).length} ]
         </button>
         <button
-          class="px-5 md:px-8 py-3 text-[11px] font-bold transition-all shrink-0 uppercase tracking-[0.15em] font-mono border-b-2"
+          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
           classList={{
-            "border-red-600 text-red-600 bg-red-600/5": tab() === "available",
-            "border-transparent text-zinc-500 hover:text-zinc-300":
-              tab() !== "available",
+            "bg-white/5 text-red-600": tab() === "available",
+            "text-zinc-600 hover:text-zinc-300": tab() !== "available",
           }}
           onClick={() => setTab("available")}
         >
-          AVAILABLE [{(available() || []).length}]
+          [ DISCOVERED: {(available() || []).length} ]
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto scrollbar-thin">
+      <div 
+        ref={scrollContainer}
+        class="flex-1 overflow-y-auto scrollbar-thin relative z-10"
+      >
         <Show when={tab() === "config"}>
           <ConfigPanel
             pairing={pairing()}

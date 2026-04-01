@@ -3,40 +3,47 @@ import { ArrowLeftIcon } from "../Icons";
 interface SettingsHeaderProps {
   onBack: () => void;
   search: string;
-  onSearchChange: ( _val: string) => void;
+  onSearchChange: (_val: string) => void;
 }
 
 export default function SettingsHeader(props: SettingsHeaderProps) {
   return (
-    <header class="flex flex-col gap-4 p-6 pb-2 border-b border-white/5">
-      <div class="flex items-center gap-4">
+    <header class="flex flex-col border-b border-white/10 bg-white/2">
+      <div class="flex items-stretch">
         <button
-          class="w-10 h-10 flex items-center justify-center -ml-2 text-zinc-400 hover:bg-white/5 rounded-full transition-all active:scale-95"
+          class="w-16 border-r border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/5 transition-all active:scale-95 group"
           onClick={() => props.onBack()}
           title="Back"
           aria-label="Back to chats"
         >
-          <ArrowLeftIcon size={20} />
+          <ArrowLeftIcon size={18} class="group-hover:-translate-x-0.5 transition-transform" />
         </button>
-        <div>
-          <h2 class="text-xl font-bold text-zinc-100 tracking-tight font-outfit">
-            System Settings
-          </h2>
-          <p class="text-[13px] text-zinc-500 font-medium">
-            Manage monitored chats and notification preferences.
-          </p>
+        
+        <div class="flex-1 p-6 md:p-8 flex flex-col gap-1">
+          <div class="flex items-center gap-3 mb-1">
+            <div class="w-2 h-2 bg-red-600 shadow-[0_0_8px_rgba(230,25,25,0.4)]" />
+            <h2 class="text-[10px] font-bold text-red-600 uppercase tracking-[0.3em] font-mono">
+              System_Registry // Kernel
+            </h2>
+          </div>
+          <h1 class="text-3xl md:text-5xl font-black font-sans leading-none tracking-[-0.04em] uppercase text-[#EAEAEA]">
+            Core_System<br/>Controller
+          </h1>
         </div>
       </div>
 
-      <div class="relative flex items-center mt-2 group">
+      <div class="grid grid-cols-[120px_1fr] border-t border-white/10 group focus-within:bg-white/2 transition-colors">
+        <div class="border-r border-white/10 p-4 flex items-center text-[9px] tracking-[0.2em] opacity-40 font-bold uppercase font-mono">
+          Query_Search
+        </div>
         <input
           type="text"
-          placeholder="Search for chats or numbers..."
+          placeholder="/// INPUT_REGISTRY_KEY_OR_ALIAS"
           value={props.search}
           onInput={(e) => props.onSearchChange(e.currentTarget.value)}
           spellcheck={false}
           aria-label="Search chats"
-          class="w-full p-3 px-4 bg-black/30 border border-white/10 rounded-xl text-zinc-100 font-inherit text-[14px] outline-none transition-all duration-300 focus-visible:border-accent focus-visible:bg-accent/5 focus-visible:shadow-[0_0_0_2px_rgba(16,185,129,0.1)] placeholder:text-zinc-600"
+          class="w-full bg-transparent p-4 outline-none text-sm tracking-widest placeholder:opacity-20 uppercase font-mono text-[#EAEAEA]"
         />
       </div>
     </header>

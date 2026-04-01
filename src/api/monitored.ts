@@ -16,7 +16,11 @@ monitored.post('/', async (c) => {
 
 monitored.delete('/:chatId', async (c) => {
   const chatId = c.req.param('chatId');
+
+  // Always wipe messages and media before removing from monitored list
+  await db.deleteChatsAndMessages([chatId]);
   db.removeMonitoredChat(chatId);
+
   return c.json({ success: true });
 });
 
