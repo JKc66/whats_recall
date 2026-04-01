@@ -14,6 +14,7 @@ const COLORS: Record<string, string> = {
 };
 
 export function log(category: string, message: string, ...args: any[]) {
+  if (process.env.NODE_ENV === "test" && process.env.VERBOSE !== "true") return;
   const now = new Date();
   const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
   const color = COLORS[category] || '\x1b[37m'; // Default white

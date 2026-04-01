@@ -5,10 +5,12 @@ describe("logger", () => {
     let consoleSpy: any;
 
     beforeEach(() => {
+        process.env.VERBOSE = "true";
         consoleSpy = spyOn(console, "log").mockImplementation(() => {});
     });
 
     afterEach(() => {
+        delete process.env.VERBOSE;
         if (consoleSpy) consoleSpy.mockRestore();
         setSystemTime(); // Reset system time to normal clock
     });

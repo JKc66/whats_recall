@@ -1,5 +1,4 @@
 process.env.NODE_ENV = "test"; // Must be FIRST
-import { expect, test, describe, beforeEach, afterEach, spyOn, mock, beforeAll, afterAll } from "bun:test";
 import { mkdtempSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -7,6 +6,9 @@ import { tmpdir } from "os";
 // Setup temporary directory for test database/media
 const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-auth-test-"));
 process.env.DATA_DIR = tempDir;
+process.env.DB_PATH = join(tempDir, "messages.db");
+
+import { expect, test, describe, beforeEach, afterEach, spyOn, mock, beforeAll, afterAll } from "bun:test";
 
 const { getDb } = await import("../src/db/database.ts");
 const { createHonoServer } = await import("../src/api/server.ts");

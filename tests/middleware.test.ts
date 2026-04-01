@@ -1,5 +1,4 @@
 process.env.NODE_ENV = "test"; // Must be FIRST
-import { expect, test, describe, mock, beforeEach, beforeAll, afterAll } from "bun:test";
 import { mkdtempSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -7,36 +6,50 @@ import { tmpdir } from "os";
 // Setup temporary directory for test database/media
 const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-middleware-test-"));
 process.env.DATA_DIR = tempDir;
+process.env.DB_PATH = join(tempDir, "messages.db");
 
-const { getDb } = await import("../src/db/database.ts");
+import { expect, test, describe, mock, beforeEach, beforeAll, afterAll } from "bun:test";
 
-const mockGetCookie = mock();
+const { getDb, dbInstances } = await import("../src/db/database.ts");
 
-// Mock hono/cookie synchronously
-mock.module("hono/cookie", () => ({
-  getCookie: mockGetCookie,
-  setCookie: () => {},
-  deleteCookie: () => {}
-}));
-
-const { authMiddleware } = await import("../src/api/middleware.ts");
+// No global mocking of hono/cookie as it interferes with other tests.
+// Use standard mocks for headers instead.
 
 describe("authMiddleware", () => {
   let mockContext: any;
   let mockNext: any;
-  const db = getDb();
+  let db: any;
+  let authMiddleware: any;
+
+  beforeAll(async () => {
+    
+    db = getDb();
+    const mod = await import("../src/api/middleware.ts");
+    authMiddleware = mod.authMiddleware;
+  });
 
   beforeEach(async () => {
     await db.clearAllData();
     mockNext = mock(() => Promise.resolve());
+    
+    // Create a mock headers object that getCookie can use
+    const headersMap = new Map<string, string>();
+    
     mockContext = {
       req: {
         path: "/api/chats",
-        header: mock((name: string) => undefined)
+        header: mock((name: string) => headersMap.get(name.toLowerCase())),
+        raw: {
+          headers: {
+            get: mock((name: string) => headersMap.get(name.toLowerCase()))
+          }
+        }
       },
-      json: mock((data: any, status: number) => ({ data, status }))
+      json: mock((data: any, status: number) => ({ data, status })),
+      get: mock(() => undefined),
+      set: mock(() => undefined),
+      _headersMap: headersMap // helper for tests
     };
-    mockGetCookie.mockReset();
   });
 
   afterAll(() => {
@@ -52,13 +65,12 @@ describe("authMiddleware", () => {
   });
 
   test("should return 401 if no token is found in cookies or headers", async () => {
-    mockGetCookie.mockReturnValue(undefined);
     await authMiddleware(mockContext, mockNext);
     expect(mockContext.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401);
   });
 
   test("should return 401 if session is not found in database", async () => {
-    mockGetCookie.mockReturnValue("non-existent-token");
+    mockContext._headersMap.set('x-auth-token', 'non-existent-token');
     await authMiddleware(mockContext, mockNext);
     expect(mockContext.json).toHaveBeenCalledWith({ error: 'Session expired or invalid' }, 401);
   });
@@ -68,12 +80,9 @@ describe("authMiddleware", () => {
     // Use datetime('now', '+1 hour') to ensure it's not expired in SQLite's view
     db.raw.query("INSERT INTO sessions (token, fingerprint, expires_at) VALUES (?, ?, datetime('now', '+1 hour'))").run(token, "correct-fingerprint");
     
-    mockGetCookie.mockReturnValue(token);
-    mockContext.req.header.mockImplementation((name: string) => {
-      if (name === 'X-Fingerprint') return 'wrong-fingerprint';
-      return undefined;
-    });
-
+    mockContext._headersMap.set('x-auth-token', token);
+    mockContext._headersMap.set('x-fingerprint', 'wrong-fingerprint');
+    
     await authMiddleware(mockContext, mockNext);
     expect(mockContext.json).toHaveBeenCalledWith({ error: "Fingerprint mismatch or missing" }, 401);
   });
@@ -82,12 +91,8 @@ describe("authMiddleware", () => {
     const token = "valid-token";
     db.raw.query("INSERT INTO sessions (token, fingerprint, expires_at) VALUES (?, ?, datetime('now', '+1 hour'))").run(token, "correct-fingerprint");
 
-    mockGetCookie.mockReturnValue(token);
-    mockContext.req.header.mockImplementation((name: string) => {
-      if (name === 'X-Fingerprint') return 'correct-fingerprint';
-      if (name === 'X-Auth-Token') return token;
-      return undefined;
-    });
+    mockContext._headersMap.set('x-auth-token', token);
+    mockContext._headersMap.set('x-fingerprint', 'correct-fingerprint');
 
     await authMiddleware(mockContext, mockNext);
     expect(mockNext).toHaveBeenCalled();

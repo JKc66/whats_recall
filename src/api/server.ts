@@ -109,10 +109,10 @@ export function createHonoServer(client: WhatsAppConnection) {
       return c.json({ error: 'Password required to confirm data deletion' }, 403);
     }
     const db = getDb();
-    await db.clearAllData();
+    await db.clearAllData(true);
     log('API', 'All messages and chat data cleared');
     return c.json({ ok: true });
-  });
+    });
 
   app.route('/api', api);
 

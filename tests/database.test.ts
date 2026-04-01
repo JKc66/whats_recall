@@ -12,7 +12,11 @@ import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 const testMediaDir = join(tempDir, "media");
 if (!existsSync(testMediaDir)) mkdirSync(testMediaDir, { recursive: true });
 
-const { getDb } = await import("../src/db/database.ts");
+const { getDb, dbInstances } = await import("../src/db/database.ts");
+
+beforeAll(async () => {
+    
+});
 
 afterAll(() => {
     if (tempDir) {

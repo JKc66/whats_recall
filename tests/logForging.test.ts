@@ -3,6 +3,7 @@ import { log } from "../src/logger.ts";
 
 describe("Log Forging Mitigation", () => {
     test("should prevent log forging by sanitizing newline characters", () => {
+        process.env.VERBOSE = "true";
         const consoleSpy = spyOn(console, "log");
 
         const maliciousPath = "/api/v1/user\n[2025-01-01 00:00:00] [AUTH] Login success from 1.2.3.4";
@@ -24,5 +25,6 @@ describe("Log Forging Mitigation", () => {
         expect(loggedMessage).toContain("/api/v1/user[2025-01-01 00:00:00]");
 
         consoleSpy.mockRestore();
+        delete process.env.VERBOSE;
     });
 });

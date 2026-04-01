@@ -11,7 +11,7 @@
     "lint": "bun x eslint . && cd web && bun run lint",
     "fix": "bun x eslint . --fix && cd web && bun run fix",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "t": "bun test --only-failures"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",

@@ -6,30 +6,34 @@ import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR ? resolve(process.env.DATA_DIR) : join(__dirname, '..', '..', 'data');
-const MEDIA_DIR_DEFAULT = process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(DATA_DIR, 'media'));
 
-export const MEDIA_DIR = MEDIA_DIR_DEFAULT;
-export { DATA_DIR };
+const getDynamicDataDir = () => process.env.DATA_DIR ? resolve(process.env.DATA_DIR) : join(__dirname, '..', '..', 'data');
+const getDynamicMediaDir = () => {
+  const dataDir = getDynamicDataDir();
+  return process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(dataDir, 'media'));
+};
 
-const dbInstances: Map<string, any> = new Map();
+export const DATA_DIR = getDynamicDataDir();
+export const MEDIA_DIR = getDynamicMediaDir();
+
+export const dbInstances: Map<string, any> = new Map();
 
 function escapeLike(query: string): string {
   return query.replace(/[%_]/g, '\\$&');
 }
 
 export function getDb(testDbPath?: string, testMediaDir?: string) {
-  // Safeguard: In test environment, discourage using default production path
-  if (process.env.NODE_ENV === 'test' && !testDbPath && !process.env.DATA_DIR) {
-    console.warn('WARNING: getDb() called in test mode without explicit path. This may affect production data.');
-  }
+  const currentDataDir = getDynamicDataDir();
+  const currentMediaDir = testMediaDir || (process.env.MEDIA_DIR ? resolve(process.env.MEDIA_DIR) : resolve(join(currentDataDir, 'media')));
+  const currentDbPath = testDbPath || process.env.DB_PATH || join(currentDataDir, 'messages.db');
 
-  const currentDbPath = testDbPath || join(DATA_DIR, 'messages.db');
-  const currentMediaDir = testMediaDir || MEDIA_DIR_DEFAULT;
+
 
   if (dbInstances.has(currentDbPath)) return dbInstances.get(currentDbPath);
 
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+
+
+  if (!existsSync(currentDataDir)) mkdirSync(currentDataDir, { recursive: true });
   if (!existsSync(currentMediaDir)) mkdirSync(currentMediaDir, { recursive: true });
 
   const db = new Database(currentDbPath);
@@ -473,6 +477,16 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       if (!confirm && process.env.NODE_ENV !== 'test') {
         throw new Error('Confirmation required to clear all data in non-test environment');
       }
+
+      // Strict safety check for tests: Never clear a directory that isn't in /tmp or /var/tmp or specified as test dir
+      if (process.env.NODE_ENV === 'test') {
+        const isTmp = currentDbPath.includes('/tmp/') || currentDbPath.includes('/var/tmp/') || currentDbPath.includes('whatsapp-test');
+        if (!isTmp && !testDbPath) {
+           console.error(`CRITICAL: clearAllData attempted on potential production path: ${currentDbPath}`);
+           throw new Error('Safety check failed: clearAllData attempted on non-temporary path in test mode');
+        }
+      }
+
       db.transaction(() => {
         db.query('DELETE FROM messages').run();
         db.query('DELETE FROM chats').run();
@@ -482,6 +496,14 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       })();
       
       if (existsSync(currentMediaDir)) {
+        // Additional safety for media dir
+        if (process.env.NODE_ENV === 'test') {
+            const isTmpMedia = currentMediaDir.includes('/tmp/') || currentMediaDir.includes('/var/tmp/') || currentMediaDir.includes('whatsapp-test');
+            if (!isTmpMedia && !testMediaDir) {
+                console.error(`CRITICAL: clearAllData media sync attempted on potential production path: ${currentMediaDir}`);
+                return; // Skip media deletion but continue
+            }
+        }
         rmSync(currentMediaDir, { recursive: true, force: true });
       }
       mkdirSync(currentMediaDir, { recursive: true });
@@ -503,14 +525,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
     // Session Operations
     createSession(token: string, fingerprint: string, expiresAt: string) {
+
       db.query('INSERT INTO sessions (token, fingerprint, expires_at) VALUES (?, ?, ?)').run(token, fingerprint, expiresAt);
     },
 
     getSession(token: string) {
+
       return db.query("SELECT * FROM sessions WHERE token = ? AND expires_at > datetime('now')").get(token);
     },
 
     deleteSession(token: string) {
+
       db.query('DELETE FROM sessions WHERE token = ?').run(token);
     },
 

@@ -9,7 +9,7 @@ process.env.NODE_ENV = "test";
 
 import { expect, test, describe, afterAll, beforeAll } from "bun:test";
 
-const { getDb } = await import("../src/db/database.ts");
+const { getDb, dbInstances } = await import("../src/db/database.ts");
 
 describe("database searchMessages", () => {
     let db: any;
@@ -17,6 +17,7 @@ describe("database searchMessages", () => {
     const groupChatId = "group123@g.us";
 
     beforeAll(async () => {
+        
         const dbPath = process.env.DB_PATH;
         db = getDb(dbPath, tempDir);
         await db.clearAllData();

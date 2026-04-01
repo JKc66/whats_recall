@@ -4,7 +4,6 @@ import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
 
-const db = getDb();
 const auth = new Hono();
 
 const startTime = Date.now();
@@ -19,6 +18,7 @@ auth.get('/uptime', (c) => {
 });
 
 auth.post('/login', async (c) => {
+  const db = getDb();
   const ip = getClientIp(c);
   
   if (!checkApiRateLimit(ip, 'login', MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS)) {
@@ -68,6 +68,7 @@ auth.post('/login', async (c) => {
 });
 
 auth.get('/verify', async (c) => {
+  const db = getDb();
   const token = getCookie(c, 'auth_token') || c.req.header('X-Auth-Token');
   const fingerprint = c.req.header('X-Fingerprint') || getCookie(c, 'auth_fp');
 
@@ -80,7 +81,8 @@ auth.get('/verify', async (c) => {
 });
 
 auth.post('/logout', async (c) => {
-  const token = getCookie(c, 'auth_token');
+  const db = getDb();
+  const token = getCookie(c, 'auth_token') || c.req.header('X-Auth-Token');
   if (token) db.deleteSession(token);
   deleteCookie(c, 'auth_token');
   return c.json({ success: true });
