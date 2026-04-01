@@ -239,6 +239,7 @@ export default function Settings() {
         onBack={() => setView("chats")}
         search={search()}
         onSearchChange={setSearch}
+        stats={stats()}
       />
 
       <div class="flex items-stretch overflow-x-auto no-scrollbar border-b border-white/10 bg-white/2 relative z-10">

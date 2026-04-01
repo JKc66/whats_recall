@@ -131,7 +131,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               !(chat.isGroup ?? chat.is_group) ? extractPhone(id) : "";
             const isBusy = () => props.busy === id;
             const isConfirming = () => confirming() === id;
-            const profileUrl = profilePicUrl(chat.profilePic || chat.profile_pic);
+            const profileUrl = () => profilePicUrl(chat.profilePic || chat.profile_pic);
 
             return (
               <div class="group flex items-stretch border-b border-white/10 hover:bg-white/1 transition-all duration-300 relative overflow-hidden">
@@ -168,7 +168,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                 {/* Avatar/ID Section */}
                 <div class="w-14 md:w-20 border-r border-white/10 p-2 md:p-3 flex flex-col items-center justify-start gap-2 md:gap-3 bg-white/1">
                   <Show
-                    when={profileUrl}
+                    when={profileUrl()}
                     fallback={
                       <div
                         class="w-8 h-8 md:w-10 md:h-10 border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white uppercase"
@@ -185,7 +185,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                       <span class="relative z-1">{getInitials(chat.name)}</span>
                       <img
                         class="absolute inset-0 w-full h-full object-cover z-10 grayscale contrast-125"
-                        src={profileUrl!}
+                        src={profileUrl()!}
                         alt=""
                         width="40"
                         height="40"

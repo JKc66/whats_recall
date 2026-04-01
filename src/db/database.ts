@@ -340,7 +340,12 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     },
 
     getMonitoredChats() {
-      return db.query('SELECT mc.*, c.lid FROM monitored_chats mc LEFT JOIN chats c ON mc.chat_id = c.chat_id ORDER BY mc.added_at DESC').all();
+      return db.query(`
+        SELECT mc.*, c.lid, c.profile_pic 
+        FROM monitored_chats mc 
+        LEFT JOIN chats c ON mc.chat_id = c.chat_id 
+        ORDER BY mc.added_at DESC
+      `).all();
     },
 
     isMonitored(chatId: string): boolean {

@@ -90,7 +90,8 @@ export async function fetchStats(silent = false): Promise<Stats | null> {
 export async function fetchChats(q?: string, silent = false): Promise<Chat[] | null> {
   const url = q ? `${BASE_URL}/api/chats?q=${encodeURIComponent(q)}` : `${BASE_URL}/api/chats`;
   const data = await request<{ chats: Chat[] }>(url, undefined, silent as any);
-  return data?.chats || (silent ? null : []);
+  if (data?.chats) return data.chats;
+  return silent ? null : [];
 }
 
 export async function markChatAsRead(chatId: string): Promise<void> {
@@ -109,7 +110,8 @@ export async function fetchMessages(
     undefined,
     silent as any
   );
-  return data?.messages || (silent ? null : []);
+  if (data?.messages) return data.messages;
+  return silent ? null : [];
 }
 
 export async function fetchMonitored(): Promise<MonitoredChat[]> {
