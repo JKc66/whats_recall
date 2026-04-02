@@ -195,16 +195,16 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
           WHERE mc.chat_id NOT IN (SELECT chat_id FROM chats)
         ) c
         ${query ? `WHERE c.chat_id IN (
-          SELECT chat_id FROM chats WHERE name LIKE ?
+          SELECT chat_id FROM chats WHERE name LIKE ? ESCAPE '\\'
           UNION
-          SELECT chat_id FROM monitored_chats WHERE name LIKE ?
+          SELECT chat_id FROM monitored_chats WHERE name LIKE ? ESCAPE '\\'
           UNION
-          SELECT chat_id FROM messages WHERE body LIKE ?
+          SELECT chat_id FROM messages WHERE body LIKE ? ESCAPE '\\'
         )` : ''}
         ORDER BY c.last_message_at DESC
       `;
       
-      const rows = (query ? db.query(sql).all(query, query, query) : db.query(sql).all()) as any[];
+      const rows = (query ? db.query(sql).all(`%${escapeLike(query)}%`, `%${escapeLike(query)}%`, `%${escapeLike(query)}%`) : db.query(sql).all()) as any[];
       return rows.map(row => ({
         ...row,
         profile_pic: row.profile_pic || dbMethods.getChatProfilePic(row.chat_id)
