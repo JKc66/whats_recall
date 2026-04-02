@@ -187,7 +187,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                       <img
                         class="absolute inset-0 w-full h-full object-cover z-10 grayscale contrast-125"
                         src={profileUrl()!}
-                        alt=""
+                        alt={`${chat.name || id} profile picture`}
                         width="40"
                         height="40"
                         onError={(e) => {

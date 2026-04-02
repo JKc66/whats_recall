@@ -255,7 +255,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
           <img
             class="absolute inset-0 w-full h-full object-cover rounded-inherit z-2"
             src={dpUrl()!}
-            alt=""
+            alt={`${displayName()} profile picture`}
             width="44"
             height="44"
             onError={(e) => {

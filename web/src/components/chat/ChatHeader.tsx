@@ -53,7 +53,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
             <img
               class="absolute inset-0 w-full h-full object-cover z-10"
               src={profileUrl()!}
-              alt=""
+              alt={`${displayName()} profile picture`}
               width="40"
               height="40"
               onError={(e) => {
