@@ -13,12 +13,27 @@ const AVATAR_COLORS = [
   "#84cc16",
 ];
 
+const avatarColorCache = new Map<string, string>();
+
 export function avatarColor(name: string): string {
+  if (!name) return AVATAR_COLORS[0];
+  const cached = avatarColorCache.get(name);
+  if (cached) return cached;
+
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  const color = AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+
+  if (avatarColorCache.size > 1000) {
+    // Basic LRU-like eviction for memory safety
+    const firstKey = avatarColorCache.keys().next().value;
+    if (firstKey) avatarColorCache.delete(firstKey);
+  }
+
+  avatarColorCache.set(name, color);
+  return color;
 }
 
 export function getInitials(name: string): string {
