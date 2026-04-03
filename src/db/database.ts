@@ -205,10 +205,21 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       `;
       
       const rows = (query ? db.query(sql).all(query, query, query) : db.query(sql).all()) as any[];
-      return rows.map(row => ({
-        ...row,
-        profile_pic: row.profile_pic || dbMethods.getChatProfilePic(row.chat_id)
-      }));
+      return rows.map(row => {
+        let pic = row.profile_pic;
+        if (!pic) {
+          const filename = `dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+          const fullPath = join(currentMediaDir, filename);
+          if (existsSync(fullPath)) {
+            dbMethods.updateChatProfilePic(row.chat_id, filename);
+            pic = filename;
+          }
+        }
+        return {
+          ...row,
+          profile_pic: pic
+        };
+      });
     },
 
     // Message Operations
@@ -365,10 +376,21 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         ORDER BY mc.added_at DESC
       `).all() as any[];
 
-      return rows.map(row => ({
-        ...row,
-        profile_pic: row.profile_pic || dbMethods.getChatProfilePic(row.chat_id)
-      }));
+      return rows.map(row => {
+        let pic = row.profile_pic;
+        if (!pic) {
+          const filename = `dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+          const fullPath = join(currentMediaDir, filename);
+          if (existsSync(fullPath)) {
+            dbMethods.updateChatProfilePic(row.chat_id, filename);
+            pic = filename;
+          }
+        }
+        return {
+          ...row,
+          profile_pic: pic
+        };
+      });
     },
 
     isMonitored(chatId: string): boolean {
