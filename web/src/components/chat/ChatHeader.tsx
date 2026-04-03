@@ -7,7 +7,7 @@ import {
   profilePicUrl,
   getDisplayName,
 } from "../../utils";
-import { ArrowLeftIcon, TrashIcon } from "../Icons";
+import { ArrowLeftIcon, TrashIcon, MessageSquareIcon, ImageIcon } from "../Icons";
 
 interface ChatHeaderProps {
   chat: Chat | undefined;
@@ -24,7 +24,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
   const profileUrl = () => profilePicUrl(props.chat?.profile_pic);
 
   return (
-    <header class="flex items-center gap-3 px-4 py-3 bg-surface border-b border-border min-h-16 z-20 shrink-0">
+    <header class="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-surface border-b border-border min-h-16 z-20 shrink-0">
       <button
         class="flex md:hidden items-center justify-center w-8 h-8 text-text-secondary hover:bg-surface-raised rounded-full transition-all active:tick"
         onClick={() => props.onBack()}
@@ -33,12 +33,12 @@ export default function ChatHeader(props: ChatHeaderProps) {
         <ArrowLeftIcon size={18} />
       </button>
 
-      <div class="flex items-center gap-3 flex-1 min-w-0">
+      <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
         <Show
           when={profileUrl()}
           fallback={
             <div
-              class="w-10 h-10 min-w-10 technical flex items-center justify-center text-[12px] font-mono text-white uppercase"
+              class="w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 technical flex items-center justify-center text-[11px] md:text-[12px] font-mono text-white uppercase"
               style={{ background: avatarColor(displayName()), opacity: 0.8 }}
             >
               {getInitials(displayName())}
@@ -46,7 +46,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           }
         >
           <div
-            class="relative w-10 h-10 min-w-10 technical flex items-center justify-center text-[12px] font-mono text-white uppercase overflow-hidden"
+            class="relative w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 technical flex items-center justify-center text-[11px] md:text-[12px] font-mono text-white uppercase overflow-hidden"
             style={{ background: avatarColor(displayName()), opacity: 0.8 }}
           >
             <span class="relative z-1">{getInitials(displayName())}</span>
@@ -60,14 +60,14 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </Show>
 
         <div class="flex-1 min-w-0">
-          <h2 class="text-display text-[16px] truncate">
+          <h2 class="text-display text-[15px] md:text-[16px] truncate">
             {displayName()}
           </h2>
-          <div class="text-metadata opacity-60 flex items-center gap-1.5 uppercase">
+          <div class="text-[10px] md:text-metadata opacity-60 flex items-center gap-1.5 uppercase font-mono">
             <Show
               when={props.chat?.is_group}
               fallback={
-                <span>{extractJidId(props.chatId)}</span>
+                <span class="truncate">{extractJidId(props.chatId)}</span>
               }
             >
               <span class="text-accent">GROUP_CHAT</span>
@@ -76,7 +76,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </div>
       </div>
 
-      <div class="flex items-center gap-4 ml-auto">
+      <div class="flex items-center gap-2 md:gap-4 ml-auto">
         <div
           class="flex bg-surface-raised border border-border technical p-0.5"
           role="tablist"
@@ -84,31 +84,35 @@ export default function ChatHeader(props: ChatHeaderProps) {
           <button
             role="tab"
             aria-selected={props.viewMode === "messages"}
-            class="px-4 py-1.5 text-label transition-all"
+            class="px-2 md:px-4 py-1.5 text-label transition-all flex items-center gap-2"
             classList={{
               "bg-black text-white shadow-sm": props.viewMode === "messages",
               "text-text-secondary hover:text-text-primary": props.viewMode !== "messages",
             }}
             onClick={() => props.onViewModeChange("messages")}
+            title="Messages"
           >
-            CHATS
+            <MessageSquareIcon size={14} class="md:hidden" />
+            <span class="max-md:hidden">CHATS</span>
           </button>
           <button
             role="tab"
             aria-selected={props.viewMode === "media"}
-            class="px-4 py-1.5 text-label transition-all"
+            class="px-2 md:px-4 py-1.5 text-label transition-all flex items-center gap-2"
             classList={{
               "bg-black text-white shadow-sm": props.viewMode === "media",
               "text-text-secondary hover:text-text-primary": props.viewMode !== "media",
             }}
             onClick={() => props.onViewModeChange("media")}
+            title="Media"
           >
-            MEDIA
+            <ImageIcon size={14} class="md:hidden" />
+            <span class="max-md:hidden">MEDIA</span>
           </button>
         </div>
 
         <button
-          class="flex items-center gap-2 px-3 py-1.5 technical border transition-all active:tick"
+          class="flex items-center gap-2 px-2 md:px-3 py-1.5 technical border transition-all active:tick"
           classList={{
             "bg-accent border-accent text-white shadow-[0_0_12px_rgba(215,25,33,0.3)]":
               props.showOnlyDeleted,
