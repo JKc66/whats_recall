@@ -9,42 +9,42 @@ interface SettingsHeaderProps {
 
 export default function SettingsHeader(props: SettingsHeaderProps) {
   return (
-    <header class="flex flex-col border-b border-white/10 bg-white/2">
+    <header class="flex flex-col border-b border-border bg-surface relative z-10">
       <div class="flex items-stretch">
         <button
-          class="w-16 border-r border-white/10 flex items-center justify-center text-zinc-400 hover:bg-white/5 transition-all active:scale-95 group shrink-0"
+          class="w-16 border-r border-border flex items-center justify-center text-text-secondary hover:bg-surface-raised transition-all active:tick group shrink-0"
           onClick={() => props.onBack()}
           title="Back"
           aria-label="Back to chats"
         >
           <ArrowLeftIcon size={18} class="group-hover:-translate-x-0.5 transition-transform" />
         </button>
-        
+
         <div class="flex-1 p-6 md:p-8 flex flex-col gap-1 min-w-0">
           <div class="flex items-center gap-3 mb-1">
-            <div class="w-2 h-2 bg-red-600 shadow-[0_0_8px_rgba(230,25,25,0.4)]" />
-            <h2 class="text-[10px] font-bold text-red-600 uppercase tracking-[0.3em] font-mono">
+            <div class="w-2 h-2 bg-accent shadow-[0_0_8px_var(--color-accent)]" />
+            <h2 class="text-label text-accent">
               System_Registry // Kernel
             </h2>
           </div>
-          <h1 class="text-3xl md:text-5xl font-black font-sans leading-none tracking-[-0.04em] uppercase text-[#EAEAEA] truncate">
-            Core_System<br/>Controller
+          <h1 class="text-display text-4xl md:text-5xl uppercase">
+            Core_System<br />Controller
           </h1>
         </div>
       </div>
 
-      <div class="grid grid-cols-[120px_1fr] border-t border-white/10 group focus-within:bg-white/2 transition-colors">
-        <div class="border-r border-white/10 p-4 flex items-center text-[9px] tracking-[0.2em] opacity-40 font-bold uppercase font-mono">
+      <div class="grid grid-cols-[120px_1fr] border-t border-border group focus-within:bg-border/5 transition-colors">
+        <div class="border-r border-border p-4 text-metadata uppercase text-text-disabled">
           Query_Search
         </div>
         <input
           type="text"
-          placeholder="/// INPUT_REGISTRY_KEY_OR_ALIAS"
+          placeholder="INPUT_REGISTRY_KEY_OR_ALIAS"
           value={props.search}
           onInput={(e) => props.onSearchChange(e.currentTarget.value)}
           spellcheck={false}
           aria-label="Search chats"
-          class="w-full bg-transparent p-4 outline-none text-sm tracking-widest placeholder:opacity-20 uppercase font-mono text-[#EAEAEA]"
+          class="w-full bg-transparent p-4 outline-none text-[13px] font-mono tracking-widest placeholder:text-text-disabled/40 uppercase text-text-primary"
         />
       </div>
     </header>

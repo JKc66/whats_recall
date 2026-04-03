@@ -225,20 +225,7 @@ export default function Settings() {
   }
 
   return (
-    <div class="flex-1 flex flex-col h-full bg-[#0A0A0A] relative overflow-hidden">
-      {/* CRT Scanline Effect */}
-      <div 
-        class="absolute inset-0 pointer-events-none z-50 opacity-[0.03]"
-        style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
-        aria-hidden="true"
-      />
-      
-      {/* Technical Background Grid */}
-      <div 
-        class="absolute inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" 
-        aria-hidden="true"
-      />
-
+    <div class="flex-1 flex flex-col h-full bg-bg relative overflow-hidden dot-grid">
       <SettingsHeader
         onBack={() => setView("chats")}
         search={search()}
@@ -246,38 +233,39 @@ export default function Settings() {
         stats={stats()}
       />
 
-      <div class="flex items-stretch overflow-x-auto no-scrollbar border-b border-white/10 bg-white/2 relative z-10">
+      <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 shadow-sm">
         <button
-          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
+          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
           classList={{
-            "bg-white/5 text-red-600": tab() === "config",
-            "text-zinc-600 hover:text-zinc-300": tab() !== "config",
+            "bg-surface-raised text-accent": tab() === "config",
+            "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "config",
           }}
           onClick={() => setTab("config")}
         >
-          [ CORE_CFG ]
+          CORE_CFG
         </button>
         <button
-          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
+          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
           classList={{
-            "bg-white/5 text-red-600": tab() === "monitored",
-            "text-zinc-600 hover:text-zinc-300": tab() !== "monitored",
+            "bg-surface-raised text-accent": tab() === "monitored",
+            "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "monitored",
           }}
           onClick={() => setTab("monitored")}
         >
-          [ ACTIVE: {(monitored() || []).length} ]
+          ACTIVE: {(monitored() || []).length}
         </button>
         <button
-          class="px-5 md:px-10 py-3 md:py-4 text-[9px] md:text-[10px] font-bold transition-all shrink-0 uppercase tracking-[0.2em] font-mono border-r border-white/10"
+          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
           classList={{
-            "bg-white/5 text-red-600": tab() === "available",
-            "text-zinc-600 hover:text-zinc-300": tab() !== "available",
+            "bg-surface-raised text-accent": tab() === "available",
+            "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "available",
           }}
           onClick={() => setTab("available")}
         >
-          [ DISCOVERED: {(available() || []).length} ]
+          DISCOVERED: {(available() || []).length}
         </button>
       </div>
+
 
       <div 
         ref={scrollContainer}

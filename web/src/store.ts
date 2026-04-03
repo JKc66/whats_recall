@@ -37,3 +37,21 @@ export const [jumpToQuery, setJumpToQuery] = createSignal<string | null>(null);
 // Global search state
 export const [searchQuery, setSearchQuery] = createSignal("");
 export const [searchResults, setSearchResults] = createSignal<Chat[] | null>(null);
+
+const initialTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
+export const [theme, _setTheme] = createSignal<"dark" | "light">(initialTheme);
+
+export const setTheme = (val: "dark" | "light") => {
+  localStorage.setItem("theme", val);
+  _setTheme(val);
+  if (val === "light") {
+    document.documentElement.classList.add("light");
+  } else {
+    document.documentElement.classList.remove("light");
+  }
+};
+
+// Apply initial theme
+if (initialTheme === "light") {
+  document.documentElement.classList.add("light");
+}

@@ -8,13 +8,12 @@ import chats from './chats.ts';
 import monitored from './monitored.ts';
 import settings from './settings.ts';
 import whatsappRouter from './whatsapp.ts';
-import { join, basename, dirname } from 'path';
+import { join } from 'path';
 import { getMediaDir, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
 import { safePath, pruneApiRateLimits, verifySession } from './utils.ts';
 
-const PUBLIC_DIR = './public';
 
 export function createHonoServer(client: WhatsAppConnection) {
   const password = process.env.AUTH_PASSWORD;

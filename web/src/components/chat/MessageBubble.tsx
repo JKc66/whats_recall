@@ -155,7 +155,7 @@ export function MessageBubble(props: MessageBubbleProps) {
     if (type === "image" || type === "sticker" || mt.startsWith("image/")) {
       return (
         <div
-          class="group relative rounded-lg overflow-hidden my-1 max-w-[320px]"
+          class="group relative rounded-lg overflow-hidden my-1 max-w-80"
           classList={{ "bg-transparent max-w-[180px]": type === "sticker" }}
         >
           <img
@@ -184,7 +184,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
     if (type === "video" || mt.startsWith("video/")) {
       return (
-        <div class="group relative rounded-lg overflow-hidden my-1 max-w-[320px]">
+        <div class="group relative rounded-lg overflow-hidden my-1 max-w-80">
           <video
             src={src}
             controls
@@ -205,7 +205,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
     if (type === "audio" || type === "ptt" || mt.startsWith("audio/")) {
       return (
-        <div class="flex flex-col gap-2 my-1 max-w-[320px]">
+        <div class="flex flex-col gap-2 my-1 max-w-80">
           <audio src={src} controls preload="metadata" class="w-full" />
         </div>
       );
@@ -236,12 +236,11 @@ export function MessageBubble(props: MessageBubbleProps) {
 
   return (
     <div
-      class="max-w-[72%] p-3 px-4 rounded-2xl relative mb-1.5 wrap-break-word shadow-sm transition-transform animate-in fade-in slide-in-from-bottom-1 duration-300"
+      class="max-w-[85%] p-3 px-4 technical relative mb-1.5 wrap-break-word animate-entrance shadow-sm"
       classList={{
-        "self-start bg-zinc-850 border border-white/5 rounded-bl-sm": !isMe(),
-        "self-end bg-accent/20 backdrop-blur-md border border-accent/20 rounded-br-sm shadow-[0_4px_15px_rgba(0,0,0,0.2)]":
-          isMe(),
-        "opacity-75 bg-red-dim/10 border-red-dim/20": isDeleted(),
+        "self-start bg-[var(--bubble-other)] border border-border": !isMe(),
+        "self-end bg-[var(--bubble-me)] border border-accent/20": isMe(),
+        "opacity-60 bg-accent/5 border-dashed": isDeleted(),
         "mb-5": (m().reactions?.length || 0) > 0,
       }}
       data-msg-id={m().message_id}
@@ -325,7 +324,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       {renderMedia()}
 
       <Show when={bodyText()}>
-        <div class="text-[14px] text-zinc-100 whitespace-pre-wrap leading-relaxed">
+        <div class="text-[14px] text-text-primary whitespace-pre-wrap leading-relaxed">
           <HighlightedText text={bodyText()} query={props.highlightQuery} />
         </div>
       </Show>
@@ -360,7 +359,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       </Show>
 
       <div class="flex justify-end items-center gap-1.5 mt-0.5">
-        <span class="text-[10px] font-mono text-zinc-500 font-medium tabular-nums opacity-60 tracking-tighter">
+        <span class="text-metadata opacity-60 tabular-nums">
           {time()}
         </span>
         <Show when={isDeleted()}>

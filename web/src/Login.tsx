@@ -86,70 +86,60 @@ export default function Login() {
   }
 
   return (
-    <div class="flex items-center justify-center min-h-dvh bg-[#0A0A0A] text-[#EAEAEA] font-mono selection:bg-red-600/30 overflow-hidden relative">
-      {/* CRT Scanline Effect */}
+    <div class="flex flex-col items-center justify-center min-h-dvh w-full bg-black text-text-primary selection:bg-accent/30 overflow-hidden relative dot-grid p-6">
       <div 
-        class="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
-        style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)" }}
-        aria-hidden="true"
-      />
-      
-      {/* Technical Background Grid */}
-      <div 
-        class="fixed inset-0 opacity-[0.02] pointer-events-none z-0 bg-[linear-gradient(to_right,#888_1px,transparent_1px),linear-gradient(to_bottom,#888_1px,transparent_1px)] bg-size-[40px_40px]" 
-        aria-hidden="true"
-      />
-
-      <div class="relative z-10 w-full max-w-lg border-x border-white/10 animate-reveal">
+        class="relative z-10 w-full card bg-surface p-0 animate-entrance shadow-2xl"
+        style={{"max-width":"480px"}}
+      >
         {/* Top Header Bar */}
-        <div class="border-y border-white/10 px-6 py-3 flex items-center justify-between text-[10px] tracking-[0.2em] bg-white/2">
-          <div class="flex items-center gap-4">
-            <span class="text-red-600 font-bold">● LIVE</span>
-            <span class="opacity-40">COMM_NODE / WHATSAPP_MONITOR</span>
+        <div class="border-b border-border px-6 py-4 flex items-center justify-between text-label bg-surface-raised/50">
+          <div class="flex items-center gap-3">
+            <span class="text-accent animate-pulse">● LIVE</span>
+            <span class="opacity-50">COMM_NODE / WHATSAPP_MONITOR</span>
           </div>
-          <span class="opacity-40">REV / 4.0.1</span>
+          <span class="opacity-50">V4.1</span>
         </div>
 
-        {/* Macro Typography Title Section */}
-        <div class="px-8 py-16 border-b border-white/10">
-          <h1 class="text-5xl font-black font-mono leading-none tracking-[-0.05em] uppercase mb-4">
-            Security<br/>Access
+        {/* Hero Section */}
+        <div class="px-8 py-12 border-b border-border">
+          <h1 class="text-display text-[48px] uppercase mb-2">
+            SECURITY<br/>ACCESS
           </h1>
-          <div class="flex items-center gap-4 text-[10px] opacity-40 tracking-[0.3em]">
-            <span>[ AUTHREQ_SIGNAL ]</span>
-            <div class="h-px grow bg-white/10" />
-            <span>0x00FE24</span>
+          <div class="flex items-center gap-4 text-metadata opacity-40 uppercase">
+            <span>[ AUTH_SIGNAL ]</span>
+            <div class="h-px grow bg-border" />
+            <span>ID: 0x0FE24</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} class="p-0">
-          {/* Input Section - Username */}
-          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors">
+          {/* Identity Field */}
+          <div class="grid grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors">
             <label 
               for="username-field"
-              class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase cursor-pointer"
+              class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
             >
-              Identity
+              IDENTITY
             </label>
             <input
               id="username-field"
               type="text"
               name="username"
               autocomplete="username"
-              placeholder="/// USER_ID"
+              placeholder="USER_ID"
               value={username()}
               onInput={(e) => setUsername(e.currentTarget.value)}
-              class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.2em] placeholder:opacity-20 uppercase font-mono"
+              class="w-full bg-transparent p-6 outline-none text-[13px] font-mono tracking-widest uppercase placeholder:opacity-20"
             />
           </div>
 
-          {/* Input Section - Password */}
-          <div class="grid grid-cols-[120px_1fr] border-b border-white/10 group focus-within:bg-white/2 transition-colors relative">
+          {/* Access Key Field */}
+          <div class="grid grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors relative">
             <label 
               for="password-field"
-              class="border-r border-white/10 p-6 flex items-center text-[10px] tracking-widest opacity-40 font-bold uppercase cursor-pointer"
+              class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
             >
-              Access_Key
+              ACCESS_KEY
             </label>
             <div class="relative flex items-center grow">
               <input
@@ -157,64 +147,59 @@ export default function Login() {
                 type={showPassword() ? "text" : "password"}
                 name="password"
                 autocomplete="current-password"
-                placeholder="/// **********"
+                placeholder="**********"
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
                 required
                 autofocus
-                class="w-full bg-transparent p-6 outline-none text-sm tracking-[0.5em] placeholder:opacity-20 font-mono pr-12"
+                class="w-full bg-transparent p-6 outline-none text-[13px] font-mono tracking-[0.4em] placeholder:opacity-20 pr-12"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword())}
-                class="absolute right-4 p-2 text-white/20 hover:text-white/60 transition-colors cursor-pointer"
+                class="absolute right-4 p-2 text-text-disabled hover:text-text-primary transition-colors cursor-pointer"
                 aria-label={showPassword() ? "Hide password" : "Show password"}
               >
-                <EyeIcon size={16} classList={{ "text-red-500/60": showPassword() }} />
+                <EyeIcon size={16} />
               </button>
             </div>
           </div>
 
-          {/* Action Section */}
+          {/* Action Button */}
           <div class="p-8">
             <button
               type="submit"
               disabled={loading()}
-              class="w-full py-6 bg-[#EAEAEA] hover:bg-red-600 text-black hover:text-white font-black text-[14px] uppercase tracking-[0.5em] transition-all duration-200 active:scale-[0.99] disabled:opacity-20 relative overflow-hidden group/btn"
+              class="w-full py-5 bg-text-primary text-black hover:bg-accent hover:text-white font-bold text-[14px] uppercase tracking-[0.4em] transition-all duration-200 technical active:tick disabled:opacity-20"
             >
-              <Show when={!loading()} fallback={
-                <span class="animate-pulse">AUTHENTICATING...</span>
-              }>
-                Authorize_Session
+              <Show when={!loading()} fallback={"AUTHENTICATING..."}>
+                AUTHORIZE_SESSION
               </Show>
-              {/* Button Decoration */}
-              <div class="absolute top-0 right-0 p-1 opacity-20 group-hover/btn:opacity-100 transition-opacity">
-                <span class="text-[8px] font-mono leading-none">®</span>
-              </div>
             </button>
           </div>
         </form>
 
         {/* Footer Meta Data */}
-        <div class="border-t border-white/10 grid grid-cols-2 bg-white/2">
-          <div class="border-r border-white/10 p-5 flex flex-col gap-1">
-            <span class="text-[8px] opacity-40 tracking-widest font-bold">NODE_STATUS</span>
+        <div class="border-t border-border grid grid-cols-2 bg-surface-raised/30">
+          <div class="border-r border-border p-5 flex flex-col gap-1">
+            <span class="text-metadata uppercase opacity-40">NODE_STATUS</span>
             <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-red-600 shadow-[0_0_8px_rgba(230,25,25,0.6)]" />
-              <span class="text-[10px] tracking-widest font-bold">TERMINAL_ACTIVE</span>
+              <div class="w-1.5 h-1.5 bg-accent shadow-[0_0_8px_var(--color-accent)]" />
+              <span class="text-label text-text-primary">TERMINAL_ACTIVE</span>
             </div>
           </div>
           <div class="p-5 flex flex-col gap-1">
-            <span class="text-[8px] opacity-40 tracking-widest font-bold">UPTIME_METRIC</span>
-            <span class="text-[10px] tracking-widest font-bold">{formatUptime(uptimeSeconds())}</span>
+            <span class="text-metadata uppercase opacity-40">UPTIME_METRIC</span>
+            <span class="text-label text-text-primary">{formatUptime(uptimeSeconds())}</span>
           </div>
         </div>
 
         {/* Bottom Decorative Bar */}
-        <div class="border-t border-white/10 p-4 text-[8px] opacity-20 tracking-[0.5em] text-center">
-          DECRIPTION_MODE: AES_256_GCM /// SESSION_STABILITY: 99.8%
+        <div class="border-t border-border p-4 text-metadata opacity-20 text-center uppercase tracking-widest">
+          AES_256_GCM /// SESSION_STABILITY: 99.8%
         </div>
       </div>
     </div>
+
   );
 }

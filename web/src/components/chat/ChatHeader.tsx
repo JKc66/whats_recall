@@ -24,11 +24,11 @@ export default function ChatHeader(props: ChatHeaderProps) {
   const profileUrl = () => profilePicUrl(props.chat?.profile_pic);
 
   return (
-    <header class="flex items-center gap-3 px-3 md:px-5 py-2.5 md:py-3.5 bg-zinc-900/40 backdrop-blur-md border-b border-white/5 min-h-16 md:min-h-18 z-20 shrink-0">
+    <header class="flex items-center gap-3 px-4 py-3 bg-surface border-b border-border min-h-16 z-20 shrink-0">
       <button
-        class="flex md:hidden items-center justify-center w-9 h-9 -ml-1 text-zinc-400 hover:bg-white/5 rounded-full transition-all active:scale-95"
+        class="flex md:hidden items-center justify-center w-8 h-8 text-text-secondary hover:bg-surface-raised rounded-full transition-all active:tick"
         onClick={() => props.onBack()}
-        aria-label="Back to chat list"
+        aria-label="Back"
       >
         <ArrowLeftIcon size={18} />
       </button>
@@ -38,107 +38,89 @@ export default function ChatHeader(props: ChatHeaderProps) {
           when={profileUrl()}
           fallback={
             <div
-              class="w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-xl flex items-center justify-center text-[13px] md:text-sm font-bold text-white uppercase shadow-sm"
-              style={{ background: avatarColor(displayName()) }}
+              class="w-10 h-10 min-w-10 technical flex items-center justify-center text-[12px] font-mono text-white uppercase"
+              style={{ background: avatarColor(displayName()), opacity: 0.8 }}
             >
               {getInitials(displayName())}
             </div>
           }
         >
           <div
-            class="relative w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-xl flex items-center justify-center text-[13px] md:text-sm font-bold text-white uppercase overflow-hidden shadow-sm"
-            style={{ background: avatarColor(displayName()) }}
+            class="relative w-10 h-10 min-w-10 technical flex items-center justify-center text-[12px] font-mono text-white uppercase overflow-hidden"
+            style={{ background: avatarColor(displayName()), opacity: 0.8 }}
           >
             <span class="relative z-1">{getInitials(displayName())}</span>
             <img
-              class="absolute inset-0 w-full h-full object-cover z-10"
+              class="absolute inset-0 w-full h-full object-cover z-2"
               src={profileUrl()!}
-              alt={`${displayName()} profile picture`}
-              width="40"
-              height="40"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
+              alt=""
+              loading="lazy"
             />
           </div>
         </Show>
 
         <div class="flex-1 min-w-0">
-          <h2 class="text-[14px] md:text-[15px] font-semibold text-zinc-100 truncate tracking-tight">
+          <h2 class="text-display text-[16px] truncate">
             {displayName()}
           </h2>
-          <div class="text-[10px] md:text-[11px] text-zinc-500 font-medium font-mono tabular-nums leading-tight flex items-center gap-1.5">
+          <div class="text-metadata opacity-60 flex items-center gap-1.5 uppercase">
             <Show
               when={props.chat?.is_group}
               fallback={
-                <>
-                  <span class="max-md:hidden opacity-60">Private ·</span>
-                  <span class="text-zinc-400">
-                    {extractJidId(props.chatId)}
-                  </span>
-                </>
+                <span>{extractJidId(props.chatId)}</span>
               }
             >
-              <span class="opacity-60 text-emerald-500/80">Group Chat</span>
+              <span class="text-accent">GROUP_CHAT</span>
             </Show>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 md:gap-4 ml-auto">
+      <div class="flex items-center gap-4 ml-auto">
         <div
-          class="flex bg-black/30 p-1 rounded-full border border-white/5"
+          class="flex bg-surface-raised border border-border technical p-0.5"
           role="tablist"
         >
           <button
             role="tab"
             aria-selected={props.viewMode === "messages"}
-            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-full transition-all whitespace-nowrap"
+            class="px-4 py-1.5 text-label transition-all"
             classList={{
-              "bg-zinc-800 text-white shadow-sm": props.viewMode === "messages",
-              "text-text-3 hover:text-zinc-200": props.viewMode !== "messages",
+              "bg-black text-white shadow-sm": props.viewMode === "messages",
+              "text-text-secondary hover:text-text-primary": props.viewMode !== "messages",
             }}
             onClick={() => props.onViewModeChange("messages")}
           >
-            Chats
+            CHATS
           </button>
           <button
             role="tab"
             aria-selected={props.viewMode === "media"}
-            class="px-2.5 md:px-4 py-1 md:py-1.5 text-[11px] md:text-[12px] font-semibold rounded-full transition-all whitespace-nowrap"
+            class="px-4 py-1.5 text-label transition-all"
             classList={{
-              "bg-zinc-800 text-white shadow-sm": props.viewMode === "media",
-              "text-text-3 hover:text-zinc-200": props.viewMode !== "media",
+              "bg-black text-white shadow-sm": props.viewMode === "media",
+              "text-text-secondary hover:text-text-primary": props.viewMode !== "media",
             }}
             onClick={() => props.onViewModeChange("media")}
           >
-            Media
+            MEDIA
           </button>
         </div>
 
         <button
-          class="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto md:px-3 md:py-1.5 rounded-lg transition-all border border-transparent"
+          class="flex items-center gap-2 px-3 py-1.5 technical border transition-all active:tick"
           classList={{
-            "bg-red-500/15 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]":
+            "bg-accent border-accent text-white shadow-[0_0_12px_rgba(215,25,33,0.3)]":
               props.showOnlyDeleted,
-            "bg-zinc-800/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200":
+            "bg-surface-raised border-border text-text-secondary hover:text-text-primary":
               !props.showOnlyDeleted,
           }}
           onClick={() => props.onShowOnlyDeletedChange(!props.showOnlyDeleted)}
-          aria-label={
-            props.showOnlyDeleted
-              ? "Showing only deleted messages"
-              : "Showing all messages"
-          }
-          title={
-            props.showOnlyDeleted
-              ? "Showing ONLY deleted messages"
-              : "Showing all messages"
-          }
+          title={props.showOnlyDeleted ? "Showing ONLY deleted" : "Showing all"}
         >
-          <TrashIcon size={16} stroke-width={props.showOnlyDeleted ? 2.5 : 2} />
-          <span class="text-[12px] font-bold uppercase tracking-wider max-md:hidden">
-            {props.showOnlyDeleted ? "Deleted" : "Filter"}
+          <TrashIcon size={14} />
+          <span class="text-label max-md:hidden">
+            {props.showOnlyDeleted ? "DELETED" : "FILTER"}
           </span>
         </button>
       </div>

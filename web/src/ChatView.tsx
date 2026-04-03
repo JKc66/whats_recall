@@ -160,31 +160,31 @@ export default function ChatView() {
   return (
     <>
       <Show when={!currentChatId()}>
-        <div class="flex-1 flex flex-col items-center justify-center gap-4 text-zinc-500 p-10 bg-bg-surface/20">
+        <div class="flex-1 flex flex-col items-center justify-center gap-6 p-10 bg-black dot-grid">
           <div
-            class="flex items-center justify-center w-20 h-20 rounded-3xl bg-zinc-900 border border-white/5 text-zinc-700 shadow-xl"
+            class="flex items-center justify-center w-24 h-24 technical bg-surface border border-border text-text-secondary"
             aria-hidden="true"
           >
-            <MessageSquareIcon size={40} stroke-width={1.5} />
+            <MessageSquareIcon size={48} stroke-width={1} />
           </div>
           <div class="text-center">
-            <h2 class="text-xl font-bold text-zinc-100 tracking-tight font-outfit">
-              Message Monitor
+            <h2 class="text-display text-[32px] tracking-tight">
+              WHATSAPP MONITOR
             </h2>
-            <p class="text-sm max-w-[320px] mx-auto mt-2 text-zinc-500 leading-relaxed">
-              Select a chat to view messages. Deleted messages are highlighted
-              and preserved seamlessly.
+            <p class="text-[13px] max-w-85 mx-auto mt-4 text-text-secondary leading-relaxed font-mono uppercase tracking-wider">
+              SELECT A CONVERSATION TO BEGIN MONITORING. ALL DELETED MESSAGES ARE AUTOMATICALLY PRESERVED.
             </p>
           </div>
           <button
-            class="flex items-center gap-2 mt-4 px-5 py-2.5 bg-zinc-800 hover:bg-white/10 text-white rounded-xl border border-white/5 font-medium transition-all shadow-lg active:scale-95"
+            class="flex items-center gap-2 mt-4 px-6 py-3 technical bg-surface hover:bg-surface-raised border border-border text-text-primary text-label transition-all active:tick"
             onClick={() => setView("settings")}
           >
-            <SettingsIcon size={16} stroke-width={2} />
-            Configure Chats
+            <SettingsIcon size={14} />
+            SETTINGS
           </button>
         </div>
       </Show>
+
 
       <Show when={currentChatId()}>
         <ChatHeader

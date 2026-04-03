@@ -5,7 +5,7 @@ import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
-import { getChatNameAsync, extractJidId } from './utils.ts';
+import { getChatNameAsync } from './utils.ts';
 
 export class MessageProcessor {
   constructor(private sock: any, private broadcast: BroadcastFn) {}

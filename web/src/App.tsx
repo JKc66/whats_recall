@@ -273,19 +273,16 @@ export default function App() {
 
   return (
     <>
-      <div
-        class="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-accent-dim)_0%,transparent_70%),radial-gradient(ellipse_50%_60%_at_100%_80%,var(--color-accent-muted)_0%,transparent_60%)] after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1px)] after:bg-size-[40px_40px] after:mask-[radial-gradient(ellipse_at_center,black_30%,transparent_80%)]"
-        aria-hidden="true"
-      />
       <Show
         when={authenticated() !== null}
         fallback={
-          <div class="flex flex-col items-center justify-center min-h-dvh gap-4 animate-entrance">
-            <div class="flex gap-1.5">
-              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse [animation-delay:0.2s]" />
-              <div class="w-2.5 h-2.5 rounded-full bg-accent animate-pulse [animation-delay:0.4s]" />
+          <div class="flex flex-col items-center justify-center min-h-dvh gap-6 animate-entrance bg-black dot-grid">
+            <div class="flex gap-2">
+              <div class="w-2 h-2 technical bg-text-primary animate-pulse" />
+              <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.2s]" />
+              <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.4s]" />
             </div>
+            <span class="text-label opacity-40">INITIALIZING_TERMINAL</span>
           </div>
         }
       >
