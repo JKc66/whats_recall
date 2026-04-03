@@ -54,21 +54,27 @@ export default function ChatView() {
           setSearchMatchIds(matches);
           setSearchMatchIndex(0);
           setJumpToQuery(null);
-          setTimeout(() => {
-            if (matches.length > 0) {
-              scrollToMessage(matches[0]);
-            } else {
-              scrollToBottom("auto");
-            }
-          }, 80);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (matches.length > 0) {
+                scrollToMessage(matches[0]);
+              } else {
+                scrollToBottom("auto");
+              }
+            });
+          });
         } else {
           setSearchMatchIds([]);
-          setTimeout(() => scrollToBottom("auto"), 50);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollToBottom("auto"));
+          });
         }
       } else if (lastScrolledState === stateKey && containerRef) {
         const { scrollTop, scrollHeight, clientHeight } = containerRef;
         if (scrollHeight - scrollTop - clientHeight < 150) {
-          setTimeout(() => scrollToBottom("smooth"), 50);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollToBottom("smooth"));
+          });
         }
       }
     }
@@ -266,7 +272,9 @@ export default function ChatView() {
                 onImageClick={setLightboxSrc}
                 onJumpToMessage={(id: string) => {
                   setViewMode("messages");
-                  setTimeout(() => scrollToMessage(id), 50);
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => scrollToMessage(id));
+                  });
                 }}
               />
             </Show>
