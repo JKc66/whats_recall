@@ -33,7 +33,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                   <Show when={type === "image" || type === "sticker"}>
                     <img
                       src={src}
-                      alt=""
+                      alt={type === "sticker" ? "Sticker message" : "Image message"}
                       loading="lazy"
                       class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       onClick={() => props.onImageClick(src)}
