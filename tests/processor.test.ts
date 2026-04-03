@@ -126,4 +126,55 @@ describe("MessageProcessor", () => {
         expect(history[0].old_body).toBe("Original text");
         expect(history[0].new_body).toBe("Edited text");
     });
+
+    test("should handle message edits for non-existent messages (out-of-order)", async () => {
+        // 1. Mark as monitored
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+        
+        // 2. Process an edit protocol message for a message NOT in DB
+        const editEvent = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "edit-id" },
+            update: {
+                message: {
+                    protocolMessage: {
+                        type: 14, // MESSAGE_EDIT
+                        key: { remoteJid: "12345@s.whatsapp.net", id: "msg-out-of-order", fromMe: false },
+                        editedMessage: { conversation: "First Edit" }
+                    }
+                }
+            }
+        };
+
+        await processor.handleMessageUpdate(editEvent);
+
+        // 3. Verify message was created as a stub
+        const stub = db.getMessage("msg-out-of-order");
+        expect(stub).toBeDefined();
+        expect(stub.body).toBe("First Edit");
+        
+        // 4. Subsequent edit should record history
+        const secondEditEvent = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "edit-id-2" },
+            update: {
+                message: {
+                    protocolMessage: {
+                        type: 14, // MESSAGE_EDIT
+                        key: { remoteJid: "12345@s.whatsapp.net", id: "msg-out-of-order", fromMe: false },
+                        editedMessage: { conversation: "Second Edit" }
+                    }
+                }
+            }
+        };
+
+        await processor.handleMessageUpdate(secondEditEvent);
+
+        const edited = db.getMessage("msg-out-of-order");
+        expect(edited.body).toBe("Second Edit");
+        
+        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("msg-out-of-order");
+        expect(history).toHaveLength(1);
+        expect(history[0].old_body).toBe("First Edit");
+        expect(history[0].new_body).toBe("Second Edit");
+    });
 });

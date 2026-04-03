@@ -131,10 +131,29 @@ export class MessageProcessor {
       const oldMsg = getDb().getMessage(messageId);
       const oldBody = oldMsg?.body;
       
-      getDb().updateMessageBody(messageId, body);
-      
-      if (oldBody !== undefined && oldBody !== null && oldBody !== body) {
-        getDb().addMessageEdit(messageId, oldBody, body);
+      if (!oldMsg) {
+        // If message doesn't exist yet (e.g. edit arrived before message or during sync), 
+        // create a stub so we can track future edits and show it in UI
+        const isGrp = !!isJidGroup(chatId);
+        const senderId = await syncService.resolvePN(key.participant || (isGrp ? '' : rawChatId), this.sock);
+        const senderName = await getChatNameAsync(senderId, null, this.sock);
+        
+        getDb().saveMessage({
+          message_id: messageId,
+          chat_id: chatId,
+          sender_id: senderId,
+          sender_name: senderName,
+          body: body,
+          type: 'chat',
+          timestamp: Math.floor(Date.now() / 1000),
+          is_from_me: key.fromMe ? 1 : 0,
+        });
+      } else {
+        getDb().updateMessageBody(messageId, body);
+        
+        if (oldBody !== undefined && oldBody !== null && oldBody !== body) {
+          getDb().addMessageEdit(messageId, oldBody, body);
+        }
       }
       
       log('PROCESSOR', `Message edited: ${messageId} in ${chatId}`);
@@ -382,8 +401,11 @@ export class MessageProcessor {
       getDb().updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
     }
 
+    const messageId = msg.key.id!;
+    const existingMsg = getDb().getMessage(messageId);
+
     const msgData: WhatsAppMessage = {
-      message_id: msg.key.id!,
+      message_id: messageId,
       chat_id: chatId,
       sender_id: senderId,
       sender_name: senderName,
@@ -396,7 +418,7 @@ export class MessageProcessor {
       media_sha256: mediaSha256 || undefined,
       timestamp: msg.messageTimestamp as number,
       is_from_me: msg.key.fromMe ? 1 : 0,
-      is_deleted: 0,
+      is_deleted: existingMsg?.is_deleted || 0,
       is_view_once: isViewOnce ? 1 : 0,
       original_id: msg.key.id!,
       quoted_stanza_id: quotedStanzaId || undefined,
@@ -404,7 +426,33 @@ export class MessageProcessor {
       quoted_preview: quotedPreview || undefined,
     };
 
-    getDb().saveMessage(msgData);
+    if (existingMsg) {
+      // If we have an existing stub (probably from handleEdit), 
+      // update it with the full message details but preserve the body if it was edited
+      getDb().saveMessage(msgData); // This uses INSERT OR IGNORE, so we need to update
+      
+      db.raw.query(`
+        UPDATE messages SET
+          sender_id = ?, sender_name = ?, type = ?, has_media = ?, 
+          media_type = ?, media_filename = ?, media_path = ?, media_sha256 = ?,
+          timestamp = ?, is_view_once = ?, quoted_stanza_id = ?, 
+          quoted_sender = ?, quoted_preview = ?, updated_at = datetime('now')
+        WHERE message_id = ?
+      `).run(
+        msgData.sender_id, msgData.sender_name, msgData.type, msgData.has_media ? 1 : 0,
+        msgData.media_type || null, msgData.media_filename || null, msgData.media_path || null, msgData.media_sha256 || null,
+        msgData.timestamp, msgData.is_view_once ? 1 : 0, msgData.quoted_stanza_id || null,
+        msgData.quoted_sender || null, msgData.quoted_preview || null, messageId
+      );
+
+      // If the body from the actual message is different from our stub body (which came from an edit),
+      // we should record it as the "oldest" version if it's not already there.
+      // But usually, Baileys 'upsert' for an edited message contains the EDITED body in msg.message,
+      // and the 'update' event also contains it. 
+    } else {
+      getDb().saveMessage(msgData);
+    }
+    
     if (isViewOnce) log('PROCESSOR', `Message cached: ${msgData.type} (view-once) in ${chatName} from ${senderName}`);
 
     this.broadcast('new_message', {
