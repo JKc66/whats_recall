@@ -131,28 +131,31 @@ export default function Sidebar() {
         </div>
         <nav class="flex gap-1" aria-label="Sidebar actions">
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick"
+            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             onClick={toggleTheme}
             title={theme() === "dark" ? "Light Mode" : "Dark Mode"}
+            aria-label={theme() === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Show when={theme() === "dark"} fallback={<MoonIcon size={16} />}>
               <SunIcon size={16} />
             </Show>
           </button>
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick"
+            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             classList={{ "text-accent bg-accent-subtle": view() === "settings" }}
             onClick={() =>
               setView(view() === "settings" ? "chats" : "settings")
             }
             title="Settings"
+            aria-label="Settings"
           >
             <SettingsIcon size={16} />
           </button>
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-accent hover:text-white transition-all active:tick"
+            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-accent hover:text-white transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             onClick={() => handleLogout()}
             title="Sign out"
+            aria-label="Sign out"
           >
             <LogoutIcon size={16} />
           </button>
@@ -225,7 +228,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
 
   return (
     <button
-      class="flex items-center p-3 m-[2px_12px] gap-3 cursor-pointer transition-all border-none technical bg-transparent text-inherit w-[calc(100%-24px)] text-left relative outline-none hover:bg-surface-raised active:tick group"
+      class="flex items-center p-3 m-[2px_12px] gap-3 cursor-pointer transition-all border-none technical bg-transparent text-inherit w-[calc(100%-24px)] text-left relative outline-none hover:bg-surface-raised active:tick group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       classList={{ "bg-surface-raised": props.active }}
       onClick={() => props.onClick()}
       aria-current={props.active ? "true" : "false"}
