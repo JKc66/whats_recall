@@ -58,28 +58,6 @@ function groupReactions(reactions: Reaction[]) {
   return Array.from(map.values());
 }
 
-function groupAllReactions(reactions: any[]) {
-  const map = new Map<
-    string,
-    { emoji: string; count: number; senders: string[]; is_current: boolean }
-  >();
-  for (const r of reactions) {
-    const key = `${r.emoji}_${r.is_current}`;
-    const existing = map.get(key);
-    if (existing) {
-      existing.count++;
-      existing.senders.push(r.sender_name || r.sender_id);
-    } else {
-      map.set(key, {
-        emoji: r.emoji,
-        count: 1,
-        senders: [r.sender_name || r.sender_id],
-        is_current: r.is_current
-      });
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => (b.is_current ? 1 : 0) - (a.is_current ? 1 : 0));
-}
 export function MessageBubble(props: MessageBubbleProps) {
   const m = () => props.msg;
   const isMe = () => !!m().is_from_me;

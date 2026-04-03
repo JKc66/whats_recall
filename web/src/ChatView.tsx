@@ -26,7 +26,7 @@ import MediaGallery from "./components/chat/MediaGallery";
 export default function ChatView() {
   const [lightboxSrc, setLightboxSrc] = createSignal<string | null>(null);
   const [viewMode, setViewMode] = createSignal<"messages" | "media">("messages");
-  const [showScrollBottom, setshowScrollBottom] = createSignal(false);
+  const [showScrollBottom, setShowScrollBottom] = createSignal(false);
   const [searchMatchIds, setSearchMatchIds] = createSignal<string[]>([]);
   const [searchMatchIndex, setSearchMatchIndex] = createSignal(0);
   let containerRef: HTMLDivElement | undefined;
@@ -84,7 +84,7 @@ export default function ChatView() {
     if (!containerRef) return;
     const { scrollTop } = containerRef;
     const isAtBottom = Math.abs(scrollTop) < 150;
-    setshowScrollBottom(!isAtBottom);
+    setShowScrollBottom(!isAtBottom);
   }
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {

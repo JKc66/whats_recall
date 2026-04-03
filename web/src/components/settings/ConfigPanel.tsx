@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { WifiIcon, AlertTriangleIcon, SettingsIcon } from "../Icons";
+import { AlertTriangleIcon, SettingsIcon } from "../Icons";
 
 interface ConfigPanelProps {
   pairing: any;

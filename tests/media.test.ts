@@ -15,10 +15,11 @@ mock.module("@whiskeysockets/baileys", () => ({
 }));
 
 // Mocking fetch for profile pic
-global.fetch = async (url: string) => ({
+// Use any to avoid missing fetch properties like 'preconnect' in Bun types
+(global as any).fetch = async (url: string) => ({
     ok: true,
     arrayBuffer: async () => Buffer.from("fake profile pic").buffer
-}) as any;
+});
 
 import { getDb } from "../src/db/database.ts";
 import { downloadMedia, downloadProfilePic } from "../src/whatsapp/media.ts";
