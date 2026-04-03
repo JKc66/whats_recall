@@ -81,7 +81,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                     </div>
                   </Show>
 
-                  <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto">
+                  <div class="absolute inset-0 bg-[rgba(0,0,0,0.6)] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto">
                     <div class="mb-4">
                       <span class="text-[10px] font-mono text-text-primary tabular-nums">
                         {formatTime(new Date(msg.timestamp * 1000))}

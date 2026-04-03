@@ -182,7 +182,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               href={src}
               download={msg.media_filename || "download"}
               aria-label="Download image"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -204,7 +204,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             href={src}
             download={msg.media_filename || "download"}
             aria-label="Download video"
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -357,7 +357,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               >
                 <span class="text-sm leading-none">{group.emoji}</span>
                 <Show when={group.count > 1}>
-                  <span class="text-[10px] font-mono font-black text-white bg-border-visible rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
+                  <span class="text-[10px] font-mono font-black text-text-primary bg-border-visible rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
                     {group.count}
                   </span>
                 </Show>
@@ -395,7 +395,7 @@ export function MessageBubble(props: MessageBubbleProps) {
         <div class="mt-3 space-y-2.5 border-t border-border pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
           <For each={m().edits}>
             {(edit) => (
-              <div class="bg-black/20 rounded-lg p-2.5 border border-border relative group/edit overflow-hidden transition-all hover:bg-black/30">
+              <div class="bg-surface-raised rounded-lg p-2.5 border border-border relative group/edit overflow-hidden transition-all hover:bg-border">
                 <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-accent opacity-30 group-hover/edit:opacity-100 transition-opacity" />
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-[9px] font-bold text-text-disabled uppercase tracking-widest flex items-center gap-1">
@@ -523,13 +523,13 @@ export function ImageGroup(props: {
                 href={mediaUrl(msg.media_path!)}
                 download={msg.media_filename || "download"}
                 aria-label="Download photo"
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
               >
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
               <Show when={!!msg.is_deleted}>
                 <div class="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <span class="bg-black/60 px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-border">
+                  <span class="bg-[rgba(0,0,0,0.6)] px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-border">
                     <TrashIcon size={10} /> Deleted
                   </span>
                 </div>

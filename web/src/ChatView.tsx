@@ -269,7 +269,7 @@ export default function ChatView() {
           {/* Scroll to Bottom Button - Fixed Position Relative to Parent */}
           <Show when={viewMode() === "messages" && showScrollBottom() && displayMessages().length > 0}>
             <button
-              class="absolute bottom-6 right-6 w-11 h-11 bg-surface text-text-secondary border border-border rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:text-white hover:bg-surface-raised active:scale-95 cursor-pointer backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
+              class="absolute bottom-6 right-6 w-11 h-11 bg-surface text-text-secondary border border-border rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:bg-surface-raised active:scale-95 cursor-pointer backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
               onClick={() => scrollToBottom()}
               aria-label="Scroll to bottom"
             >
@@ -287,7 +287,7 @@ export default function ChatView() {
           aria-label="Image preview"
         >
           <button
-            class="absolute top-6 right-6 w-12 h-12 bg-surface-raised hover:bg-border rounded-full flex items-center justify-center text-white transition-all active:scale-90 border border-border shadow-2xl"
+            class="absolute top-6 right-6 w-12 h-12 bg-surface-raised hover:bg-border rounded-full flex items-center justify-center text-text-primary transition-all active:scale-90 border border-border shadow-2xl"
             onClick={closeLightbox}
             aria-label="Close preview"
           >
