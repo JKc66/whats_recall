@@ -90,21 +90,14 @@ export default function MessageList(props: MessageListProps) {
 
   const grouped = () => {
     lastDate = "";
-    return groupMessages(props.messages);
+    return groupMessages(props.messages).reverse();
   };
 
   return (
-    <div class="flex-1 flex flex-col gap-1.5 px-6 py-6 pb-24">
+    <div class="flex-1 flex flex-col-reverse gap-1.5 px-6 py-6 pb-24">
       <For each={grouped()}>
         {(group) => (
           <>
-            <Show when={group.showDate}>
-              <div class="flex justify-center py-6 mb-2">
-                <span class="bg-zinc-800/80 backdrop-blur-md text-text-3 text-[11px] font-bold py-1 px-4 rounded-full border border-white/5 uppercase tracking-widest shadow-sm">
-                  {group.dateStr}
-                </span>
-              </div>
-            </Show>
             <Show
               when={group.type === "image-group"}
               fallback={
@@ -126,6 +119,13 @@ export default function MessageList(props: MessageListProps) {
                 findMessage={props.findMessage}
                 highlightQuery={props.highlightQuery}
               />
+            </Show>
+            <Show when={group.showDate}>
+              <div class="flex justify-center py-6 mb-2">
+                <span class="bg-zinc-800/80 backdrop-blur-md text-text-3 text-[11px] font-bold py-1 px-4 rounded-full border border-white/5 uppercase tracking-widest shadow-sm">
+                  {group.dateStr}
+                </span>
+              </div>
             </Show>
           </>
         )}

@@ -57,18 +57,10 @@ export default function ChatView() {
           setTimeout(() => {
             if (matches.length > 0) {
               scrollToMessage(matches[0]);
-            } else {
-              scrollToBottom("auto");
             }
           }, 80);
         } else {
           setSearchMatchIds([]);
-          setTimeout(() => scrollToBottom("auto"), 50);
-        }
-      } else if (lastScrolledState === stateKey && containerRef) {
-        const { scrollTop, scrollHeight, clientHeight } = containerRef;
-        if (scrollHeight - scrollTop - clientHeight < 150) {
-          setTimeout(() => scrollToBottom("smooth"), 50);
         }
       }
     }
@@ -90,15 +82,15 @@ export default function ChatView() {
   // Track scroll position to show/hide "Scroll to Bottom" button
   function handleScroll() {
     if (!containerRef) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 150;
+    const { scrollTop } = containerRef;
+    const isAtBottom = Math.abs(scrollTop) < 150;
     setShowScrollBottom(!isAtBottom);
   }
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     if (containerRef) {
       containerRef.scrollTo({
-        top: containerRef.scrollHeight,
+        top: 0,
         behavior,
       });
     }
@@ -236,7 +228,7 @@ export default function ChatView() {
 
         <div class="flex-1 flex flex-col overflow-hidden relative">
           <div
-            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30"
+            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30 flex flex-col-reverse"
             ref={(el) => (containerRef = el)}
             onScroll={handleScroll}
           >
