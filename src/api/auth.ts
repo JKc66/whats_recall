@@ -3,6 +3,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
+import * as crypto_node from 'crypto';
 
 const auth = new Hono();
 
@@ -27,9 +28,20 @@ auth.post('/login', async (c) => {
   }
 
   const { password, fingerprint } = await c.req.json();
-  const serverPassword = process.env.AUTH_PASSWORD;
+  const serverPassword = process.env.AUTH_PASSWORD || '';
 
-  if (password !== serverPassword) {
+  const passwordBuffer = Buffer.from(String(password || ''));
+  const serverPasswordBuffer = Buffer.from(serverPassword);
+
+  let isMatch = false;
+  if (passwordBuffer.length === serverPasswordBuffer.length) {
+    isMatch = crypto_node.timingSafeEqual(passwordBuffer, serverPasswordBuffer);
+  } else {
+    // Prevent timing attacks by always doing the comparison anyway, just against a dummy buffer
+    crypto_node.timingSafeEqual(serverPasswordBuffer, serverPasswordBuffer);
+  }
+
+  if (!isMatch) {
     log('AUTH', `Login failed from ${ip}`);
     return c.json({ error: 'Invalid password' }, 401);
   }
