@@ -34,7 +34,7 @@ auth.post('/login', bodyLimit({
   let body;
   try {
     body = await c.req.json();
-  } catch (err) {
+  } catch (_err) {
     return c.json({ error: 'Invalid JSON payload' }, 400);
   }
 

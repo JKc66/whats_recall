@@ -1,6 +1,6 @@
 node_modules/
 data/
-public/
+/public/
 *.log
 nohup.out
 .wwebjs_auth/
