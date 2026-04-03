@@ -143,7 +143,7 @@ export function MessageBubble(props: MessageBubbleProps) {
     const msg = m();
     if (!msg.has_media || !msg.media_path) {
       return (msg.has_media && msg.type !== 'chat') ? (
-        <div class="flex items-center gap-2 p-3 bg-white/5 rounded-lg text-xs text-text-3 italic">
+        <div class="flex items-center gap-2 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary italic">
           <FileIcon size={14} /> {msg.type}
         </div>
       ) : null;
@@ -163,7 +163,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             src={src}
             alt={type === "sticker" ? "Sticker" : "Image"}
             loading="lazy"
-            class="w-full cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900 rounded-sm"
+            class="w-full cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black rounded-sm"
             onClick={() => props.onImageClick(src)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -182,7 +182,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               href={src}
               download={msg.media_filename || "download"}
               aria-label="Download image"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/10 backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -204,7 +204,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             href={src}
             download={msg.media_filename || "download"}
             aria-label="Download video"
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/10 backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -221,7 +221,7 @@ export function MessageBubble(props: MessageBubbleProps) {
     }
 
     return (
-      <div class="flex items-center gap-3 p-3 bg-white/5 rounded-lg text-xs text-text-3">
+      <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary">
         <FileIcon size={14} />
         <a
           href={src}
@@ -235,7 +235,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           href={src}
           download={msg.media_filename || "download"}
           aria-label="Download file"
-          class="ml-auto w-7 h-7 rounded-sm bg-white/10 flex items-center justify-center hover:bg-white/20 focus-visible:bg-accent focus-visible:text-white outline-none"
+          class="ml-auto w-7 h-7 rounded-sm bg-border flex items-center justify-center hover:bg-border-visible focus-visible:bg-accent focus-visible:text-white outline-none"
         >
           <DownloadIcon size={14} stroke-width={2.5} />
         </a>
@@ -261,7 +261,7 @@ export function MessageBubble(props: MessageBubbleProps) {
         >
           {m().sender_name || phone() || "Unknown"}
           <Show when={phone() && m().sender_name}>
-            <span class="text-[10px] font-normal text-text-3 font-mono">
+            <span class="text-[10px] font-normal text-text-secondary font-mono">
               {phone()}
             </span>
           </Show>
@@ -285,7 +285,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
       <Show when={formattedReply()}>
         <div
-          class="relative bg-zinc-900/60 rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-zinc-400 overflow-hidden transition-all hover:bg-zinc-800/80 cursor-pointer group/reply border border-white/5 outline-none focus-visible:ring-1 ring-accent/50"
+          class="relative bg-surface-raised rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-text-secondary overflow-hidden transition-all hover:bg-surface/80 cursor-pointer group/reply border border-border outline-none focus-visible:ring-1 ring-accent/50"
           onClick={handleQuoteClick}
           role="button"
           tabindex="0"
@@ -339,7 +339,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       </Show>
 
       <Show when={isViewOnce() && !bodyText() && !m().has_media}>
-        <div class="flex items-center gap-2 p-2 bg-white/5 rounded-lg text-xs text-text-3 italic">
+        <div class="flex items-center gap-2 p-2 bg-surface-raised rounded-lg text-xs text-text-secondary italic">
           <EyeIcon size={14} /> View-once {m().type || "message"}
         </div>
       </Show>
@@ -352,12 +352,12 @@ export function MessageBubble(props: MessageBubbleProps) {
           <For each={groupReactions(m().reactions!)}>
             {(group) => (
               <span
-                class="inline-flex items-center gap-1 bg-zinc-800 border border-white/5 rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
+                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
                 title={group.senders.join(", ")}
               >
                 <span class="text-sm leading-none">{group.emoji}</span>
                 <Show when={group.count > 1}>
-                  <span class="text-[10px] font-mono font-black text-white bg-white/20 rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
+                  <span class="text-[10px] font-mono font-black text-text-primary bg-border-visible rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
                     {group.count}
                   </span>
                 </Show>
@@ -383,7 +383,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             </span>
             <button
               onClick={() => setShowHistory(!showHistory())}
-              class="text-[9px] font-medium text-text-secondary hover:text-text-primary px-2 py-0.5 bg-white/5 rounded-full border border-white/10 hover:bg-white/10 transition-colors uppercase tracking-tight"
+              class="text-[9px] font-medium text-text-secondary hover:text-text-primary px-2 py-0.5 bg-surface-raised rounded-full border border-border hover:bg-border transition-colors uppercase tracking-tight"
             >
               {showHistory() ? "Hide" : `${m().edits!.length} Historical Version${m().edits!.length > 1 ? 's' : ''}`}
             </button>
@@ -392,21 +392,21 @@ export function MessageBubble(props: MessageBubbleProps) {
       </div>
 
       <Show when={showHistory() && m().edits?.length}>
-        <div class="mt-3 space-y-2.5 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div class="mt-3 space-y-2.5 border-t border-border pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
           <For each={m().edits}>
             {(edit) => (
-              <div class="bg-black/20 rounded-lg p-2.5 border border-white/5 relative group/edit overflow-hidden transition-all hover:bg-black/30">
+              <div class="bg-surface-raised rounded-lg p-2.5 border border-border relative group/edit overflow-hidden transition-all hover:bg-border">
                 <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-accent opacity-30 group-hover/edit:opacity-100 transition-opacity" />
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                  <span class="text-[9px] font-bold text-text-disabled uppercase tracking-widest flex items-center gap-1">
                     Previous Version
                   </span>
                 </div>
                 <div class="flex items-end justify-between gap-4">
-                  <div class="text-[13px] text-zinc-300 line-through opacity-60 leading-relaxed italic wrap-break-word">
+                  <div class="text-[13px] text-text-primary line-through opacity-60 leading-relaxed italic wrap-break-word">
                     {edit.old_body}
                   </div>
-                  <span class="text-[9px] font-mono text-zinc-600 opacity-60 tabular-nums pb-0.5 shrink-0">
+                  <span class="text-[9px] font-mono text-text-disabled opacity-60 tabular-nums pb-0.5 shrink-0">
                     {formatTime(new Date(edit.edited_at))}
                   </span>
                 </div>
@@ -474,7 +474,7 @@ export function ImageGroup(props: {
     <div
       class="max-w-110 p-3 px-4 rounded-2xl relative mb-1.5 shadow-sm animate-in fade-in duration-300"
       classList={{
-        "self-start bg-zinc-850 border border-white/5 rounded-bl-sm": !isMe(),
+        "self-start bg-surface border border-border rounded-bl-sm": !isMe(),
         "self-end bg-accent/20 backdrop-blur-md border border-accent/20 rounded-br-sm":
           isMe(),
         "mb-5": props.messages.some(
@@ -524,13 +524,13 @@ export function ImageGroup(props: {
                 href={mediaUrl(msg.media_path!)}
                 download={msg.media_filename || "download"}
                 aria-label="Download photo"
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-white/5 backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900"
+                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
               >
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
               <Show when={!!msg.is_deleted}>
                 <div class="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <span class="bg-black/60 px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-white/10">
+                  <span class="bg-[rgba(0,0,0,0.6)] px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-border">
                     <TrashIcon size={10} /> Deleted
                   </span>
                 </div>
@@ -541,19 +541,19 @@ export function ImageGroup(props: {
       </div>
 
       <Show when={first().body}>
-        <div class="text-[14px] text-zinc-100 whitespace-pre-wrap leading-relaxed px-0.5 pt-1">
+        <div class="text-[14px] text-text-primary whitespace-pre-wrap leading-relaxed px-0.5 pt-1">
           <HighlightedText text={first().body!} query={props.highlightQuery} />
         </div>
       </Show>
 
       <div class="flex justify-between items-center gap-1.5 mt-2">
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] text-zinc-500 font-medium">
+          <span class="text-[10px] text-text-disabled font-medium">
             {imageCount()} photos
           </span>
           <Show when={imageCount() > 1}>
             <button
-              class="inline-flex items-center gap-1 bg-white/5 hover:bg-accent-muted border border-white/10 rounded-full px-2 py-0.5 text-[9px] font-bold text-zinc-400 hover:text-accent transition-all uppercase tracking-wide outline-none focus-visible:ring-1 ring-accent"
+              class="inline-flex items-center gap-1 bg-surface-raised hover:bg-accent-muted border border-border rounded-full px-2 py-0.5 text-[9px] font-bold text-text-secondary hover:text-accent transition-all uppercase tracking-wide outline-none focus-visible:ring-1 ring-accent"
               onClick={downloadAll}
               aria-label={`Download all ${imageCount()} photos`}
               disabled={isDownloading()}
@@ -565,7 +565,7 @@ export function ImageGroup(props: {
             </button>
           </Show>
         </div>
-        <span class="text-[10px] font-mono text-zinc-500 font-medium tabular-nums opacity-60">
+        <span class="text-[10px] font-mono text-text-disabled font-medium tabular-nums opacity-60">
           {time()}
         </span>
       </div>
@@ -584,12 +584,12 @@ export function ImageGroup(props: {
           >
             {(group) => (
               <span
-                class="inline-flex items-center gap-1 bg-zinc-800 border border-white/5 rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
+                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
                 title={group.senders.join(", ")}
               >
                 <span class="text-sm">{group.emoji}</span>
                 <Show when={group.count > 1}>
-                  <span class="text-[10px] font-mono font-bold text-zinc-400">
+                  <span class="text-[10px] font-mono font-bold text-text-secondary">
                     {group.count}
                   </span>
                 </Show>

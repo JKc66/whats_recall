@@ -15,7 +15,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
       <Show
         when={props.messages.length > 0}
         fallback={
-          <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-sm text-center h-full gap-1">
+          <div class="flex flex-col items-center justify-center p-12 text-text-disabled text-sm text-center h-full gap-1">
             No media found in this chat
           </div>
         }
@@ -27,7 +27,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
               const type = msg.type;
               return (
                 <div
-                  class="group relative aspect-square bg-zinc-900 border border-white/5 rounded-lg overflow-hidden cursor-pointer"
+                  class="group relative aspect-square bg-surface-raised border border-border rounded-lg overflow-hidden cursor-pointer"
                   classList={{ "opacity-60 grayscale": !!msg.is_deleted }}
                 >
                   <Show when={type === "image" || type === "sticker"}>
@@ -58,7 +58,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                     </div>
                   </Show>
                   <Show when={type === "audio" || type === "ptt"}>
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-zinc-850 p-4 gap-2">
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-surface p-4 gap-2">
                       <div class="text-accent">
                         <MusicIcon size={28} stroke-width={1.5} />
                       </div>
@@ -71,19 +71,19 @@ export default function MediaGallery(props: MediaGalleryProps) {
                     </div>
                   </Show>
                   <Show when={type === "document"}>
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-zinc-850 p-4 gap-2">
-                      <div class="text-zinc-400">
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-surface p-4 gap-2">
+                      <div class="text-text-secondary">
                         <FileIcon size={28} stroke-width={1.5} />
                       </div>
-                      <span class="text-[10px] font-mono text-zinc-500 truncate w-full text-center">
+                      <span class="text-[10px] font-mono text-text-disabled truncate w-full text-center">
                         {msg.media_filename || "Document"}
                       </span>
                     </div>
                   </Show>
 
-                  <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto">
+                  <div class="absolute inset-0 bg-[rgba(0,0,0,0.6)] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto">
                     <div class="mb-4">
-                      <span class="text-[10px] font-mono text-zinc-300 tabular-nums">
+                      <span class="text-[10px] font-mono text-text-primary tabular-nums">
                         {formatTime(new Date(msg.timestamp * 1000))}
                       </span>
                       <Show when={!!msg.is_deleted}>
@@ -93,7 +93,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       </Show>
                     </div>
                     <button
-                      class="px-3 py-1.5 bg-white/10 hover:bg-accent hover:text-white border border-white/10 rounded-md text-[11px] font-medium transition-all"
+                      class="px-3 py-1.5 bg-border hover:bg-accent hover:text-white border border-border rounded-md text-[11px] font-medium transition-all"
                       onClick={() => props.onJumpToMessage(msg.message_id)}
                     >
                       Jump to message

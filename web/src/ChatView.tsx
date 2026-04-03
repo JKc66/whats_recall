@@ -190,33 +190,33 @@ export default function ChatView() {
         />
 
         <Show when={searchMatchIds().length > 0}>
-          <div class="flex items-center justify-between px-4 py-2 bg-zinc-900/90 border-b border-white/5 text-[12px] text-zinc-400 backdrop-blur-md gap-3 shrink-0 shadow-sm animate-in slide-in-from-top-1 duration-200">
+          <div class="flex items-center justify-between px-4 py-2 bg-surface-raised/90 border-b border-border text-[12px] text-text-secondary backdrop-blur-md gap-3 shrink-0 shadow-sm animate-in slide-in-from-top-1 duration-200">
             <div class="flex items-center gap-2">
               <SearchIcon size={13} class="text-accent" />
               <span>
-                <span class="text-zinc-100 font-semibold tabular-nums">{searchMatchIndex() + 1}</span>
+                <span class="text-text-primary font-semibold tabular-nums">{searchMatchIndex() + 1}</span>
                 {" of "}
-                <span class="text-zinc-100 font-semibold tabular-nums">{searchMatchIds().length}</span>
+                <span class="text-text-primary font-semibold tabular-nums">{searchMatchIds().length}</span>
                 {" matches"}
               </span>
             </div>
             <div class="flex items-center gap-1">
               <button
-                class="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
                 onClick={() => navigateMatch(-1)}
                 aria-label="Previous match"
               >
                 <ArrowUpIcon size={13} stroke-width={2.5} />
               </button>
               <button
-                class="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center transition-all active:scale-90"
+                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:scale-90"
                 onClick={() => navigateMatch(1)}
                 aria-label="Next match"
               >
                 <ArrowDownIcon size={13} stroke-width={2.5} />
               </button>
               <button
-                class="w-7 h-7 rounded-md bg-white/5 hover:bg-red-500/10 hover:text-red-400 border border-white/8 flex items-center justify-center transition-all active:scale-90 ml-1"
+                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-red-500/10 hover:text-red-400 border border-border flex items-center justify-center transition-all active:scale-90 ml-1"
                 onClick={() => { setSearchMatchIds([]); setSearchMatchIndex(0); }}
                 aria-label="Clear search matches"
               >
@@ -236,7 +236,7 @@ export default function ChatView() {
               <Show
                 when={displayMessages().length > 0}
                 fallback={
-                  <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-sm text-center gap-1 italic opacity-60 min-h-full">
+                  <div class="flex flex-col items-center justify-center p-12 text-text-disabled text-sm text-center gap-1 italic opacity-60 min-h-full">
                     No {showOnlyDeleted() ? "deleted " : ""}messages in this chat
                   </div>
                 }
@@ -269,7 +269,7 @@ export default function ChatView() {
           {/* Scroll to Bottom Button - Fixed Position Relative to Parent */}
           <Show when={viewMode() === "messages" && showScrollBottom() && displayMessages().length > 0}>
             <button
-              class="absolute bottom-6 right-6 w-11 h-11 bg-zinc-800 text-text-3 border border-white/10 rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:text-white hover:bg-zinc-700 active:scale-95 cursor-pointer backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
+              class="absolute bottom-6 right-6 w-11 h-11 bg-surface text-text-secondary border border-border rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:bg-surface-raised active:scale-95 cursor-pointer backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
               onClick={() => scrollToBottom()}
               aria-label="Scroll to bottom"
             >
@@ -287,7 +287,7 @@ export default function ChatView() {
           aria-label="Image preview"
         >
           <button
-            class="absolute top-6 right-6 w-12 h-12 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white transition-all active:scale-90 border border-white/10 shadow-2xl"
+            class="absolute top-6 right-6 w-12 h-12 bg-surface-raised hover:bg-border rounded-full flex items-center justify-center text-text-primary transition-all active:scale-90 border border-border shadow-2xl"
             onClick={closeLightbox}
             aria-label="Close preview"
           >
