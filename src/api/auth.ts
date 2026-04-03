@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { bodyLimit } from 'hono/body-limit';
 import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
@@ -18,7 +19,10 @@ auth.get('/uptime', (c) => {
   return c.json({ uptime: Math.floor((Date.now() - startTime) / 1000) });
 });
 
-auth.post('/login', async (c) => {
+auth.post('/login', bodyLimit({
+  maxSize: 8192,
+  onError: (c) => c.json({ error: 'Payload too large' }, 413)
+}), async (c) => {
   const db = getDb();
   const ip = getClientIp(c);
   
@@ -27,10 +31,23 @@ auth.post('/login', async (c) => {
     return c.json({ error: 'Too many login attempts. Try again later.' }, 429);
   }
 
-  const { password, fingerprint } = await c.req.json();
-  const serverPassword = process.env.AUTH_PASSWORD || '';
+  let body;
+  try {
+    body = await c.req.json();
+  } catch (err) {
+    return c.json({ error: 'Invalid JSON payload' }, 400);
+  }
 
-  const passwordBuffer = Buffer.from(String(password || ''));
+  const { password, fingerprint } = body;
+  const serverPassword = process.env.AUTH_PASSWORD || '';
+  const maxPasswordLength = Math.max(1024, serverPassword.length * 2);
+
+  if (typeof password !== 'string' || password.length > maxPasswordLength) {
+    log('AUTH', `Login failed from ${ip}: invalid password format or length`);
+    return c.json({ error: 'Invalid password format or length' }, 400);
+  }
+
+  const passwordBuffer = Buffer.from(password);
   const serverPasswordBuffer = Buffer.from(serverPassword);
 
   let isMatch = false;
