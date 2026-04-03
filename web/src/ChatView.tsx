@@ -65,15 +65,11 @@ export default function ChatView() {
           });
         } else {
           setSearchMatchIds([]);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              scrollToBottom("auto");
-            });
-          });
+          // CSS handles initial anchor
         }
       } else if (lastScrolledState === stateKey && containerRef) {
-        const { scrollTop, scrollHeight, clientHeight } = containerRef;
-        if (scrollHeight - scrollTop - clientHeight < 150) {
+        const { scrollTop } = containerRef;
+        if (Math.abs(scrollTop) < 150) {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               scrollToBottom("smooth");
@@ -100,15 +96,15 @@ export default function ChatView() {
   // Track scroll position to show/hide "Scroll to Bottom" button
   function handleScroll() {
     if (!containerRef) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 150;
+    const { scrollTop } = containerRef;
+    const isAtBottom = Math.abs(scrollTop) < 150;
     setShowScrollBottom(!isAtBottom);
   }
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     if (containerRef) {
       containerRef.scrollTo({
-        top: containerRef.scrollHeight,
+        top: 0,
         behavior,
       });
     }
@@ -246,40 +242,42 @@ export default function ChatView() {
 
         <div class="flex-1 flex flex-col overflow-hidden relative">
           <div
-            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30"
+            class="flex-1 flex flex-col-reverse overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30"
             ref={(el) => (containerRef = el)}
             onScroll={handleScroll}
           >
-            <Show when={viewMode() === "messages"}>
-              <Show
-                when={displayMessages().length > 0}
-                fallback={
-                  <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-sm text-center gap-1 italic opacity-60 min-h-full">
-                    No {showOnlyDeleted() ? "deleted " : ""}messages in this chat
-                  </div>
-                }
-              >
-                <MessageList
-                  messages={displayMessages()}
-                  isGroup={!!chat()?.is_group}
+            <div class="flex flex-col justify-end min-h-full">
+              <Show when={viewMode() === "messages"}>
+                <Show
+                  when={displayMessages().length > 0}
+                  fallback={
+                    <div class="flex flex-col items-center justify-center p-12 text-zinc-500 text-sm text-center gap-1 italic opacity-60 flex-1">
+                      No {showOnlyDeleted() ? "deleted " : ""}messages in this chat
+                    </div>
+                  }
+                >
+                  <MessageList
+                    messages={displayMessages()}
+                    isGroup={!!chat()?.is_group}
+                    onImageClick={setLightboxSrc}
+                    onQuoteClick={scrollToMessage}
+                    findMessage={findMessageByStanzaId}
+                    highlightQuery={searchQuery()}
+                  />
+                </Show>
+              </Show>
+
+              <Show when={viewMode() === "media"}>
+                <MediaGallery
+                  messages={mediaMessages()}
                   onImageClick={setLightboxSrc}
-                  onQuoteClick={scrollToMessage}
-                  findMessage={findMessageByStanzaId}
-                  highlightQuery={searchQuery()}
+                  onJumpToMessage={(id: string) => {
+                    setViewMode("messages");
+                    setTimeout(() => scrollToMessage(id), 50);
+                  }}
                 />
               </Show>
-            </Show>
-
-            <Show when={viewMode() === "media"}>
-              <MediaGallery
-                messages={mediaMessages()}
-                onImageClick={setLightboxSrc}
-                onJumpToMessage={(id: string) => {
-                  setViewMode("messages");
-                  setTimeout(() => scrollToMessage(id), 50);
-                }}
-              />
-            </Show>
+            </div>
           </div>
 
           {/* Scroll to Bottom Button - Fixed Position Relative to Parent */}
