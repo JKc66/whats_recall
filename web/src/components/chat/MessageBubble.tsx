@@ -67,7 +67,7 @@ export function MessageBubble(props: MessageBubbleProps) {
   const phone = () => (m().sender_id ? extractJidId(m().sender_id!) : "");
   const [showHistory, setShowHistory] = createSignal(false);
 
-  const replyData = () => {
+  const replyData = createMemo(() => {
     const msg = m();
     if (msg.quoted_stanza_id) {
       return {
@@ -87,9 +87,9 @@ export function MessageBubble(props: MessageBubbleProps) {
       }
     }
     return null;
-  };
+  });
 
-  const formattedReply = () => {
+  const formattedReply = createMemo(() => {
     const data = replyData();
     if (!data) return null;
     const previewRaw = data.preview || "Message";
@@ -120,9 +120,9 @@ export function MessageBubble(props: MessageBubbleProps) {
       label: finalLabel,
       stanzaId: data.stanzaId,
     };
-  };
+  });
 
-  const bodyText = () => {
+  const bodyText = createMemo(() => {
     const msg = m();
     if (!msg.body) return "";
     if (msg.body.startsWith("[Replying to: ")) {
@@ -130,7 +130,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       if (newlineIndex > -1) return msg.body.slice(newlineIndex + 3);
     }
     return msg.body;
-  };
+  });
 
   function handleQuoteClick() {
     const reply = replyData();
@@ -435,8 +435,9 @@ export function ImageGroup(props: {
     );
   const phone = () =>
     first().sender_id ? extractJidId(first().sender_id!) : "";
-  const imageMessages = () =>
-    props.messages.filter((m) => m.has_media && m.media_path);
+  const imageMessages = createMemo(() =>
+    props.messages.filter((m) => m.has_media && m.media_path)
+  );
   const imageCount = () => imageMessages().length;
 
   const [isDownloading, setIsDownloading] = createSignal(false);
