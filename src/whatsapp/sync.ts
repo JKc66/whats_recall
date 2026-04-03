@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
+import { jidNormalizedUser } from '@whiskeysockets/baileys';
 import { log } from '../logger.js';
 import { getDataDir } from '../db/database.js';
 import { safeMerge, extractJidId } from './utils.ts';
@@ -41,13 +42,14 @@ export class WhatsAppSync {
     for (const item of items) {
       if (!item.id) continue;
       if (item.id.includes('@lid') && item.phoneNumber) {
-        const pn = item.phoneNumber.includes('@s.whatsapp.net') ? item.phoneNumber : (item.phoneNumber + '@s.whatsapp.net');
+        const pn = jidNormalizedUser(item.phoneNumber.includes('@s.whatsapp.net') ? item.phoneNumber : (item.phoneNumber + '@s.whatsapp.net'));
         this.lidToPn.set(item.id, pn);
         this.pnToLid.set(pn, item.id);
       } else if (item.id.includes('@s.whatsapp.net') && item.lid) {
         const lid = item.lid.includes('@lid') ? item.lid : (item.lid + '@lid');
-        this.pnToLid.set(item.id, lid);
-        this.lidToPn.set(lid, item.id);
+        const pn = jidNormalizedUser(item.id);
+        this.pnToLid.set(pn, lid);
+        this.lidToPn.set(lid, pn);
       }
     }
   }
@@ -91,19 +93,20 @@ export class WhatsAppSync {
   public async resolvePN(jid: string, sock: any = null): Promise<string> {
     if (!jid) return jid;
     if (jid.includes('@g.us')) return jid;
-    if (jid.includes('@s.whatsapp.net')) return jid;
-    if (!jid.includes('@lid')) return jid;
+    
+    const normalized = jidNormalizedUser(jid);
+    if (!jid.includes('@lid')) return normalized;
 
     // 1. Check local cache
     const cached = this.lidToPn.get(jid);
-    if (cached) return cached;
+    if (cached) return jidNormalizedUser(cached);
 
     // 2. Check Baileys repository
     if (sock?.signalRepository?.lidMapping) {
       try {
         const pn = await sock.signalRepository.lidMapping.getPNForLID(jid);
         if (pn) {
-          const fullPn = pn.includes('@s.whatsapp.net') ? pn : pn + '@s.whatsapp.net';
+          const fullPn = jidNormalizedUser(pn.includes('@s.whatsapp.net') ? pn : (pn + '@s.whatsapp.net'));
           this.lidToPn.set(jid, fullPn);
           this.pnToLid.set(fullPn, jid);
           return fullPn;
@@ -115,40 +118,44 @@ export class WhatsAppSync {
 
     // 3. Fallback: search contacts
     for (const [c_jid, c_info] of this.contacts.entries()) {
+      const normalizedCjid = jidNormalizedUser(c_jid);
       if (c_info.lid && (c_info.lid === jid || c_info.lid.includes(extractJidId(jid))) && c_jid.includes('@s.whatsapp.net')) {
-        this.lidToPn.set(jid, c_jid);
-        this.pnToLid.set(c_jid, jid);
-        return c_jid;
+        this.lidToPn.set(jid, normalizedCjid);
+        this.pnToLid.set(normalizedCjid, jid);
+        return normalizedCjid;
       }
     }
     
-    return jid;
+    return normalized;
   }
 
   public async resolveLID(jid: string, sock: any = null): Promise<string | null> {
-    if (!jid || !jid.includes('@s.whatsapp.net')) return null;
-    const cached = this.pnToLid.get(jid);
+    if (!jid) return null;
+    if (!jid.includes('@s.whatsapp.net')) return null;
+
+    const normalizedJid = jidNormalizedUser(jid);
+    const cached = this.pnToLid.get(normalizedJid);
     if (cached) return cached;
 
     if (sock?.signalRepository?.lidMapping) {
       try {
-        let lid = await sock.signalRepository.lidMapping.getLIDForPN(jid);
+        let lid = await sock.signalRepository.lidMapping.getLIDForPN(normalizedJid);
         if (lid) {
           if (!lid.includes('@lid')) lid += '@lid';
-          this.pnToLid.set(jid, lid);
-          this.lidToPn.set(lid, jid);
+          this.pnToLid.set(normalizedJid, lid);
+          this.lidToPn.set(lid, normalizedJid);
           return lid;
         }
       } catch (e: any) {
-        log('SYNC', `Failed to get LID for PN ${jid}: ${e.message}`);
+        log('SYNC', `Failed to get LID for PN ${normalizedJid}: ${e.message}`);
       }
     }
 
-    const contact = this.contacts.get(jid);
+    const contact = this.contacts.get(normalizedJid) || this.contacts.get(jid);
     if (contact?.lid) {
       const lid = contact.lid.includes('@lid') ? contact.lid : (contact.lid + '@lid');
-      this.pnToLid.set(jid, lid);
-      this.lidToPn.set(lid, jid);
+      this.pnToLid.set(normalizedJid, lid);
+      this.lidToPn.set(lid, normalizedJid);
       return lid;
     }
 
@@ -156,11 +163,11 @@ export class WhatsAppSync {
   }
 
   public async getRelatedJids(jid: string, sock: any = null): Promise<string[]> {
-    const related = new Set<string>([jid]);
+    const related = new Set<string>([jidNormalizedUser(jid)]);
     
     if (jid.includes('@lid')) {
       const pn = await this.resolvePN(jid, sock);
-      if (pn && pn !== jid) related.add(pn);
+      if (pn && pn !== jid) related.add(jidNormalizedUser(pn));
     } else if (jid.includes('@s.whatsapp.net')) {
       const lid = await this.resolveLID(jid, sock);
       if (lid) related.add(lid);
@@ -168,11 +175,12 @@ export class WhatsAppSync {
 
     // Also check contacts for any other linked IDs
     for (const [c_jid, c_info] of this.contacts.entries()) {
-      if (jid.includes('@lid') && c_info.lid && (c_info.lid === jid || c_info.lid.includes(extractJidId(jid))) && c_jid.includes('@s.whatsapp.net')) {
-        related.add(c_jid);
+      const normalizedCjid = jidNormalizedUser(c_jid);
+      if (jid.includes('@lid') && c_info.lid && (c_info.lid === jid || c_info.lid.includes(extractJidId(jid)))) {
+        related.add(normalizedCjid);
       }
-      if (c_jid === jid && c_info.phoneNumber) {
-        related.add(c_info.phoneNumber + '@s.whatsapp.net');
+      if (normalizedCjid === jidNormalizedUser(jid) && c_info.phoneNumber) {
+        related.add(jidNormalizedUser(c_info.phoneNumber + '@s.whatsapp.net'));
       }
     }
 
