@@ -57,6 +57,29 @@ function groupReactions(reactions: Reaction[]) {
   }
   return Array.from(map.values());
 }
+
+function groupAllReactions(reactions: any[]) {
+  const map = new Map<
+    string,
+    { emoji: string; count: number; senders: string[]; is_current: boolean }
+  >();
+  for (const r of reactions) {
+    const key = `${r.emoji}_${r.is_current}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.count++;
+      existing.senders.push(r.sender_name || r.sender_id);
+    } else {
+      map.set(key, {
+        emoji: r.emoji,
+        count: 1,
+        senders: [r.sender_name || r.sender_id],
+        is_current: r.is_current
+      });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.is_current ? 1 : 0) - (a.is_current ? 1 : 0));
+}
 export function MessageBubble(props: MessageBubbleProps) {
   const m = () => props.msg;
   const isMe = () => !!m().is_from_me;
@@ -346,9 +369,9 @@ export function MessageBubble(props: MessageBubbleProps) {
                 class="inline-flex items-center gap-1 bg-zinc-800 border border-white/5 rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
                 title={group.senders.join(", ")}
               >
-                <span class="text-sm">{group.emoji}</span>
+                <span class="text-sm leading-none">{group.emoji}</span>
                 <Show when={group.count > 1}>
-                  <span class="text-[10px] font-mono font-bold text-zinc-400">
+                  <span class="text-[10px] font-mono font-black text-white bg-white/20 rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
                     {group.count}
                   </span>
                 </Show>
@@ -368,12 +391,17 @@ export function MessageBubble(props: MessageBubbleProps) {
           </span>
         </Show>
         <Show when={m().edits?.length}>
-          <button
-            onClick={() => setShowHistory(!showHistory())}
-            class="text-[9px] font-bold text-accent uppercase tracking-widest px-1.5 py-px bg-accent/10 rounded-full border border-accent/15 hover:bg-accent/20 transition-colors"
-          >
-            {showHistory() ? "Hide History" : `${m().edits!.length} edits`}
-          </button>
+          <div class="flex items-center gap-1.5 ml-1">
+            <span class="text-[10px] font-bold text-accent uppercase tracking-widest opacity-90">
+              EDITED
+            </span>
+            <button
+              onClick={() => setShowHistory(!showHistory())}
+              class="text-[9px] font-medium text-text-secondary hover:text-text-primary px-2 py-0.5 bg-white/5 rounded-full border border-white/10 hover:bg-white/10 transition-colors uppercase tracking-tight"
+            >
+              {showHistory() ? "Hide" : `${m().edits!.length} Historical Version${m().edits!.length > 1 ? 's' : ''}`}
+            </button>
+          </div>
         </Show>
       </div>
 
@@ -381,18 +409,20 @@ export function MessageBubble(props: MessageBubbleProps) {
         <div class="mt-3 space-y-2.5 border-t border-white/5 pt-3 animate-in fade-in slide-in-from-top-1 duration-200">
           <For each={m().edits}>
             {(edit) => (
-              <div class="bg-black/20 rounded-lg p-2.5 border border-white/5 relative group/edit overflow-hidden">
-                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-zinc-700 opacity-30 group-hover/edit:opacity-100 transition-opacity" />
-                <div class="flex items-center justify-between mb-1">
+              <div class="bg-black/20 rounded-lg p-2.5 border border-white/5 relative group/edit overflow-hidden transition-all hover:bg-black/30">
+                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-accent opacity-30 group-hover/edit:opacity-100 transition-opacity" />
+                <div class="flex items-center justify-between mb-2">
                   <span class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
                     Previous Version
                   </span>
-                  <span class="text-[9px] font-mono text-zinc-600 opacity-80 tabular-nums">
+                </div>
+                <div class="flex items-end justify-between gap-4">
+                  <div class="text-[13px] text-zinc-300 line-through opacity-60 leading-relaxed italic wrap-break-word">
+                    {edit.old_body}
+                  </div>
+                  <span class="text-[9px] font-mono text-zinc-600 opacity-60 tabular-nums pb-0.5 shrink-0">
                     {formatTime(new Date(edit.edited_at))}
                   </span>
-                </div>
-                <div class="text-[13px] text-zinc-400 line-through opacity-60 leading-relaxed italic wrap-break-word">
-                  {edit.old_body}
                 </div>
               </div>
             )}

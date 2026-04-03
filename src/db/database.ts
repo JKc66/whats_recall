@@ -289,12 +289,13 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       const messages = msgs as WhatsAppMessage[];
       if (messages.length > 0) {
         const ids = messages.map(m => m.message_id);
-        const reactions = db.query(`SELECT * FROM reactions WHERE message_id IN (${ids.map(() => '?').join(',')}) AND emoji != ''`).all(...ids);
+        const reactionEntries = db.query(`SELECT * FROM reactions WHERE message_id IN (${ids.map(() => '?').join(',')}) AND emoji != ''`).all(...ids);
         const reactionMap: Record<string, any[]> = {};
-        for (const r of reactions as any[]) {
+        for (const r of reactionEntries as any[]) {
           if (!reactionMap[r.message_id]) reactionMap[r.message_id] = [];
           reactionMap[r.message_id].push({ sender_id: r.sender_id, sender_name: r.sender_name, emoji: r.emoji });
         }
+
         for (const m of messages) {
           m.reactions = reactionMap[m.message_id] || [];
         }
@@ -377,10 +378,13 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
     // Reactions
     addReaction(messageId: string, senderId: string, senderName: string, emoji: string) {
+      if (process.env.VERBOSE === 'true') {
+        console.log(`[DB] Adding reaction: msg=${messageId}, sender=${senderId}, emoji=${emoji}`);
+      }
       if (emoji) {
         db.query(`
-          INSERT OR REPLACE INTO reactions (message_id, sender_id, sender_name, emoji)
-          VALUES (?, ?, ?, ?)
+          INSERT OR REPLACE INTO reactions (message_id, sender_id, sender_name, emoji, timestamp)
+          VALUES (?, ?, ?, ?, datetime('now'))
         `).run(messageId, senderId, senderName, emoji);
       } else {
         db.query('DELETE FROM reactions WHERE message_id = ? AND sender_id = ?').run(messageId, senderId);

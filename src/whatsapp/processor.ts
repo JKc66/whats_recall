@@ -25,6 +25,8 @@ export class MessageProcessor {
    * Uses participantAlt/remoteJidAlt if the primary ID is an LID to ensure we store the Phone Number sender.
    */
   private async resolveSender(msg: WAMessage, chatId: string, isGrp: boolean): Promise<string> {
+    if (msg.key.fromMe) return jidNormalizedUser(this.sock.user.id);
+
     let senderId = isGrp ? (msg.key.participant || chatId) : chatId;
 
     // Fallback to PN-based IDs (participantAlt/remoteJidAlt) if the current ID is an LID
@@ -111,12 +113,21 @@ export class MessageProcessor {
     if (!mType) return;
 
     const inner = (content as any)[mType];
-    let body = '';
-    if (mType === 'conversation') body = (content as any).conversation;
-    else if (mType === 'extendedTextMessage') body = inner.text;
-    else if (inner && inner.caption) body = inner.caption;
+    let body: string | undefined;
 
-    if (body !== undefined) {
+    if (mType === 'conversation') {
+      body = (content as any).conversation;
+    } else if (mType === 'extendedTextMessage') {
+      body = inner.text;
+    } else if (inner && 'caption' in inner) {
+      body = inner.caption;
+    } else if (mType === 'templateButtonReplyMessage') {
+      body = inner.selectedId;
+    } else if (mType === 'buttonsResponseMessage') {
+      body = inner.selectedButtonId;
+    }
+
+    if (body !== undefined && body !== null) {
       const oldMsg = getDb().getMessage(messageId);
       const oldBody = oldMsg?.body;
       
@@ -144,6 +155,7 @@ export class MessageProcessor {
 
     // Normalize to Phone Number for single unified chat view
     const chatId = await syncService.resolvePN(rawChatId, this.sock);
+    const isGrp = !!isJidGroup(chatId);
 
     // Process "View Once" stubs that contain metadata but no message body (standard Baileys behavior)
     if (!msg.message) {
@@ -151,7 +163,6 @@ export class MessageProcessor {
         if (!(await this.checkIsMonitored(chatId))) return;
         
         log('PROCESSOR', `📸 View-Once STUB detected from ${chatId}`);
-        const isGrp = !!isJidGroup(chatId);
         const senderId = await this.resolveSender(msg, chatId, isGrp);
         const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
         const chatName = await getChatNameAsync(chatId, null, this.sock);
@@ -261,9 +272,10 @@ export class MessageProcessor {
 
       const targetId = targetKey.id;
       const emoji = reaction.text || '';
-      const isGrp = !!isJidGroup(chatId);
       const senderId = await this.resolveSender(msg, chatId, isGrp);
       const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
+
+      log('RX_DEBUG', `fromMe: ${msg.key.fromMe}, senderId: ${senderId}, emoji: ${emoji}`);
 
       getDb().addReaction(targetId, senderId, senderName, emoji);
       this.broadcast('message_reaction', {
@@ -276,7 +288,6 @@ export class MessageProcessor {
       return;
     }
 
-    const isGrp = !!isJidGroup(chatId);
     const senderId = await this.resolveSender(msg, chatId, isGrp);
     const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
     const chatName = await getChatNameAsync(chatId, null, this.sock);
