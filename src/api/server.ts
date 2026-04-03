@@ -36,7 +36,7 @@ export function createHonoServer(client: WhatsAppConnection) {
     c.header('X-Frame-Options', 'DENY');
     c.header('X-XSS-Protection', '1; mode=block');
     c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-    c.header('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https://api.qrserver.com https://pps.whatsapp.net; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:;");
+    c.header('Content-Security-Policy', "default-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.qrserver.com https://pps.whatsapp.net; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' ws: wss:;");
   });
 
   // CORS for cross-port development (e.g. Vite on 5173, Backend on 3001)
@@ -124,18 +124,26 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   app.route('/api', api);
 
+  // Static files middleware first
+  app.use('/*', serveStatic({ root: './public' }));
+
+  // SPA fallback - catch any remaining routes and serve index.html
   app.get('*', async (c, next) => {
-    if (c.req.path.startsWith('/api') || c.req.path.startsWith('/ws')) return next();
+    // Avoid catching API or WS routes
+    const path = c.req.path;
+    if (path.startsWith('/api') || path.startsWith('/ws')) return next();
+
+    // Avoid catching assets that might be missing (to avoid recursion or MIME errors)
+    if (path.includes('.') && !path.endsWith('.html')) return next();
+
     const publicDir = process.env.PUBLIC_DIR || './public';
     const indexFile = Bun.file(join(publicDir, 'index.html'));
+    
     if (await indexFile.exists()) {
       return c.html(await indexFile.text());
     }
     return c.text('Not Found', 404);
   });
-
-  // Static files
-  app.use('/*', serveStatic({ root: './public' }));
 
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
