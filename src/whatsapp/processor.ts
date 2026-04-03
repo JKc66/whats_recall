@@ -135,7 +135,14 @@ export class MessageProcessor {
         // If message doesn't exist yet (e.g. edit arrived before message or during sync), 
         // create a stub so we can track future edits and show it in UI
         const isGrp = !!isJidGroup(chatId);
-        const senderId = await syncService.resolvePN(key.participant || (isGrp ? '' : rawChatId), this.sock);
+        
+        let senderId: string;
+        if (key.fromMe) {
+          senderId = jidNormalizedUser(this.sock.user.id);
+        } else {
+          senderId = await syncService.resolvePN(key.participant || (isGrp ? '' : rawChatId), this.sock);
+        }
+        
         const senderName = await getChatNameAsync(senderId, null, this.sock);
         
         getDb().saveMessage({
@@ -286,10 +293,9 @@ export class MessageProcessor {
     // Process incoming message reactions and sync them to the database
     if (messageType === 'reactionMessage') {
       const reaction = content;
-      const targetKey = reaction.key;
-      if (!targetKey?.id) return;
+      const targetId = reaction.key?.id;
+      if (!targetId) return;
 
-      const targetId = targetKey.id;
       const emoji = reaction.text || '';
       const senderId = await this.resolveSender(msg, chatId, isGrp);
       const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
@@ -428,10 +434,18 @@ export class MessageProcessor {
 
     if (existingMsg) {
       // If we have an existing stub (probably from handleEdit), 
-      // update it with the full message details but preserve the body if it was edited
-      getDb().saveMessage(msgData); // This uses INSERT OR IGNORE, so we need to update
+      // we need to merge the full message details but record an edit if the bodies differ.
+      // Baileys 'upsert' often contains the EDITED body if it was edited before we saw it.
       
-      db.raw.query(`
+      if (existingMsg.body !== body && body) {
+        // The incoming 'body' is likely the original, and existingMsg.body is the edit
+        getDb().addMessageEdit(messageId, body, existingMsg.body!);
+      }
+
+      getDb().saveMessage(msgData); // This uses INSERT OR IGNORE, but we want to update metadata
+      
+      const dbObj = getDb();
+      dbObj.raw.query(`
         UPDATE messages SET
           sender_id = ?, sender_name = ?, type = ?, has_media = ?, 
           media_type = ?, media_filename = ?, media_path = ?, media_sha256 = ?,
@@ -444,11 +458,6 @@ export class MessageProcessor {
         msgData.timestamp, msgData.is_view_once ? 1 : 0, msgData.quoted_stanza_id || null,
         msgData.quoted_sender || null, msgData.quoted_preview || null, messageId
       );
-
-      // If the body from the actual message is different from our stub body (which came from an edit),
-      // we should record it as the "oldest" version if it's not already there.
-      // But usually, Baileys 'upsert' for an edited message contains the EDITED body in msg.message,
-      // and the 'update' event also contains it. 
     } else {
       getDb().saveMessage(msgData);
     }
