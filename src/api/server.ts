@@ -62,7 +62,8 @@ export function createHonoServer(client: WhatsAppConnection) {
     await next();
     const ms = Date.now() - start;
     if (!c.req.path.startsWith('/ws')) {
-      log('HTTP', `${c.req.method} ${c.req.path} - ${c.res.status} (${ms}ms)`);
+      const safePath = c.req.path.replace(/[\n\r]/g, '');
+      log('HTTP', `${c.req.method} ${safePath} - ${c.res.status} (${ms}ms)`);
     }
   });
 
