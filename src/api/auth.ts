@@ -28,9 +28,15 @@ auth.post('/login', async (c) => {
   }
 
   const { password, fingerprint } = await c.req.json();
+
+  if (typeof password !== 'string' || password.length > 256) {
+    log('AUTH', `Login failed from ${ip}: invalid password format or length`);
+    return c.json({ error: 'Invalid password format or length' }, 400);
+  }
+
   const serverPassword = process.env.AUTH_PASSWORD || '';
 
-  const passwordBuffer = Buffer.from(String(password || ''));
+  const passwordBuffer = Buffer.from(password);
   const serverPasswordBuffer = Buffer.from(serverPassword);
 
   let isMatch = false;
