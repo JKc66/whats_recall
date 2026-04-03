@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { Message } from "../../types";
 import { MessageBubble, ImageGroup } from "./MessageBubble";
 
@@ -88,10 +88,10 @@ export default function MessageList(props: MessageListProps) {
     return groups;
   }
 
-  const grouped = () => {
+  const grouped = createMemo(() => {
     lastDate = "";
     return groupMessages(props.messages).reverse();
-  };
+  });
 
   return (
     <div class="flex-1 flex flex-col-reverse gap-1.5 px-6 py-6 pb-24">
