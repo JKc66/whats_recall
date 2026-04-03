@@ -31,6 +31,13 @@ export interface Reaction {
   emoji: string;
 }
 
+export interface ReactionEdit {
+  sender_id: string;
+  old_emoji: string;
+  new_emoji: string | null;
+  edited_at: string;
+}
+
 export interface MessageEdit {
   old_body: string;
   new_body: string;
@@ -58,6 +65,7 @@ export interface Message {
   quoted_sender: string | null;
   quoted_preview: string | null;
   reactions?: Reaction[];
+  reaction_edits?: ReactionEdit[];
   edits?: MessageEdit[];
 }
 

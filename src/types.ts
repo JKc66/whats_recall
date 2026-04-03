@@ -15,30 +15,44 @@ export interface WhatsAppChat {
   last_message_sender?: string;
 }
 
+export interface Reaction {
+  sender_id: string;
+  sender_name: string;
+  emoji: string;
+}
+
+export interface ReactionEdit {
+  sender_id: string;
+  old_emoji: string;
+  new_emoji: string | null;
+  edited_at: string;
+}
+
 export interface WhatsAppMessage {
   message_id: string;
   chat_id: string;
-  sender_id?: string;
-  sender_name?: string;
-  body?: string;
+  sender_id: string | null;
+  sender_name: string | null;
+  body: string | null;
   type: string;
-  has_media: boolean;
-  media_type?: string;
-  media_filename?: string;
-  media_path?: string;
-  media_sha256?: string;
+  has_media: boolean | number;
+  media_type?: string | null;
+  media_filename?: string | null;
+  media_path?: string | null;
+  media_sha256?: string | null;
   timestamp: number;
   is_from_me: boolean | number;
   is_deleted: boolean | number;
-  deleted_at?: string;
+  deleted_at?: string | null;
   is_view_once: boolean | number;
-  original_id?: string;
-  quoted_stanza_id?: string;
-  quoted_sender?: string;
-  quoted_preview?: string;
-  created_at?: string;
-  reactions?: WhatsAppReaction[];
+  original_id: string | null;
+  quoted_stanza_id?: string | null;
+  quoted_sender?: string | null;
+  quoted_preview?: string | null;
+  reactions?: Reaction[];
+  reaction_edits?: ReactionEdit[];
   edits?: WhatsAppEdit[];
+  created_at?: string;
   updated_at?: string;
 }
 

@@ -126,6 +126,7 @@ export default function App() {
             deleted_at: null,
             is_view_once: msg.is_view_once ? 1 : 0,
             reactions: [],
+            edits: [],
           };
           setMessages((m) => [...m, normalized]);
         }
