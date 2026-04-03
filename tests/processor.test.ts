@@ -30,6 +30,7 @@ describe("MessageProcessor", () => {
     beforeEach(async () => {
         await db.clearAllData();
         mockSock = {
+            user: { id: "me@s.whatsapp.net" },
             ev: { on: mock(() => {}) },
             sendMessage: mock(async () => ({}))
         };

@@ -54,8 +54,8 @@ describe("WhatsAppSync", () => {
   });
 
   test("should resolve PN from LID", async () => {
-    const lid = "test_lid@lid";
-    const pn = "test_pn@s.whatsapp.net";
+    const lid = "11111@lid";
+    const pn = "22222@s.whatsapp.net";
     sync.lidToPn.set(lid, pn);
 
     const resolved = await sync.resolvePN(lid);
@@ -63,8 +63,8 @@ describe("WhatsAppSync", () => {
   });
 
   test("should resolve LID from PN", async () => {
-    const lid = "test_lid@lid";
-    const pn = "test_pn@s.whatsapp.net";
+    const lid = "33333@lid";
+    const pn = "44444@s.whatsapp.net";
     sync.pnToLid.set(pn, lid);
 
     const resolved = await sync.resolveLID(pn);
@@ -72,8 +72,8 @@ describe("WhatsAppSync", () => {
   });
 
   test("should get related JIDs", async () => {
-    const lid = "related_lid@lid";
-    const pn = "related_pn@s.whatsapp.net";
+    const lid = "55555@lid";
+    const pn = "66666@s.whatsapp.net";
     sync.lidToPn.set(lid, pn);
     sync.pnToLid.set(pn, lid);
 
