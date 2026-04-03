@@ -108,3 +108,41 @@ describe("database searchMessages", () => {
         expect(bodies).toContain("case sensitive");
     });
 });
+
+describe("database getChats", () => {
+    let db: any;
+    const chatId1 = "chat1@c.us";
+    const chatId2 = "chat2@c.us";
+    const chatId3 = "chat3@c.us";
+
+    beforeAll(async () => {
+        const dbPath = process.env.DB_PATH;
+        db = getDb(dbPath, tempDir);
+        await db.clearAllData();
+
+        db.upsertChat(chatId1, "Regular Chat", false);
+        db.upsertChat(chatId2, "Chat with % and _", false);
+        db.upsertChat(chatId3, "Another Chat", false);
+    });
+
+    test("should handle SQL LIKE special characters as literals (escaped behavior)", () => {
+        const results = db.getChats("%");
+        expect(results.length).toBe(1);
+        expect(results[0].name).toBe("Chat with % and _");
+
+        const resultsUnderscore = db.getChats("_");
+        expect(resultsUnderscore.length).toBe(1);
+        expect(resultsUnderscore[0].name).toBe("Chat with % and _");
+    });
+
+    test("should return all chats when query is empty", () => {
+        const results = db.getChats("");
+        expect(results.length).toBe(3);
+    });
+
+    test("should return only matching chats for normal text", () => {
+        const results = db.getChats("Regular");
+        expect(results.length).toBe(1);
+        expect(results[0].name).toBe("Regular Chat");
+    });
+});
