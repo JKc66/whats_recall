@@ -163,8 +163,16 @@ export function MessageBubble(props: MessageBubbleProps) {
             src={src}
             alt={type === "sticker" ? "Sticker" : "Image"}
             loading="lazy"
-            class="w-full cursor-pointer hover:opacity-90 transition-opacity"
+            class="w-full cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-zinc-900 rounded-sm"
             onClick={() => props.onImageClick(src)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                props.onImageClick(src);
+              }
+            }}
+            tabIndex={0}
+            role="button"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
             }}
@@ -497,8 +505,16 @@ export function ImageGroup(props: {
                 src={mediaUrl(msg.media_path!)}
                 alt="Image"
                 loading="lazy"
-                class="w-full h-full object-cover transition-opacity hover:opacity-90"
+                class="w-full h-full object-cover transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent"
                 onClick={() => props.onImageClick(mediaUrl(msg.media_path!))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    props.onImageClick(mediaUrl(msg.media_path!));
+                  }
+                }}
+                tabIndex={0}
+                role="button"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
