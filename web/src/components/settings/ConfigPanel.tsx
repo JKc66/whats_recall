@@ -24,9 +24,8 @@ export default function ConfigPanel(props: ConfigPanelProps) {
         <div class="px-4 md:px-6 py-2 md:py-3 bg-surface-raised/30 border-b border-border flex items-center justify-between">
           <h3 class="text-[9px] md:text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex items-center gap-2">
             <div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse-slow" />
-            MONITOR
+            CONNECTION
           </h3>
-          <span class="text-[8px] md:text-[9px] text-text-disabled font-mono tracking-widest uppercase">V4.1</span>
         </div>
 
         <div class="p-4 md:p-8">
@@ -35,10 +34,10 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               <div class="flex items-center gap-3">
                 <div class={`w-1.5 md:w-2 h-1.5 md:h-2 ${isConnected() ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-accent shadow-[0_0_8px_var(--color-accent)] animate-pulse-slow"}`} />
                 <span class={`text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] font-mono ${isConnected() ? "text-emerald-500" : "text-accent"}`}>
-                  {isConnected() ? "SESSION_ESTABLISHED" : "LINK_TERMINATED"}
+                  {isConnected() ? "CONNECTED" : "DISCONNECTED"}
                 </span>
               </div>
-              <span class="text-[7px] md:text-[8px] text-text-disabled font-mono">ID: {props.stats?.id || "0xNULL"}</span>
+              <span class="text-[7px] md:text-[8px] text-text-disabled font-mono uppercase">DEVICE_ID: {props.stats?.id || "NULL"}</span>
             </div>
 
             <Show when={!isConnected()}>
@@ -54,9 +53,9 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                     </div>
                     <div class="flex flex-col gap-1">
                       <p class="text-[9px] md:text-[10px] text-text-primary font-mono tracking-[0.2em] uppercase font-bold">
-                        [ SECURITY_QR_AUTH_REQ ]
+                        SCAN_QR_CODE
                       </p>
-                      <p class="text-[8px] md:text-[9px] text-text-secondary font-mono uppercase">Scan via mobile device</p>
+                      <p class="text-[8px] md:text-[9px] text-text-secondary font-mono uppercase">Use WhatsApp on your phone</p>
                     </div>
                   </div>
                 </Show>
@@ -64,7 +63,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 <Show when={props.pairing?.type === "code"}>
                   <div class="flex flex-col items-center gap-4 text-center w-full">
                     <div class="text-[9px] md:text-[10px] font-bold text-text-secondary uppercase tracking-widest border border-border px-3 md:px-4 py-1 bg-surface-raised">
-                      PAIRING_SECRET
+                      PAIRING_CODE
                     </div>
                     <div class="text-3xl md:text-4xl font-black text-accent drop-shadow-[0_0_15px_rgba(196,22,28,0.2)] tracking-[0.3em] font-mono py-1 md:py-2">
                       {props.pairing?.data || "INIT..."}
@@ -91,7 +90,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                         <div class="w-1 md:w-1.5 h-1 md:h-1.5 bg-accent animate-pulse [animation-delay:0.4s]" />
                       </div>
                       <span class="text-[9px] md:text-[10px] font-mono text-accent uppercase tracking-[0.3em] animate-pulse">
-                        INIT_PROTOCOL...
+                        INITIALIZING...
                       </span>
                     </Show>
                   </div>
@@ -119,9 +118,9 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 <div class="relative z-10 text-[10px] md:text-[12px]">
                   {isConnected()
                     ? props.showResetNotice
-                      ? "Apply_&_Reset"
-                      : "Term_Session"
-                    : "Init_Link"}
+                      ? "Apply_&_Restart"
+                      : "Disconnect"
+                    : "Connect"}
                 </div>
               </button>
             </div>
@@ -134,16 +133,16 @@ export default function ConfigPanel(props: ConfigPanelProps) {
         <div class="px-4 md:px-6 py-2 md:py-3 bg-surface-raised/30 border-b border-border flex items-center justify-between">
           <h3 class="text-[9px] md:text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] flex items-center gap-2">
             <SettingsIcon size={12} stroke-width={2.5} />
-            SYS_PARAMETERS
+            SYSTEM_SETTINGS
           </h3>
-          <span class="text-[8px] md:text-[9px] text-text-disabled font-mono tracking-widest uppercase">REG // CFG_01</span>
+          <span class="text-[8px] md:text-[9px] text-text-disabled font-mono tracking-widest uppercase">CONFIGURATION</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2">
           {/* Auth Mechanism */}
           <div class="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] border-b border-border">
             <div class="border-r border-border p-4 md:p-6 flex items-center text-[8px] md:text-[9px] tracking-[0.2em] text-text-disabled font-bold uppercase font-mono bg-surface-raised/20">
-              Auth_Mode
+              PAIRING_METHOD
             </div>
             <div class="flex">
               <button
@@ -175,7 +174,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               for="whatsapp_phone"
               class="border-r border-border p-4 md:p-6 flex items-center text-[8px] md:text-[9px] tracking-[0.2em] text-text-disabled font-bold uppercase font-mono bg-surface-raised/20 cursor-pointer"
             >
-              Session_Key
+              PHONE_NUMBER
             </label>
             <div class="relative flex items-center bg-surface">
               <input
@@ -204,10 +203,10 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               class="text-[11px] md:text-[12px] font-bold uppercase tracking-widest font-mono transition-colors"
               classList={{ "text-accent": (props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled), "text-text-primary": !(props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled) }}
             >
-              Auto_Relay_Stream
+              PRIVATE_RELAY
             </div>
             <div class="text-[8px] md:text-[9px] text-text-secondary uppercase tracking-widest font-mono">
-              [ PROTOCOL: GCM_ENCRYPTED_STREAM ]
+              FORWARD_DELETED_CONTENT_TO_SELF
             </div>
           </div>
           <div class="flex items-center justify-center p-4">
@@ -234,7 +233,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               <span class={`text-[7px] font-mono font-black tracking-[0.2em] transition-all duration-300 ${
                 (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "text-accent animate-pulse-slow" : "text-text-disabled opacity-40"
               }`}>
-                {(props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "LIVE" : "STBY"}
+                {(props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "ON" : "OFF"}
               </span>
             </label>
           </div>

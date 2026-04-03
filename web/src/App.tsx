@@ -283,7 +283,7 @@ export default function App() {
               <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.2s]" />
               <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.4s]" />
             </div>
-            <span class="text-label opacity-40">INITIALIZING_TERMINAL</span>
+            <span class="text-label opacity-40">LOADING_SYSTEM_UI</span>
           </div>
         }
       >

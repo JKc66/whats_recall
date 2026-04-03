@@ -161,10 +161,10 @@ export default function ChatView() {
           </div>
           <div class="text-center">
             <h2 class="text-display text-[32px] tracking-tight">
-              WHATSAPP MONITOR
+              CONVERSATIONS
             </h2>
             <p class="text-[13px] max-w-85 mx-auto mt-4 text-text-secondary leading-relaxed font-mono uppercase tracking-wider">
-              SELECT A CONVERSATION TO BEGIN MONITORING. ALL DELETED MESSAGES ARE AUTOMATICALLY PRESERVED.
+              SELECT A CONVERSATION TO VIEW MESSAGE HISTORY. DELETED CONTENT IS AUTOMATICALLY PRESERVED AND HIGHLIGHTED.
             </p>
           </div>
           <button

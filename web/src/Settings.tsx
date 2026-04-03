@@ -242,7 +242,7 @@ export default function Settings() {
           }}
           onClick={() => setTab("config")}
         >
-          CORE_CFG
+          CONFIGURATION
         </button>
         <button
           class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
@@ -252,7 +252,7 @@ export default function Settings() {
           }}
           onClick={() => setTab("monitored")}
         >
-          ACTIVE: {(monitored() || []).length}
+          MONITORED: {(monitored() || []).length}
         </button>
         <button
           class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
@@ -262,7 +262,7 @@ export default function Settings() {
           }}
           onClick={() => setTab("available")}
         >
-          DISCOVERED: {(available() || []).length}
+          AVAILABLE: {(available() || []).length}
         </button>
       </div>
 

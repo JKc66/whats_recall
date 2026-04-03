@@ -24,26 +24,26 @@ export default function SettingsHeader(props: SettingsHeaderProps) {
           <div class="flex items-center gap-3 mb-1">
             <div class="w-2 h-2 bg-accent shadow-[0_0_8px_var(--color-accent)]" />
             <h2 class="text-label text-accent">
-              System_Registry // Kernel
+              SETTINGS
             </h2>
           </div>
           <h1 class="text-display text-4xl md:text-5xl uppercase">
-            Core_System<br />Controller
+            CONFIGURATION
           </h1>
         </div>
       </div>
 
       <div class="grid grid-cols-[120px_1fr] border-t border-border group focus-within:bg-border/5 transition-colors">
         <div class="border-r border-border p-4 text-metadata uppercase text-text-disabled">
-          Query_Search
+          SEARCH
         </div>
         <input
           type="text"
-          placeholder="INPUT_REGISTRY_KEY_OR_ALIAS"
+          placeholder="SEARCH_SETTINGS..."
           value={props.search}
           onInput={(e) => props.onSearchChange(e.currentTarget.value)}
           spellcheck={false}
-          aria-label="Search chats"
+          aria-label="Search settings"
           class="w-full bg-transparent p-4 outline-none text-[13px] font-mono tracking-widest placeholder:text-text-disabled/40 uppercase text-text-primary"
         />
       </div>

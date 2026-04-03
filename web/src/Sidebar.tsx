@@ -112,22 +112,24 @@ export default function Sidebar() {
 
   return (
     <aside
-      class="flex flex-col bg-surface border border-border min-h-0 h-[calc(100dvh-32px)] m-4 rounded-xl z-10 overflow-hidden transition-all duration-300 shadow-sm max-md:m-0 max-md:h-dvh max-md:border-none max-md:rounded-none"
+      class="flex flex-col bg-surface border border-border min-h-0 h-full rounded-lg z-10 overflow-hidden transition-all duration-300 shadow-sm max-md:m-0 max-md:h-dvh max-md:border-none max-md:rounded-none"
       classList={{ "max-md:hidden": sidebarHidden() }}
     >
       <header class="flex items-center justify-between p-4 min-h-16 border-b border-border bg-surface-raised/30">
         <div class="flex items-center gap-3 text-display text-[18px]">
-          <div class="relative flex items-center justify-center">
+          <div class="relative flex items-center justify-center w-5 h-5">
+            <Show when={stats().connected}>
+              <span class="absolute w-full h-full rounded-full bg-success/20 animate-status-pulse" />
+            </Show>
             <span
-              class="w-1.5 h-1.5 rounded-full bg-text-disabled transition-all duration-300"
+              class="relative z-10 rounded-full transition-all duration-500"
               classList={{
-                "bg-accent shadow-[0_0_8px_var(--color-accent)]":
-                  stats().connected,
+                "w-2 h-2 bg-success shadow-[0_0_12px_var(--color-success)]": stats().connected,
+                "w-1.5 h-1.5 bg-text-disabled opacity-30": !stats().connected,
               }}
             />
           </div>
-          MONITOR
-          <span class="text-label ml-1 opacity-50">V4.1</span>
+          WHATSAPP LOGGER
         </div>
         <nav class="flex gap-1" aria-label="Sidebar actions">
           <button

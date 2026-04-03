@@ -17,18 +17,18 @@ export default function DangerZone(props: DangerZoneProps) {
       <div class="px-4 md:px-6 py-2 md:py-3 bg-accent/10 border-b border-accent/20 flex items-center justify-between">
         <h3 class="text-[9px] md:text-[10px] font-bold text-accent uppercase tracking-[0.2em] flex items-center gap-2">
           <AlertTriangleIcon size={12} stroke-width={2.5} />
-          DESTRUCTIVE_PROTOCOL
+          DESTRUCTIVE_ACTIONS
         </h3>
-        <span class="text-[8px] md:text-[9px] text-accent/60 font-mono tracking-widest uppercase italic">HIGH_RISK</span>
+        <span class="text-[8px] md:text-[9px] text-accent/60 font-mono tracking-widest uppercase italic">DANGER_ZONE</span>
       </div>
 
       <div class="p-4 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 hover:bg-accent/10 transition-colors">
         <div class="flex flex-col gap-1 max-w-140 w-full md:w-auto">
           <div class="text-[12px] md:text-[14px] font-black text-text-primary uppercase tracking-[0.05em] font-mono">
-            SYS_WIPE // DATA_PURGE
+            DATA_WIPE
           </div>
           <div class="text-[8px] md:text-[9px] text-text-disabled uppercase tracking-widest font-mono leading-relaxed opacity-80">
-            [ ACTION: IRREVERSIBLE_DELETION ]
+            [ ACTION: IRREVERSIBLE_ACTION ]
           </div>
         </div>
         <button
@@ -37,11 +37,10 @@ export default function DangerZone(props: DangerZoneProps) {
           onClick={() => props.onClearData()}
         >
           {props.clearing ? (
-            <span class="animate-pulse">PURGING...</span>
+            <span class="animate-pulse">WIPING...</span>
           ) : (
             <>
-              Execute_Wipe
-              <span class="text-[8px] opacity-40">®</span>
+              PERFORM_WIPE
             </>
           )}
         </button>
@@ -50,7 +49,7 @@ export default function DangerZone(props: DangerZoneProps) {
       <Show when={props.confirmClear}>
         <div class="m-4 md:m-8 mt-0 p-4 md:p-6 border-2 border-accent bg-surface animate-in fade-in zoom-in-95 duration-300 shadow-[0_0_40px_var(--color-accent-subtle)] relative z-20">
           <div class="absolute -top-3 left-4 bg-accent text-white px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
-            ADMIN_AUTH
+            AUTHORIZATION
           </div>
           
           <div class="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
@@ -59,10 +58,10 @@ export default function DangerZone(props: DangerZoneProps) {
             </div>
             <div class="flex flex-col gap-1">
               <span class="text-[10px] md:text-[11px] font-black text-accent uppercase tracking-widest font-mono">
-                Unauthorized_Access_Block
+                CONFIRM_IDENTITY
               </span>
               <p class="text-[9px] md:text-[10px] text-text-secondary uppercase tracking-wider leading-relaxed">
-                Provide authorization key for system data destruction.
+                Enter password to confirm irreversible data deletion.
               </p>
             </div>
           </div>
@@ -70,7 +69,7 @@ export default function DangerZone(props: DangerZoneProps) {
           <div class="flex flex-col gap-3 md:gap-4">
             <div class="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] border border-border focus-within:border-accent transition-colors bg-surface-raised/20">
               <div class="border-r border-border p-3 md:p-4 flex items-center text-[8px] md:text-[9px] tracking-[0.2em] text-text-disabled font-bold uppercase font-mono bg-surface-raised/50">
-                SECRET
+                PASSWORD
               </div>
               <input
                 type="password"
@@ -90,13 +89,13 @@ export default function DangerZone(props: DangerZoneProps) {
                 disabled={!props.clearPassword}
                 onClick={() => props.onConfirmClearData()}
               >
-                Destroy_Data
+                ERASE_ALL_DATA
               </button>
               <button
                 class="px-6 md:px-10 py-3 md:py-4 bg-surface-raised hover:bg-border-visible/50 text-text-primary border border-border font-black text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all active:scale-95"
                 onClick={() => props.onCancelClear()}
               >
-                Abort
+                CANCEL
               </button>
             </div>
           </div>

@@ -1,5 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&family=Doto:wght@400..900&display=swap");
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&family=Doto:wght@400..900&display=swap");
 
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -19,9 +19,9 @@
   --color-text-display: var(--text-display);
 
   /* Functional Accents */
-  --color-accent: #D71921;
-  --color-accent-subtle: rgba(215, 25, 33, 0.15);
-  --color-success: #4A9E5C;
+  --color-accent: var(--accent-color);
+  --color-accent-subtle: var(--accent-subtle-color);
+  --color-success: #00FF41; /* Technical Matrix Green */
   --color-warning: #D4A843;
   --color-error: #D71921;
   --color-interactive: var(--interactive);
@@ -58,15 +58,20 @@
   100% { transform: scale(0.98); }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+@keyframes status-pulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.3; }
+  50% { transform: scale(1.2); opacity: 0.6; }
+}
+
+@utility animate-status-pulse {
+  animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @utility animate-pulse-slow {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Base Variable Engine - Global Scope */
 :root {
   color-scheme: dark;
   --black: #000000;
@@ -79,16 +84,17 @@
   --text-primary: #E8E8E8;
   --text-display: #FFFFFF;
   --interactive: #5B9BF6;
+  --accent-color: #ef4444;
+  --accent-subtle-color: rgba(239, 68, 68, 0.15);
   
   --bg: var(--black);
   --text: var(--text-primary);
-  --bubble-me: rgba(215, 25, 33, 0.12);
-  --bubble-other: var(--surface-raised);
 }
 
-:root.light {
+/* Light Mode Overrides on root for CSS Variables */
+.light {
   color-scheme: light;
-  --black: #F5F5F5; /* Warmer, cleaner off-white */
+  --black: #F5F5F5;
   --surface: #FFFFFF;
   --surface-raised: #EFEFEF;
   --border: #E0E0E0;
@@ -97,17 +103,11 @@
   --text-secondary: #444444;
   --text-primary: #121212;
   --text-display: #000000;
-  --interactive: #0066CC;
+  --accent-color: #C4161C;
+  --accent-subtle-color: rgba(196, 22, 28, 0.08);
   
   --bg: var(--black);
   --text: var(--text-primary);
-  
-  /* Overrides for better contrast on light */
-  --color-accent: #C4161C;
-  --color-accent-subtle: rgba(196, 22, 28, 0.08);
-
-  --bubble-me: #FFF2F2;
-  --bubble-other: #FFFFFF;
 }
 
 @utility dot-grid {
@@ -118,11 +118,6 @@
 @utility dot-grid-subtle {
   background-image: radial-gradient(circle, var(--border) 0.5px, transparent 0.5px);
   background-size: 12px 12px;
-}
-
-@utility msg-highlight {
-  animation: entrance 0.6s ease-out forwards;
-  background-color: var(--accent-subtle);
 }
 
 @utility scrollbar-hide {
@@ -146,6 +141,8 @@ html, body, #root {
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -178,16 +175,11 @@ html, body, #root {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px; /* Mechanical 8px radius */
+  border-radius: 8px;
 }
 
 button, [role="button"] {
   cursor: pointer;
-  transition: all 0.15s ease-out;
-}
-
-button:active {
-  transform: scale(0.98);
 }
 
 .pill {
@@ -196,13 +188,4 @@ button:active {
 
 .technical {
   border-radius: 4px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }

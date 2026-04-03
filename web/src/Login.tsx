@@ -2,7 +2,8 @@ import { createSignal, Show, onMount, onCleanup } from "solid-js";
 import { login, fetchUptime } from "./api";
 import { setAuthenticated } from "./store";
 import { notify } from "./notify";
-import { EyeIcon } from "./components/Icons";
+import { EyeIcon, MoonIcon, SunIcon } from "./components/Icons";
+import { theme, setTheme } from "./store";
 
 export default function Login() {
   const [username, setUsername] = createSignal("whatsapp-monitor");
@@ -25,6 +26,10 @@ export default function Login() {
 
     onCleanup(() => clearInterval(timer));
   });
+  
+  function toggleTheme() {
+    setTheme(theme() === "dark" ? "light" : "dark");
+  }
 
   const formatUptime = (totalSeconds: number) => {
     const d = Math.floor(totalSeconds / (24 * 3600));
@@ -94,21 +99,29 @@ export default function Login() {
         {/* Top Header Bar */}
         <div class="border-b border-border px-6 py-4 flex items-center justify-between text-label bg-surface-raised/50">
           <div class="flex items-center gap-3">
-            <span class="text-accent animate-pulse">● LIVE</span>
-            <span class="opacity-50">COMM_NODE / WHATSAPP_MONITOR</span>
+            <span class="text-success animate-pulse">● ONLINE</span>
+            <span class="opacity-50">WHATSAPP LOGGER</span>
           </div>
-          <span class="opacity-50">V4.1</span>
+          <button
+            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+            onClick={toggleTheme}
+            title={theme() === "dark" ? "Light Mode" : "Dark Mode"}
+            aria-label={theme() === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <Show when={theme() === "dark"} fallback={<MoonIcon size={16} />}>
+              <SunIcon size={16} />
+            </Show>
+          </button>
         </div>
 
         {/* Hero Section */}
         <div class="px-8 py-12 border-b border-border">
           <h1 class="text-display text-[48px] uppercase mb-2">
-            SECURITY<br/>ACCESS
+            ACCOUNT<br/>LOGIN
           </h1>
           <div class="flex items-center gap-4 text-metadata opacity-40 uppercase">
-            <span>[ AUTH_SIGNAL ]</span>
+            <span>SESSION_AUTH</span>
             <div class="h-px grow bg-border" />
-            <span>ID: 0x0FE24</span>
           </div>
         </div>
 
@@ -119,7 +132,7 @@ export default function Login() {
               for="username-field"
               class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
             >
-              IDENTITY
+              USERNAME
             </label>
             <input
               id="username-field"
@@ -139,7 +152,7 @@ export default function Login() {
               for="password-field"
               class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
             >
-              ACCESS_KEY
+              PASSWORD
             </label>
             <div class="relative flex items-center grow">
               <input
@@ -170,10 +183,10 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading()}
-              class="w-full py-5 bg-text-primary text-black hover:bg-accent hover:text-white font-bold text-[14px] uppercase tracking-[0.4em] transition-all duration-200 technical active:tick disabled:opacity-20"
+              class="w-full py-5 bg-text-primary text-black hover:bg-success hover:text-white font-bold text-[14px] uppercase tracking-[0.4em] transition-all duration-200 technical active:tick disabled:opacity-20"
             >
               <Show when={!loading()} fallback={"AUTHENTICATING..."}>
-                AUTHORIZE_SESSION
+                SIGN_IN
               </Show>
             </button>
           </div>
@@ -182,21 +195,21 @@ export default function Login() {
         {/* Footer Meta Data */}
         <div class="border-t border-border grid grid-cols-2 bg-surface-raised/30">
           <div class="border-r border-border p-5 flex flex-col gap-1">
-            <span class="text-metadata uppercase opacity-40">NODE_STATUS</span>
+            <span class="text-metadata uppercase opacity-40">SYSTEM_STATUS</span>
             <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 bg-accent shadow-[0_0_8px_var(--color-accent)]" />
-              <span class="text-label text-text-primary">TERMINAL_ACTIVE</span>
+              <div class="w-1.5 h-1.5 bg-success shadow-[0_0_8px_var(--color-success)]" />
+              <span class="text-label text-text-primary">ACTIVE</span>
             </div>
           </div>
           <div class="p-5 flex flex-col gap-1">
-            <span class="text-metadata uppercase opacity-40">UPTIME_METRIC</span>
+            <span class="text-metadata uppercase opacity-40">UPTIME</span>
             <span class="text-label text-text-primary">{formatUptime(uptimeSeconds())}</span>
           </div>
         </div>
 
         {/* Bottom Decorative Bar */}
-        <div class="border-t border-border p-4 text-metadata opacity-20 text-center uppercase tracking-widest">
-          AES_256_GCM /// SESSION_STABILITY: 99.8%
+        <div class="border-t border-border p-4 text-metadata opacity-40 text-center uppercase tracking-widest">
+          ESTABLISHED_SECURE_NODE
         </div>
       </div>
     </div>

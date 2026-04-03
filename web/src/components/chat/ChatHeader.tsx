@@ -24,7 +24,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
   const profileUrl = () => profilePicUrl(props.chat?.profile_pic);
 
   return (
-    <header class="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-3 bg-surface border-b border-border min-h-16 z-20 shrink-0">
+    <header class="flex items-center gap-2 md:gap-3 px-3 md:p-4 py-2 bg-surface border-b border-border min-h-16 z-20 shrink-0">
       <button
         class="flex md:hidden items-center justify-center w-8 h-8 text-text-secondary hover:bg-surface-raised rounded-full transition-all active:tick"
         onClick={() => props.onBack()}

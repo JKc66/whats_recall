@@ -27,7 +27,7 @@
 | 🎭 **Reaction Tracking** | Full support for real-time message reactions and emoji changes. |
 | 🧵 **Threaded Context** | Preserves and displays quoted messages (replies) to maintain conversation flow. |
 | 🔒 **Security-First** | Device fingerprinting via **ThumbmarkJS** + `HttpOnly` / `SameSite=Strict` session cookies. |
-| 💎 **Liquid Glass UI** | A premium, high-density dashboard featuring OLED-black themes and technical glassmorphism. |
+| 💎 **Nothing UI Style** | A premium, monochromatic dashboard focused on typography, OLED-black themes, and technical clarity. |
 
 ---
 
@@ -42,7 +42,7 @@
 | **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
 | **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
 | **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
-| **Design** | Technical Glass | Deep OLED blacks, 32px blurs, and `JetBrains Mono` typography. |
+| **Design** | [Nothing Design](.agents/skills/nothing-design) | OLED blacks, `Space Grotesk` & `Space Mono` typography, and functional grid layouts. |
 
 ---
 
