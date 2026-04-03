@@ -35,8 +35,16 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       src={src}
                       alt={type === "sticker" ? "Sticker message" : "Image message"}
                       loading="lazy"
-                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
                       onClick={() => props.onImageClick(src)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          props.onImageClick(src);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
@@ -44,8 +52,16 @@ export default function MediaGallery(props: MediaGalleryProps) {
                   </Show>
                   <Show when={type === "video"}>
                     <div
-                      class="w-full h-full relative"
+                      class="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent rounded-sm"
                       onClick={() => props.onImageClick(src)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          props.onImageClick(src);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
                     >
                       <video
                         src={src}
