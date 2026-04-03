@@ -100,7 +100,7 @@ describe("Fingerprint Enforcement", () => {
             "X-Auth-Token": "valid-token",
             "X-Fingerprint": "secure-fp-123"
         });
-        await authMiddleware(c as any, next);
+        await authMiddleware(c as any, next as any);
         expect(next).toHaveBeenCalled();
     });
 });
