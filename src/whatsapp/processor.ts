@@ -88,10 +88,13 @@ export class MessageProcessor {
    * Centralized handler for protocol messages (Revoke/Edit).
    */
   private async handleProtocolMessage(key: any, protocolMsg: any) {
+    const editKey = { ...protocolMsg.key };
+    if (!editKey.remoteJid) editKey.remoteJid = key.remoteJid;
+
     if (protocolMsg.type === 0 || protocolMsg.type === 'REVOKE') {
-      await this.handleRevoke(key, protocolMsg.key);
-    } else if (protocolMsg.type === 14 || protocolMsg.type === 'MESSAGE_EDIT') {
-      await this.handleEdit(protocolMsg.key, protocolMsg.editedMessage);
+      await this.handleRevoke(key, editKey);
+    } else if (protocolMsg.type === 14 || protocolMsg.type === 16 || protocolMsg.type === 'MESSAGE_EDIT') {
+      await this.handleEdit(editKey, protocolMsg.editedMessage);
     }
   }
 
@@ -101,16 +104,33 @@ export class MessageProcessor {
   private async handleEdit(key: any, editedMessage: any) {
     const messageId = key.id;
     const rawChatId = key.remoteJid;
-    if (!rawChatId || !messageId) return;
+    
+    if (!messageId) {
+      log('PROCESSOR', 'Edit aborted: missing messageId');
+      return;
+    }
+    if (!rawChatId) {
+      log('PROCESSOR', `Edit aborted: missing rawChatId for msg ${messageId}`);
+      return;
+    }
 
     const chatId = await syncService.resolvePN(rawChatId, this.sock);
-    if (!(await this.checkIsMonitored(chatId))) return;
+    if (!(await this.checkIsMonitored(chatId))) {
+      log('PROCESSOR', `Edit ignored: chat ${chatId} is not monitored`);
+      return;
+    }
 
     const content = extractMessageContent(editedMessage);
-    if (!content) return;
+    if (!content) {
+      log('PROCESSOR', `Edit aborted: could not extract content for msg ${messageId}`);
+      return;
+    }
 
     const mType = getContentType(content);
-    if (!mType) return;
+    if (!mType) {
+      log('PROCESSOR', `Edit aborted: unknown content type for msg ${messageId}`);
+      return;
+    }
 
     const inner = (content as any)[mType];
     let body: string | undefined;
@@ -131,6 +151,8 @@ export class MessageProcessor {
       const oldMsg = getDb().getMessage(messageId);
       const oldBody = oldMsg?.body;
       
+      log('PROCESSOR', `Processing edit for ${messageId}: "${oldBody || 'N/A'}" -> "${body}"`);
+
       if (!oldMsg) {
         // If message doesn't exist yet (e.g. edit arrived before message or during sync), 
         // create a stub so we can track future edits and show it in UI
@@ -155,6 +177,7 @@ export class MessageProcessor {
           timestamp: Math.floor(Date.now() / 1000),
           is_from_me: key.fromMe ? 1 : 0,
         });
+        log('PROCESSOR', `Created stub for out-of-order edit: ${messageId}`);
       } else {
         getDb().updateMessageBody(messageId, body);
         
@@ -163,7 +186,7 @@ export class MessageProcessor {
         }
       }
       
-      log('PROCESSOR', `Message edited: ${messageId} in ${chatId}`);
+      log('PROCESSOR', `Message updated/edited: ${messageId} in ${chatId}`);
       
       this.broadcast('message_edited', {
         message_id: messageId,
@@ -172,6 +195,8 @@ export class MessageProcessor {
         old_body: oldBody,
         updated_at: new Date().toISOString()
       });
+    } else {
+      log('PROCESSOR', `Edit aborted: no text body found for msg ${messageId} (type: ${mType})`);
     }
   }
 
