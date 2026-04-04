@@ -283,7 +283,7 @@ export default function App() {
               <div class="w-2 h-2 rounded-lg bg-text-primary animate-pulse [animation-delay:0.2s]" />
               <div class="w-2 h-2 rounded-lg bg-text-primary animate-pulse [animation-delay:0.4s]" />
             </div>
-            <span class="text-label opacity-40">Connecting to system...</span>
+            <span class="text-label">CONNECTING_TO_SYSTEM...</span>
           </div>
         }
       >
@@ -297,9 +297,9 @@ export default function App() {
         containerStyle={{ "z-index": "2100", "font-family": "var(--font-mono)" }}
         toastOptions={{
           style: {
-            background: "#121212",
-            color: "#EAEAEA",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--border-visible)",
             "border-radius": "8px",
             "font-size": "11px",
             "text-transform": "uppercase",

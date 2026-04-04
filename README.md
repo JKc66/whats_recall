@@ -42,7 +42,7 @@
 | **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
 | **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
 | **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
-| **Design** | [Nothing Design](.agents/skills/nothing-design) | Full **Softened Nothing** compliance. Achromatic (Monochrome) palette, `Doto` hero typography, pill-shaped UI, and functional mechanical indicators. |
+| **Design** | [Nothing Design](.agents/skills/nothing-design) | Full **Softened Nothing** compliance. OLED Monochrome palette (`#000000`), `Doto` hero typography, pill-shaped UI, and functional mechanical indicators. |
 
 ---
 
@@ -116,7 +116,7 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 
 ## 💎 Development & Maintenance
 
-To maintain the project's design consistency, we utilize **Tailwind Canonical Classes**. This ensures all arbitrary values (like `min-h-[72px]`) are mapped to standard Tailwind units (like `min-h-18`) whenever possible.
+To maintain the project's design consistency, we use a **standardized CSS design system** defined in `index.css`. This ensures all components follow the **Nothing Design** specifications for typography, buttons, and controls without redundant or arbitrary styling.
 
 ### 🧩 Automated Formatting
 Keep the project's design consistent by automatically rewriting arbitrary Tailwind classes project-wide from the root.

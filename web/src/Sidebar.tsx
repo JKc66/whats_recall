@@ -116,7 +116,7 @@ export default function Sidebar() {
       classList={{ "max-md:hidden": sidebarHidden() }}
     >
       <header class="flex items-center justify-between p-4 min-h-16 border-b border-border bg-surface-raised/30">
-        <div class="flex items-center gap-3 text-display text-[18px]">
+        <div class="flex items-center gap-3 text-subheading text-text-display">
           <div class="relative flex items-center justify-center w-5 h-5">
             <Show when={stats().connected}>
               <span class="absolute w-full h-full rounded-full bg-success/20 animate-status-pulse" />
@@ -177,7 +177,7 @@ export default function Sidebar() {
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
             spellcheck={false}
-            class="w-full p-[8px_12px_8px_32px] bg-surface-raised border border-border rounded-lg text-text-primary text-[12px] font-mono outline-none transition-all focus:border-border-visible placeholder:text-text-disabled"
+            class="w-full p-[8px_12px_8px_32px] bg-surface-raised border border-border rounded-lg text-text-primary text-caption outline-none transition-all focus:border-border-visible placeholder:text-text-disabled"
           />
         </div>
       </div>
@@ -252,7 +252,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
         </Show>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-[14px] font-medium whitespace-nowrap overflow-hidden text-ellipsis text-text-primary">
+        <div class="text-body-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis text-text-primary">
           {displayName()}
         </div>
         <div class="text-metadata whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
@@ -264,7 +264,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
           {time()}
         </span>
         <Show when={props.chat.deleted_count > 0}>
-          <span class="bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg tabular-nums max-h-5 min-w-5 flex items-center justify-center">
+          <span class="tag tag-accent px-1.5 py-0.5 tabular-nums min-h-0 h-5 min-w-5">
             {props.chat.deleted_count}
           </span>
         </Show>

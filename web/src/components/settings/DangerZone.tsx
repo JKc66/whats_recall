@@ -32,16 +32,14 @@ export default function DangerZone(props: DangerZoneProps) {
           </div>
         </div>
         <button
-          class="w-full md:w-auto px-6 md:px-10 py-2.5 md:py-3 bg-accent hover:brightness-110 text-white font-bold text-[11px] md:text-[12px] uppercase tracking-[0.3em] font-mono transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-2"
+          class="btn btn-destructive w-full md:w-auto"
           disabled={props.clearing}
           onClick={() => props.onClearData()}
         >
           {props.clearing ? (
             <span class="animate-pulse">WIPING...</span>
           ) : (
-            <>
-              PERFORM_WIPE
-            </>
+            "PERFORM_WIPE"
           )}
         </button>
       </div>
@@ -83,16 +81,16 @@ export default function DangerZone(props: DangerZoneProps) {
               />
             </div>
             
-            <div class="flex flex-col sm:flex-row items-stretch gap-3 md:gap-4">
+            <div class="flex flex-col sm:flex-row items-stretch gap-4">
               <button
-                class="flex-1 py-4 bg-transparent border border-accent text-accent hover:bg-accent hover:text-white font-bold text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all disabled:opacity-20 rounded-full active:tick"
+                class="btn btn-destructive flex-1"
                 disabled={!props.clearPassword}
                 onClick={() => props.onConfirmClearData()}
               >
                 ERASE_ALL_DATA
               </button>
               <button
-                class="px-8 md:px-12 py-4 bg-transparent border border-border-visible text-text-primary hover:bg-surface-raised font-bold text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all active:tick rounded-full"
+                class="btn btn-secondary px-12"
                 onClick={() => props.onCancelClear()}
               >
                 CANCEL

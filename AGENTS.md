@@ -16,13 +16,12 @@ This document is specifically designed for AI agents (Claude, Gemini, etc.) to u
 ## 🎨 Design Philosophy
 The UI follows a **Softened Nothing Design System**, adhering exactly to the **Nothing Design** specifications with a slightly reduced "hacker-terminal" roleplay.
 - **Three-Layer Rule**: Primary (Display size, Doto font), Secondary (Body context, Space Grotesk), Tertiary (Metadata & Labels, Space Mono).
-- **Subtract, don't add**: Every element must earn its pixel. Use white space and typographic scale for hierarchy instead of colors, borders, or shadows.
-- **Palette**: Strictly achromatic (Monochrome). Background: `#121212`. Text: `#FFFFFF` (Primary), `#999999` (Secondary), `#666666` (Metadata). **Nothing Red** (#D71921) is the only allowed accent.
-- **Components**:
-  - **Buttons**: All buttons must be pill-shaped (999px radius).
-  - **Segmented Controls**: Inverted colors (White BG, Black Text) for active states with bracketed text indicators (e.g., `[ HOME ]`).
-  - **Toggles**: Mechanical design (Pill track, circle thumb). Inverted colors for ON state.
-- **Anti-Patterns**: No gradients, no glassmorphism (backdrop-blur), no heavy shadows. No generic Tailwind colors (`text-red-500`) — use strictly defined status variables (`accent`, `success`, `warning`).
+- **Palette**: Strictly achromatic (Monochrome). **Dark Mode**: Background: `#000000` (OLED), Primary Text: `#E8E8E8`, Display Text: `#FFFFFF`, Secondary Text: `#999999`, Metadata: `#666666`. **Light Mode**: Background: `#F5F5F5`. **Nothing Red** (#D71921) is the only allowed accent.
+- **Implementation**: Avoid writing raw Tailwind classes for basic components. Use the standardized design system classes in `index.css`:
+  - **Typography**: `.text-display-lg`, `.text-subheading`, `.text-body-sm`, `.text-label`, `.text-metadata`.
+  - **Buttons**: `.btn` with variants `.btn-primary`, `.btn-secondary`, `.btn-destructive`.
+  - **Controls**: `.segmented-control` + `.segmented-item` (with brackets), and `.tag` for badges.
+- **Anti-Patterns**: No gradients, no glassmorphism (backdrop-blur), no heavy shadows. No generic Tailwind colors (`text-red-500`) — use strictly defined variables (`--accent`, `--success`, `--warning`).
 - **Communication**: Use clear, functional, and uppercase interface text (e.g., `NO_MESSAGES_LOGGED` instead of "No messages found").
 
 ---

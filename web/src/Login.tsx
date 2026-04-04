@@ -116,7 +116,7 @@ export default function Login() {
 
         {/* Hero Section */}
         <div class="px-8 py-12 border-b border-border">
-          <h1 class="text-display text-[48px] uppercase mb-2">
+          <h1 class="text-display-lg text-text-display uppercase mb-2">
             SIGN<br/>IN
           </h1>
           <div class="flex items-center gap-4 text-metadata opacity-40">
@@ -183,7 +183,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading()}
-              class="w-full py-5 bg-text-primary text-black hover:bg-success hover:text-black font-bold text-[14px] uppercase tracking-[0.4em] transition-all duration-200 rounded-full active:tick disabled:opacity-20"
+              class="btn btn-primary w-full py-6"
             >
               <Show when={!loading()} fallback={"AUTHENTICATING..."}>
                 SIGN IN

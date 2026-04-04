@@ -219,7 +219,7 @@ export function MessageBubble(props: MessageBubbleProps) {
     }
 
     return (
-      <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary border border-border-visible">
+      <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg text-caption border border-border-visible">
         <FileIcon size={14} />
         <div class="flex flex-col flex-1 overflow-hidden">
           <a
@@ -230,7 +230,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           >
             {msg.media_filename || "Download"}
           </a>
-          <span class="text-[8px] uppercase tracking-widest text-text-disabled mt-0.5">
+          <span class="text-metadata text-[8px] mt-0.5">
             ATTACHMENT_{type.toUpperCase()}
           </span>
         </div>
@@ -288,7 +288,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
       <Show when={formattedReply()}>
         <div
-          class="relative bg-surface-raised rounded-lg p-2.5 pl-3.5 mb-2 text-[12px] text-text-secondary overflow-hidden transition-all hover:bg-surface/80 cursor-pointer group/reply border border-border outline-none focus-visible:ring-1 ring-accent/50"
+          class="relative bg-surface rounded-lg p-2.5 pl-3.5 mb-2 text-caption overflow-hidden transition-all hover:bg-surface-raised cursor-pointer group/reply border border-border outline-none focus-visible:ring-1 ring-accent/50"
           onClick={handleQuoteClick}
           role="button"
           tabindex="0"
@@ -306,7 +306,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           />
           <Show when={formattedReply()?.sender}>
             <div
-              class="text-[11px] font-bold text-accent mb-0.5 uppercase tracking-wider opacity-90 group-hover/reply:opacity-100"
+              class="text-metadata text-accent mb-0.5 opacity-90 group-hover/reply:opacity-100"
               classList={{ "text-accent": isMe() }}
             >
               {extractJidId(formattedReply()!.sender)}
@@ -336,7 +336,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       {renderMedia()}
 
       <Show when={bodyText()}>
-        <div class="text-[14px] text-text-primary whitespace-pre-wrap leading-relaxed">
+        <div class="text-body-sm text-text-primary whitespace-pre-wrap leading-relaxed">
           <HighlightedText text={bodyText()} query={props.highlightQuery} />
         </div>
       </Show>
@@ -375,18 +375,18 @@ export function MessageBubble(props: MessageBubbleProps) {
           {time()}
         </span>
         <Show when={isDeleted()}>
-          <span class="text-[9px] font-mono font-bold text-accent uppercase tracking-[0.2em]">
+          <span class="text-metadata text-accent">
             [ DELETED ]
           </span>
         </Show>
         <Show when={m().edits?.length}>
           <div class="flex items-center gap-1.5 ml-1">
-            <span class="text-[10px] font-bold text-accent uppercase tracking-widest opacity-90">
+            <span class="text-metadata text-accent">
               EDITED
             </span>
             <button
               onClick={() => setShowHistory(!showHistory())}
-              class="text-[9px] font-medium text-text-secondary hover:text-text-primary px-2 py-0.5 bg-surface-raised rounded-full border border-border hover:bg-border transition-colors uppercase tracking-tight"
+              class="tag"
             >
               {showHistory() ? "HIDE" : `${m().edits!.length} VERSIONS`}
             </button>
@@ -532,9 +532,9 @@ export function ImageGroup(props: {
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
               <Show when={!!msg.is_deleted}>
-                <div class="absolute inset-0 flex items-center justify-center bg-bg/20">
-                  <span class="bg-[rgba(0,0,0,0.6)] px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 border border-border">
-                    <TrashIcon size={10} /> DELETED
+                <div class="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <span class="tag tag-accent border-accent text-accent">
+                    <TrashIcon size={10} class="mr-1.5" /> DELETED
                   </span>
                 </div>
               </Show>
@@ -544,31 +544,31 @@ export function ImageGroup(props: {
       </div>
 
       <Show when={first().body}>
-        <div class="text-[14px] text-text-primary whitespace-pre-wrap leading-relaxed px-0.5 pt-1">
+        <div class="text-body-sm text-text-primary whitespace-pre-wrap leading-relaxed px-0.5 pt-1">
           <HighlightedText text={first().body!} query={props.highlightQuery} />
         </div>
       </Show>
 
       <div class="flex justify-between items-center gap-1.5 mt-2">
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] text-text-disabled font-medium">
+          <span class="text-metadata">
             {imageCount()} photos
           </span>
           <Show when={imageCount() > 1}>
             <button
-              class="inline-flex items-center gap-1 bg-surface-raised hover:bg-accent-muted border border-border rounded-full px-2 py-0.5 text-[9px] font-bold text-text-secondary hover:text-accent transition-all uppercase tracking-wide outline-none focus-visible:ring-1 ring-accent"
+              class="tag hover:border-accent hover:text-accent transition-all cursor-pointer"
               onClick={downloadAll}
               aria-label={`Download all ${imageCount()} photos`}
               disabled={isDownloading()}
             >
-              <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} />}>
-                <CheckIcon size={10} class="text-success animate-in zoom-in duration-300" />
+              <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} class="mr-1.5" />}>
+                <CheckIcon size={10} class="text-success animate-in zoom-in duration-300 mr-1.5" />
               </Show>
               {isDownloading() ? "DOWNLOADED" : "ALBUM"}
             </button>
           </Show>
         </div>
-        <span class="text-[10px] font-mono text-text-disabled font-medium tabular-nums opacity-60">
+        <span class="text-metadata tabular-nums opacity-60">
           {time()}
         </span>
       </div>

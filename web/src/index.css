@@ -74,24 +74,28 @@
 /* Base Variable Engine - Global Scope */
 :root {
   color-scheme: dark;
-  --black: #121212;
-  --surface: #1C1C1C;
-  --surface-raised: #242424;
-  --border: #2A2A2A;
-  --border-visible: #383838;
-  --text-disabled: #555555;
-  --text-secondary: #AAAAAA;
-  --text-primary: #E0E0E0;
+  --black: #000000;
+  --surface: #111111;
+  --surface-raised: #1A1A1A;
+  --border: #222222;
+  --border-visible: #333333;
+  --text-disabled: #666666;
+  --text-secondary: #999999;
+  --text-primary: #E8E8E8;
   --text-display: #FFFFFF;
   --interactive: #5B9BF6;
   --accent-color: #D71921;
-  --accent-subtle-color: rgba(215, 25, 33, 0.1);
+  --accent-subtle-color: rgba(215, 25, 33, 0.15);
   
-  --bubble-me: #242424;
-  --bubble-other: #1C1C1C;
+  --bubble-me: var(--surface-raised);
+  --bubble-other: var(--surface);
 
   --bg: var(--black);
   --text: var(--text-primary);
+  
+  --success: #4A9E5C;
+  --warning: #D4A843;
+  --error: #D71921;
 }
 
 /* Light Mode Overrides on root for CSS Variables */
@@ -99,18 +103,18 @@
   color-scheme: light;
   --black: #F5F5F5;
   --surface: #FFFFFF;
-  --surface-raised: #EFEFEF;
-  --border: #E0E0E0;
+  --surface-raised: #F0F0F0;
+  --border: #E8E8E8;
   --border-visible: #CCCCCC;
-  --text-disabled: #666666;
-  --text-secondary: #444444;
-  --text-primary: #121212;
+  --text-disabled: #999999;
+  --text-secondary: #666666;
+  --text-primary: #1A1A1A;
   --text-display: #000000;
   --accent-color: #D71921;
-  --accent-subtle-color: rgba(215, 25, 33, 0.08);
+  --accent-subtle-color: rgba(215, 25, 33, 0.1);
 
-  --bubble-me: #EFEFEF;
-  --bubble-other: #FFFFFF;
+  --bubble-me: var(--surface-raised);
+  --bubble-other: var(--surface);
   
   --bg: var(--black);
   --text: var(--text-primary);
@@ -148,25 +152,78 @@ html, body, #root {
 }
 
 /* Three-Layer Typographic Rules */
-.text-display {
+.text-display-xl {
   font-family: var(--font-display);
-  color: var(--text-display);
-  letter-spacing: -0.03em;
+  font-size: 72px;
   line-height: 1.0;
+  letter-spacing: -0.03em;
+}
+
+.text-display-lg {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.text-display-md {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-heading {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+}
+
+.text-subheading {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.text-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+.text-caption {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
 .text-label {
   font-family: var(--font-mono);
   font-size: 11px;
-  text-transform: uppercase;
+  line-height: 1.2;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
 .text-metadata {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Components */
@@ -176,10 +233,129 @@ html, body, #root {
   border-radius: 12px;
 }
 
-button, [role="button"] {
-  cursor: pointer;
+.segmented-control {
+  display: flex;
+  background: transparent;
+  border: 1px solid var(--border-visible);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 44px;
 }
 
-.pill {
+.segmented-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  border: none;
+  background: transparent;
+}
+
+.segmented-item.active {
+  background: var(--text-display);
+  color: var(--black);
+}
+
+.segmented-item:hover:not(.active) {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+/* Standard Button Base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 24px;
+  min-height: 44px;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  border: none;
+  outline: none;
   border-radius: 999px;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--text-display);
+  color: var(--black);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-visible);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-raised);
+}
+
+.btn-destructive {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-destructive:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-ghost {
+  background: transparent;
+  padding: 8px 12px;
+  min-height: unset;
+  color: var(--text-secondary);
+  border-radius: 0;
+}
+
+.btn-ghost:hover {
+  color: var(--text-primary);
+}
+
+/* Tag / Chip */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border: 1px solid var(--border-visible);
+  border-radius: 999px;
+  color: var(--text-secondary);
+}
+
+.tag-accent {
+  border-color: var(--accent);
+  color: var(--accent);
 }

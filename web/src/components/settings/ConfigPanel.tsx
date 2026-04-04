@@ -98,30 +98,28 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               </div>
             </Show>
 
-            <div class="p-3 md:p-4 bg-surface-raised/50 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 border-t border-inherit">
+            <div class="p-4 md:p-6 bg-surface-raised/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-inherit">
               <Show when={props.showResetNotice}>
-                <div class="w-full sm:w-auto flex items-center gap-2 text-warning text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-warning/10 px-2 md:px-3 py-1.5 md:py-2 border border-warning/30 font-mono">
+                <div class="w-full sm:w-auto flex items-center gap-2 text-warning text-label bg-warning/10 px-3 py-2 border border-warning/30">
                   <AlertTriangleIcon size={12} />
                   RESET_SESSION
                 </div>
               </Show>
               <button
-                class="w-full sm:w-auto px-8 md:px-10 py-3 md:py-4 font-bold text-[11px] md:text-[12px] uppercase tracking-[0.3em] font-mono transition-all active:tick disabled:opacity-20 rounded-full"
+                class="btn w-full sm:w-auto min-w-40"
                 classList={{
-                  "bg-warning text-black border-warning": props.showResetNotice,
-                  "bg-transparent text-text-primary border border-border-visible hover:bg-surface-raised": !props.showResetNotice && isConnected(),
-                  "bg-text-display text-black hover:bg-success hover:text-black": !props.showResetNotice && !isConnected(),
+                  "btn-primary bg-warning text-black border-warning": props.showResetNotice,
+                  "btn-secondary": !props.showResetNotice && isConnected(),
+                  "btn-primary": !props.showResetNotice && !isConnected(),
                 }}
                 onClick={() => props.onReset()}
                 disabled={!!props.busy}
               >
-                <div class="relative z-10 text-[10px] md:text-[12px]">
-                  {isConnected()
-                    ? props.showResetNotice
-                      ? "APPLY_CHANGES"
-                      : "DISCONNECT"
-                    : "CONNECT"}
-                </div>
+                {isConnected()
+                  ? props.showResetNotice
+                    ? "APPLY_CHANGES"
+                    : "DISCONNECT"
+                  : "CONNECT"}
               </button>
             </div>
           </div>
@@ -141,30 +139,30 @@ export default function ConfigPanel(props: ConfigPanelProps) {
         <div class="grid grid-cols-1 md:grid-cols-2">
           {/* Auth Mechanism */}
           <div class="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] border-b border-border">
-            <div class="border-r border-border p-4 md:p-6 flex items-center text-[8px] md:text-[9px] tracking-[0.2em] text-text-disabled font-bold uppercase font-mono bg-surface-raised/20">
+            <div class="border-r border-border p-4 md:p-6 flex items-center text-label bg-surface-raised/20">
               METHOD
             </div>
-            <div class="flex">
-              <button
-                class="flex-1 p-3 md:p-6 text-[10px] md:text-[11px] font-bold transition-all uppercase tracking-[0.2em] font-mono border-r border-border"
-                classList={{
-                  "bg-surface-raised text-accent": (props.config?.whatsapp_pairing_method || "code") === "qr",
-                  "text-text-disabled hover:text-text-primary": (props.config?.whatsapp_pairing_method || "code") !== "qr",
-                }}
-                onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "qr")}
-              >
-                QR
-              </button>
-              <button
-                class="flex-1 p-3 md:p-6 text-[10px] md:text-[11px] font-bold transition-all uppercase tracking-[0.2em] font-mono"
-                classList={{
-                  "bg-surface-raised text-accent": (props.config?.whatsapp_pairing_method || "code") === "code",
-                  "text-text-disabled hover:text-text-primary": (props.config?.whatsapp_pairing_method || "code") !== "code",
-                }}
-                onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "code")}
-              >
-                CODE
-              </button>
+            <div class="flex items-center px-4">
+              <div class="segmented-control w-full">
+                <button
+                  class="segmented-item"
+                  classList={{ 
+                    "active": (props.config?.whatsapp_pairing_method || "code") === "qr"
+                  }}
+                  onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "qr")}
+                >
+                  {(props.config?.whatsapp_pairing_method || "code") === "qr" ? "[ QR ]" : "QR"}
+                </button>
+                <button
+                  class="segmented-item"
+                  classList={{ 
+                    "active": (props.config?.whatsapp_pairing_method || "code") === "code"
+                  }}
+                  onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "code")}
+                >
+                  {(props.config?.whatsapp_pairing_method || "code") === "code" ? "[ CODE ]" : "CODE"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -172,7 +170,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
           <div class="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] border-b border-border md:border-l">
             <label
               for="whatsapp_phone"
-              class="border-r border-border p-4 md:p-6 flex items-center text-[8px] md:text-[9px] tracking-[0.2em] text-text-disabled font-bold uppercase font-mono bg-surface-raised/20 cursor-pointer"
+              class="border-r border-border p-4 md:p-6 flex items-center text-label bg-surface-raised/20 cursor-pointer"
             >
               PHONE_NUM
             </label>
@@ -231,7 +229,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 />
               </div>
               <span class={`text-[7px] font-mono font-bold tracking-[0.2em] transition-all duration-300 ${
-                (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "text-accent animate-pulse-slow" : "text-text-disabled opacity-40"
+                (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "text-accent" : "text-text-disabled opacity-40"
               }`}>
                 {(props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "ON" : "OFF"}
               </span>

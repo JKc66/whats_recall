@@ -160,18 +160,18 @@ export default function ChatView() {
             <MessageSquareIcon size={48} stroke-width={1} />
           </div>
           <div class="text-center">
-            <h2 class="text-display text-[32px] tracking-tight">
+            <h2 class="text-display-md text-text-display">
               CONVERSATIONS
             </h2>
-            <p class="text-[13px] max-w-85 mx-auto mt-4 text-text-secondary leading-relaxed font-mono uppercase tracking-wider">
+            <p class="text-body-sm max-w-85 mx-auto mt-4 text-text-secondary uppercase tracking-wider font-mono">
               SELECT A CONVERSATION TO VIEW MESSAGE HISTORY. DELETED CONTENT IS AUTOMATICALLY PRESERVED AND HIGHLIGHTED.
             </p>
           </div>
           <button
-            class="flex items-center gap-2 mt-4 px-6 py-3 rounded-lg bg-surface hover:bg-surface-raised border border-border text-text-primary text-label transition-all active:tick"
+            class="btn btn-secondary mt-4"
             onClick={() => setView("settings")}
           >
-            <SettingsIcon size={14} />
+            <SettingsIcon size={14} class="mr-2" />
             SETTINGS
           </button>
         </div>
@@ -191,32 +191,32 @@ export default function ChatView() {
 
         <Show when={searchMatchIds().length > 0}>
           <div class="flex items-center justify-between px-4 py-2 bg-surface-raised border-b border-border text-[12px] text-text-secondary gap-3 shrink-0 animate-in slide-in-from-top-1 duration-200">
+          <div class="flex items-center gap-2">
+            <SearchIcon size={13} class="text-accent" />
+            <span class="text-caption">
+              <span class="text-text-primary font-bold tabular-nums">[{searchMatchIndex() + 1}</span>
+              {" / "}
+              <span class="text-text-primary font-bold tabular-nums">{searchMatchIds().length}]</span>
+              {" MATCHES"}
+            </span>
+          </div>
             <div class="flex items-center gap-2">
-              <SearchIcon size={13} class="text-accent" />
-              <span>
-                <span class="text-text-primary font-semibold tabular-nums">{searchMatchIndex() + 1}</span>
-                {" / "}
-                <span class="text-text-primary font-bold tabular-nums">{searchMatchIds().length}</span>
-                {" MATCHES"}
-              </span>
-            </div>
-            <div class="flex items-center gap-1">
               <button
-                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:tick disabled:opacity-30"
+                class="w-8 h-8 rounded-full bg-surface hover:bg-surface-raised border border-border flex items-center justify-center transition-all active:tick disabled:opacity-30"
                 onClick={() => navigateMatch(-1)}
                 aria-label="Previous match"
               >
                 <ArrowUpIcon size={12} stroke-width={2} />
               </button>
               <button
-                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:tick"
+                class="w-8 h-8 rounded-full bg-surface hover:bg-surface-raised border border-border flex items-center justify-center transition-all active:tick"
                 onClick={() => navigateMatch(1)}
                 aria-label="Next match"
               >
                 <ArrowDownIcon size={12} stroke-width={2} />
               </button>
               <button
-                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-accent/10 hover:text-accent border border-border flex items-center justify-center transition-all active:tick ml-1"
+                class="btn btn-ghost p-0 w-8 h-8 flex items-center justify-center active:tick ml-1"
                 onClick={() => { setSearchMatchIds([]); setSearchMatchIndex(0); }}
                 aria-label="Clear search"
               >
