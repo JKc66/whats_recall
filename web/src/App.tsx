@@ -113,6 +113,7 @@ export default function App() {
               total_deleted_count: 0,
               total_messages: 1,
               profile_pic: profilePic,
+              lid: null,
             } as Chat,
             ...prev,
           ];
@@ -173,6 +174,7 @@ export default function App() {
               total_deleted_count: 1,
               total_messages: 1,
               profile_pic: null,
+              lid: null,
             } as Chat,
             ...prev,
           ];
