@@ -28,7 +28,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
           </h3>
         </div>
 
-        <div class="p-4 md:p-8">
+        <div class="p-3 md:p-8">
           <div class={`mb-4 md:mb-6 flex flex-col gap-3 md:gap-4 border ${isConnected() ? "border-success/30 bg-success/5" : "border-accent/30 bg-accent/5"}`}>
             <div class="p-3 md:p-4 border-b border-inherit flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -37,7 +37,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                   {isConnected() ? "ONLINE" : "OFFLINE"}
                 </span>
               </div>
-              <span class="text-[7px] md:text-[8px] text-text-disabled font-mono uppercase">ID: {props.stats?.id || "--"}</span>
+              <span class="text-[7px] md:text-[8px] text-text-disabled font-mono uppercase">ID: {props.stats?.myId || "--"}</span>
             </div>
 
             <Show when={!isConnected()}>
@@ -138,8 +138,8 @@ export default function ConfigPanel(props: ConfigPanelProps) {
 
         <div class="grid grid-cols-1 md:grid-cols-2">
           {/* Auth Mechanism */}
-          <div class="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] border-b border-border">
-            <div class="border-r border-border p-4 md:p-6 flex items-center text-label bg-surface-raised/20">
+          <div class="grid grid-cols-[90px_1fr] md:grid-cols-[140px_1fr] border-b border-border">
+            <div class="border-r border-border p-3 md:p-6 flex items-center text-label bg-surface-raised/20">
               METHOD
             </div>
             <div class="flex items-center px-4">
@@ -167,10 +167,10 @@ export default function ConfigPanel(props: ConfigPanelProps) {
           </div>
 
           {/* Session Key (Phone) */}
-          <div class="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] border-b border-border md:border-l">
+          <div class="grid grid-cols-[90px_1fr] md:grid-cols-[140px_1fr] border-b border-border md:border-l">
             <label
               for="whatsapp_phone"
-              class="border-r border-border p-4 md:p-6 flex items-center text-label bg-surface-raised/20 cursor-pointer"
+              class="border-r border-border p-3 md:p-6 flex items-center text-label bg-surface-raised/20 cursor-pointer"
             >
               PHONE_NUM
             </label>

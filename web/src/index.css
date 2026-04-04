@@ -63,6 +63,11 @@
   50% { opacity: 0.8; transform: scale(1.15); }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
 @utility animate-status-pulse {
   animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -91,6 +96,7 @@
   --bubble-other: var(--surface);
 
   --bg: var(--black);
+  --bg-rgb: 0, 0, 0;
   --text: var(--text-primary);
   
   --success: #4A9E5C;
@@ -103,6 +109,7 @@
   color-scheme: light;
   --black: #F5F5F5;
   --surface: #FFFFFF;
+  --bg-rgb: 245, 245, 245;
   --surface-raised: #F0F0F0;
   --border: #E8E8E8;
   --border-visible: #CCCCCC;

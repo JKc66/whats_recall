@@ -91,13 +91,13 @@ export default function Login() {
   }
 
   return (
-    <div class="flex flex-col items-center justify-center min-h-dvh w-full bg-bg text-text-primary selection:bg-accent/30 overflow-hidden relative p-6">
+    <div class="flex flex-col items-center justify-center min-h-dvh w-full bg-bg text-text-primary selection:bg-accent/30 overflow-hidden relative p-4 md:p-6">
       <div 
         class="relative z-10 w-full card bg-surface p-0 animate-entrance"
         style={{"max-width":"480px"}}
       >
         {/* Top Header Bar */}
-        <div class="border-b border-border px-6 py-4 flex items-center justify-between text-label bg-surface-raised/50">
+        <div class="border-b border-border px-4 md:px-6 py-3 md:py-4 flex items-center justify-between text-label bg-surface-raised/50">
           <div class="flex items-center gap-3">
             <span class="text-success">● ONLINE</span>
             <span class="opacity-50">ARCHIVE</span>
@@ -114,9 +114,9 @@ export default function Login() {
           </button>
         </div>
 
-        {/* Hero Section */}
-        <div class="px-8 py-12 border-b border-border">
-          <h1 class="text-display-lg text-text-display uppercase mb-2">
+        {/* Hero Section — compact on mobile */}
+        <div class="px-6 md:px-8 py-8 md:py-12 border-b border-border">
+          <h1 class="text-display-md md:text-display-lg text-text-display uppercase mb-2">
             SIGN<br/>IN
           </h1>
           <div class="flex items-center gap-4 text-metadata opacity-40">
@@ -126,11 +126,11 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} class="p-0">
-          {/* Identity Field */}
-          <div class="grid grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors">
+          {/* Identity Field — responsive label */}
+          <div class="flex flex-col md:grid md:grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors">
             <label 
               for="username-field"
-              class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
+              class="md:border-r border-b md:border-b-0 border-border px-4 md:px-6 py-3 md:py-6 flex items-center text-label font-bold cursor-pointer"
             >
               USERNAME
             </label>
@@ -142,15 +142,15 @@ export default function Login() {
               placeholder="USER_ID"
               value={username()}
               onInput={(e) => setUsername(e.currentTarget.value)}
-              class="w-full bg-transparent p-6 outline-none text-[13px] font-mono tracking-[0.2em] uppercase placeholder:opacity-20 text-text-primary"
+              class="w-full bg-transparent px-4 md:px-6 py-4 md:py-6 outline-none text-[13px] font-mono tracking-[0.15em] md:tracking-[0.2em] uppercase placeholder:opacity-20 text-text-primary"
             />
           </div>
 
-          {/* Access Key Field */}
-          <div class="grid grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors relative">
+          {/* Access Key Field — responsive label */}
+          <div class="flex flex-col md:grid md:grid-cols-[120px_1fr] border-b border-border group focus-within:bg-border/5 transition-colors relative">
             <label 
               for="password-field"
-              class="border-r border-border p-6 flex items-center text-label font-bold cursor-pointer"
+              class="md:border-r border-b md:border-b-0 border-border px-4 md:px-6 py-3 md:py-6 flex items-center text-label font-bold cursor-pointer"
             >
               PASSWORD
             </label>
@@ -165,7 +165,7 @@ export default function Login() {
                 onInput={(e) => setPassword(e.currentTarget.value)}
                 required
                 autofocus
-                class="w-full bg-transparent p-6 outline-none text-[13px] font-mono tracking-[0.4em] placeholder:opacity-20 pr-12"
+                class="w-full bg-transparent px-4 md:px-6 py-4 md:py-6 outline-none text-[13px] font-mono tracking-[0.3em] md:tracking-[0.4em] placeholder:opacity-20 pr-12"
               />
               <button
                 type="button"
@@ -179,11 +179,11 @@ export default function Login() {
           </div>
 
           {/* Action Button */}
-          <div class="p-8">
+          <div class="p-5 md:p-8">
             <button
               type="submit"
               disabled={loading()}
-              class="btn btn-primary w-full py-6"
+              class="btn btn-primary w-full py-5 md:py-6"
             >
               <Show when={!loading()} fallback={"AUTHENTICATING..."}>
                 SIGN IN
@@ -194,21 +194,21 @@ export default function Login() {
 
         {/* Footer Meta Data */}
         <div class="border-t border-border grid grid-cols-2 bg-surface-raised/30">
-          <div class="border-r border-border p-5 flex flex-col gap-1">
+          <div class="border-r border-border p-4 md:p-5 flex flex-col gap-1">
             <span class="text-metadata uppercase opacity-40">STATUS</span>
             <div class="flex items-center gap-2">
                <div class="w-1.5 h-1.5 bg-success" />
               <span class="text-label text-text-primary">ACTIVE</span>
             </div>
           </div>
-          <div class="p-5 flex flex-col gap-1">
+          <div class="p-4 md:p-5 flex flex-col gap-1">
             <span class="text-metadata uppercase opacity-40">UPTIME</span>
             <span class="text-label text-text-primary">{formatUptime(uptimeSeconds())}</span>
           </div>
         </div>
 
         {/* Bottom Decorative Bar */}
-        <div class="border-t border-border p-4 text-metadata opacity-40 text-center uppercase tracking-widest">
+        <div class="border-t border-border p-3 md:p-4 text-metadata opacity-40 text-center uppercase tracking-widest">
           SECURE_ACCESS
         </div>
       </div>

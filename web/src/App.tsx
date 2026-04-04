@@ -294,17 +294,18 @@ export default function App() {
       <Toaster
         position={window.innerWidth <= 768 ? "bottom-center" : "top-right"}
         gutter={8}
-        containerStyle={{ "z-index": "2100", "font-family": "var(--font-mono)" }}
+        containerStyle={{
+          "z-index": "2100",
+          ...(window.innerWidth <= 768
+            ? { "padding-bottom": "env(safe-area-inset-bottom, 12px)", "padding-left": "8px", "padding-right": "8px" }
+            : { "padding": "12px" }),
+        }}
         toastOptions={{
           style: {
-            background: "var(--surface)",
-            color: "var(--text-primary)",
-            border: "1px solid var(--border-visible)",
-            "border-radius": "8px",
-            "font-size": "11px",
-            "text-transform": "uppercase",
-            "letter-spacing": "0.1em",
             "box-shadow": "none",
+            border: "none",
+            background: "none",
+            padding: "0",
           },
           duration: 4000,
         }}

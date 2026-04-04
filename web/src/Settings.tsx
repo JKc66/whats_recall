@@ -240,34 +240,34 @@ export default function Settings() {
 
       <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 min-h-14">
         <button
-          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
             "bg-text-display text-black": tab() === "config",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "config",
           }}
           onClick={() => setTab("config")}
         >
-          {tab() === "config" ? "[ CONFIGURATION ]" : "CONFIGURATION"}
+          {tab() === "config" ? "[ CONFIG ]" : "CONFIG"}
         </button>
         <button
-          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
             "bg-text-display text-black": tab() === "monitored",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "monitored",
           }}
           onClick={() => setTab("monitored")}
         >
-          {tab() === "monitored" ? `[ MONITORED: ${(monitored() || []).length} ]` : `MONITORED: ${(monitored() || []).length}`}
+          {tab() === "monitored" ? `[ MON: ${(monitored() || []).length} ]` : `MON: ${(monitored() || []).length}`}
         </button>
         <button
-          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
             "bg-text-display text-black": tab() === "available",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "available",
           }}
           onClick={() => setTab("available")}
         >
-          {tab() === "available" ? `[ AVAILABLE: ${(available() || []).length} ]` : `AVAILABLE: ${(available() || []).length}`}
+          {tab() === "available" ? `[ AVAIL: ${(available() || []).length} ]` : `AVAIL: ${(available() || []).length}`}
         </button>
       </div>
 
