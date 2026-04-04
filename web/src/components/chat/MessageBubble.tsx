@@ -1,9 +1,20 @@
 import { Show, For, createMemo, createSignal } from "solid-js";
 import type { Message, Reaction } from "../../types";
 import { avatarColor, formatTime, extractJidId, mediaUrl } from "../../utils";
-import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon, CheckIcon } from "../Icons";
+import { 
+  FileIcon, 
+  GalleryBrokenIcon,
+  DownloadIcon, 
+  TrashIcon, 
+  EyeIcon, 
+  ImageIcon, 
+  VideoIcon, 
+  MusicIcon, 
+  CheckIcon 
+} from "../Icons";
 import { notify } from "../../notify";
 import AudioPlayer from "./AudioPlayer";
+import VideoNotePlayer from "./VideoNotePlayer";
 
 interface MessageBubbleProps {
   msg: Message;
@@ -16,20 +27,20 @@ interface MessageBubbleProps {
 
 function HighlightedText(props: { text: string; query?: string }) {
   const query = createMemo(() => props.query?.trim() || "");
-  
+
   const parts = createMemo(() => {
     const q = query();
     if (!q) return [props.text];
     return props.text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
   });
-  
+
   return (
     <Show when={query()} fallback={<span>{props.text}</span>}>
       <span>
         <For each={parts()}>
           {(part) => (
-            part.toLowerCase() === query().toLowerCase() 
-              ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark> 
+            part.toLowerCase() === query().toLowerCase()
+              ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
               : part
           )}
         </For>
@@ -77,16 +88,6 @@ export function MessageBubble(props: MessageBubbleProps) {
         sender: msg.quoted_sender || "",
       };
     }
-    if (msg.body?.startsWith("[Replying to: ")) {
-      const newlineIndex = msg.body.indexOf("]\n\n");
-      if (newlineIndex > -1) {
-        return {
-          stanzaId: null,
-          preview: msg.body.slice(14, newlineIndex),
-          sender: "",
-        };
-      }
-    }
     return null;
   });
 
@@ -95,43 +96,26 @@ export function MessageBubble(props: MessageBubbleProps) {
     if (!data) return null;
     const previewRaw = data.preview || "Message";
     const lower = previewRaw.toLowerCase();
-    
+
     const hasPhoto = lower.includes("photo") || lower.includes("image");
-    const hasVideo = lower.includes("video");
+    const hasVideo = lower.includes("video") || lower.includes("ptv");
     const hasAudio = lower.includes("audio") || lower.includes("ptt");
     const hasSticker = lower.includes("sticker");
     const hasViewOnce = previewRaw.includes("👁️") || lower.includes("view once");
-    
-    let p = previewRaw.replace(/👁️/g, "").trim();
-    p = p.replace(/\s*\(\s*view once\s*\)\s*/gi, "").trim();
-    p = p.replace(/\s*view once\s*/gi, "").trim();
-    p = p.replace(/\[?(image|video|audio|document|sticker)(Message)?\]?/gi, "").trim();
-    p = p.replace(/^\(\)\s*/, "").replace(/^\[\]\s*/, "").trim();
-    p = p.replace(/^[-\s]+|[|-\s]+$/g, "").trim();
-    
-    const finalLabel = p || (hasPhoto ? "Photo" : hasVideo ? "Video" : hasAudio ? "Audio" : hasSticker ? "Sticker" : "Message");
-    
+
     return {
       sender: data.sender,
-      hasPhoto: hasPhoto && !hasSticker,
+      hasPhoto,
       hasVideo,
       hasAudio,
       hasSticker,
       hasViewOnce,
-      label: finalLabel,
+      label: previewRaw,
       stanzaId: data.stanzaId,
     };
   });
 
-  const bodyText = createMemo(() => {
-    const msg = m();
-    if (!msg.body) return "";
-    if (msg.body.startsWith("[Replying to: ")) {
-      const newlineIndex = msg.body.indexOf("]\n\n");
-      if (newlineIndex > -1) return msg.body.slice(newlineIndex + 3);
-    }
-    return msg.body;
-  });
+  const bodyText = createMemo(() => m().body || "");
 
   function handleQuoteClick() {
     const reply = replyData();
@@ -142,17 +126,24 @@ export function MessageBubble(props: MessageBubbleProps) {
 
   function renderMedia() {
     const msg = m();
-    if (!msg.has_media || !msg.media_path) {
-      return (msg.has_media && msg.type !== 'chat') ? (
-        <div class="flex items-center gap-2 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary italic">
-          <FileIcon size={14} /> {msg.type}
+    const type = msg.type;
+    const isPtv = type === "ptv";
+    const src = msg.media_path ? mediaUrl(msg.media_path) : null;
+    const mt = (msg.media_type || "").toLowerCase();
+
+    if (!src) {
+      if (type === "chat") return null;
+      return (
+        <div class="flex items-center gap-3 p-3 bg-surface-raised border border-border rounded-lg text-[10px] font-mono font-bold text-text-disabled uppercase tracking-widest my-1 min-w-50">
+          <GalleryBrokenIcon size={18} class="text-accent/30" />
+          {`[ ${type.toUpperCase().replace("MESSAGE", "")} ]`}
         </div>
-      ) : null;
+      );
     }
 
-    const src = mediaUrl(msg.media_path);
-    const mt = (msg.media_type || "").toLowerCase();
-    const type = msg.type;
+    if (isPtv) {
+      return <VideoNotePlayer src={src} />;
+    }
 
     if (
       type === "image" || 
@@ -160,14 +151,15 @@ export function MessageBubble(props: MessageBubbleProps) {
       type === "lottieSticker" || 
       mt.startsWith("image/")
     ) {
+      const isSticker = type.includes("sticker");
       return (
         <div
           class="group relative rounded-lg overflow-hidden my-1 max-w-80"
-          classList={{ "bg-transparent max-w-[180px]": type === "sticker" || type === "lottieSticker" }}
+          classList={{ "bg-transparent max-w-[180px]": isSticker }}
         >
           <img
             src={src}
-            alt={type.includes("sticker") ? "Sticker" : "Image"}
+            alt={isSticker ? "Sticker" : "Image"}
             loading="lazy"
             class="w-full cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black rounded-sm"
             onClick={() => props.onImageClick(src)}
@@ -183,12 +175,12 @@ export function MessageBubble(props: MessageBubbleProps) {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-          <Show when={!type.includes("sticker")}>
+          <Show when={!isSticker}>
             <a
               href={src}
               download={msg.media_filename || "download"}
               aria-label="Download"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -197,9 +189,9 @@ export function MessageBubble(props: MessageBubbleProps) {
       );
     }
 
-    if (type === "video" || type === "ptv" || mt.startsWith("video/")) {
+    if (type === "video" || mt.startsWith("video/")) {
       return (
-        <div class="group relative rounded-lg overflow-hidden my-1 max-w-80">
+        <div class="group relative rounded-lg overflow-hidden my-1 max-w-80 border border-border-visible bg-black">
           <video
             src={src}
             controls
@@ -210,7 +202,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             href={src}
             download={msg.media_filename || "download"}
             aria-label="Download video"
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -227,21 +219,26 @@ export function MessageBubble(props: MessageBubbleProps) {
     }
 
     return (
-      <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary">
+      <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg text-xs text-text-secondary border border-border-visible">
         <FileIcon size={14} />
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener"
-          class="text-accent underline"
-        >
-          {msg.media_filename || "Download"}
-        </a>
+        <div class="flex flex-col flex-1 overflow-hidden">
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener"
+            class="text-accent underline truncate"
+          >
+            {msg.media_filename || "Download"}
+          </a>
+          <span class="text-[8px] uppercase tracking-widest text-text-disabled mt-0.5">
+            ATTACHMENT_{type.toUpperCase()}
+          </span>
+        </div>
         <a
           href={src}
           download={msg.media_filename || "download"}
           aria-label="Download file"
-          class="ml-auto w-7 h-7 rounded-sm bg-border flex items-center justify-center hover:bg-border-visible focus-visible:bg-accent focus-visible:text-white outline-none"
+          class="ml-auto w-8 h-8 rounded-full bg-border flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
         >
           <DownloadIcon size={14} stroke-width={2.5} />
         </a>
@@ -284,7 +281,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       </Show>
 
       <Show when={isViewOnce()}>
-        <div class="bg-surface-raised text-text-primary text-[10.5px] font-semibold py-0.5 px-2 rounded-full mb-1 inline-flex items-center gap-1.5 border border-border">
+        <div class="bg-surface-raised text-text-primary text-[10.5px] font-semibold font-mono py-0.5 px-2 rounded-full mb-1 inline-flex items-center gap-1.5 border border-border">
           <EyeIcon size={12} /> VIEW_ONCE
         </div>
       </Show>
@@ -303,7 +300,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             }
           }}
         >
-          <div 
+          <div
             class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg"
             classList={{ "bg-accent/50": isMe() }}
           />
@@ -451,7 +448,7 @@ export function ImageGroup(props: {
     if (isDownloading()) return;
     setIsDownloading(true);
     notify.info("Starting download...", `${imageCount()} photos`);
-    
+
     imageMessages().forEach((msg, index) => {
       setTimeout(() => {
         const link = document.createElement("a");
@@ -460,7 +457,7 @@ export function ImageGroup(props: {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         if (index === imageMessages().length - 1) {
           setTimeout(() => setIsDownloading(false), 2000);
         }
@@ -472,7 +469,7 @@ export function ImageGroup(props: {
     const n = imageCount();
     if (n === 1) return "grid-cols-1";
     if (n === 2) return "grid-cols-2";
-    if (n === 3) return "grid-cols-2"; // 3 is handled by first child spanning rows
+    if (n === 3) return "grid-cols-2"; 
     return "grid-cols-2";
   };
 
@@ -566,7 +563,7 @@ export function ImageGroup(props: {
             >
               <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} />}>
                 <CheckIcon size={10} class="text-success animate-in zoom-in duration-300" />
-              </Show> 
+              </Show>
               {isDownloading() ? "DOWNLOADED" : "ALBUM"}
             </button>
           </Show>

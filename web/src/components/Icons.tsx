@@ -85,6 +85,14 @@ export const VideoIcon = (props: IconProps) => (
   </IconBase>
 );
 
+export const GalleryBrokenIcon = (props: IconProps) => (
+  <SolarIconBase {...props}>
+    <circle cx="16" cy="8" r="2" />
+    <path stroke-linecap="round" d="m2 12.5l1.752-1.533a2.3 2.3 0 0 1 3.14.105l4.29 4.29a2 2 0 0 0 2.564.222l.299-.21a3 3 0 0 1 3.731.225L21 18.5" />
+    <path stroke-linecap="round" d="M22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464c.974.974 1.3 2.343 1.41 4.536" />
+  </SolarIconBase>
+);
+
 export const PlayIcon = (props: IconProps) => (
   <SolarIconBase {...props}>
     <path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/>

@@ -433,26 +433,28 @@ export class MessageProcessor {
     // Download and store media attachments (images, videos, documents, stickers)
     let mediaPath = null;
     let mediaSha256: string | null = null;
-    const hasMedia = [
-      'imageMessage', 
-      'videoMessage', 
-      'audioMessage', 
-      'stickerMessage', 
-      'documentMessage', 
-      'ptvMessage', 
-      'lottieStickerMessage'
-    ].includes(messageType);
+    const mediaTypesMap: Record<string, string> = {
+      imageMessage: 'image',
+      videoMessage: 'video',
+      audioMessage: 'audio',
+      stickerMessage: 'sticker',
+      documentMessage: 'document',
+      ptvMessage: 'ptv',
+      lottieStickerMessage: 'lottieSticker'
+    };
+
+    const hasMediaCandidate = !!mediaTypesMap[messageType];
     
-    if (hasMedia) {
-      // Use the raw message type for downloadMedia (ptv, lottieSticker, etc.)
-      const downloadType = messageType.replace('Message', '');
+    if (hasMediaCandidate) {
+      // Map lottieStickerMessage to sticker for downloader compatibility if needed
+      const downloadType = messageType === 'lottieStickerMessage' ? 'sticker' : messageType.replace('Message', '');
       const mediaResult = await downloadMedia(msg, downloadType, this.sock);
       if (mediaResult) {
         mediaPath = mediaResult.path;
         mediaSha256 = mediaResult.sha256hex;
       }
     }
-
+    
     // If replying to a view-once message, save the recovered media to the original message
     if (quotedViewOnceMedia && quotedStanzaId) {
       getDb().updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
@@ -467,7 +469,7 @@ export class MessageProcessor {
       sender_id: senderId,
       sender_name: senderName,
       body,
-      type: mediaPath ? messageType.replace('Message', '') : 'chat',
+      type: mediaTypesMap[messageType] || 'chat',
       has_media: !!mediaPath,
       media_type: mediaPath ? (content.mimetype || messageType.replace('Message', '')) : undefined,
       media_filename: mediaPath ? (content.fileName || undefined) : undefined,

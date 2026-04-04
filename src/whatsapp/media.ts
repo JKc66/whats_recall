@@ -1,5 +1,5 @@
-import { downloadMediaMessage, WAMessage } from '@whiskeysockets/baileys';
-import { writeFile } from 'fs/promises';
+import { downloadMediaMessage, WAMessage, downloadContentFromMessage } from '@whiskeysockets/baileys';
+import { writeFile} from 'fs/promises';
 import { join } from 'path';
 import { getDb, getDataDir } from '../db/database.js';
 import { log } from '../logger.js';
@@ -39,7 +39,7 @@ async function computeHash(buffer: Buffer): Promise<string> {
 export async function downloadMedia(message: WAMessage, type: string, sock?: any): Promise<{ path: string, sha256hex: string | null } | null> {
   const db = getDb();
   try {
-    const mType = type + 'Message';
+    const mType = type.endsWith('Message') ? type : type + 'Message';
     const msg = message.message as any;
     const mediaObj = msg?.[mType] || 
                     msg?.ephemeralMessage?.message?.[mType] || 
@@ -61,17 +61,31 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
       }
     }
 
-    const buffer = await downloadMediaMessage(
-      message,
-      'buffer',
-      {},
-      { 
-        logger: { level: 'silent' } as any,
-        reuploadRequest: sock?.updateMediaMessage
+    let buffer: Buffer;
+    try {
+      buffer = await downloadMediaMessage(
+        message,
+        'buffer',
+        {},
+        { 
+          logger: { level: 'silent' } as any,
+          reuploadRequest: sock?.updateMediaMessage
+        }
+      ) as Buffer;
+    } catch (_err) {
+      log('MEDIA', `Standard direct download failed for ${type}, attempting manual fallback...`);
+      // Manual fallback using low-level content downloader for types like lottieSticker
+      const bType = (type === 'lottieSticker' ? 'sticker' : (type === 'ptv' ? 'video' : type)) as any;
+      const stream = await downloadContentFromMessage(mediaObj, bType);
+      
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
       }
-    ) as Buffer;
+      buffer = Buffer.concat(chunks);
+    }
 
-    if (!buffer) return null;
+    if (!buffer || buffer.length === 0) return null;
 
     // Verify SHA256 if not provided in message (offloaded to worker)
     if (!sha256hex) {

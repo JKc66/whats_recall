@@ -66,7 +66,7 @@ export default function AudioPlayer(props: AudioPlayerProps) {
       }}
     >
       <audio 
-        ref={audioRef!} 
+        ref={el => audioRef = el} 
         src={props.src} 
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
