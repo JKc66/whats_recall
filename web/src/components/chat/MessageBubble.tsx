@@ -10,7 +10,8 @@ import {
   ImageIcon, 
   VideoIcon, 
   MusicIcon, 
-  CheckIcon 
+  CheckIcon,
+  EditIcon
 } from "../Icons";
 import { notify } from "../../notify";
 import AudioPlayer from "./AudioPlayer";
@@ -180,7 +181,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               href={src}
               download={msg.media_filename || "download"}
               aria-label="Download"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -202,7 +203,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             href={src}
             download={msg.media_filename || "download"}
             aria-label="Download video"
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -370,28 +371,29 @@ export function MessageBubble(props: MessageBubbleProps) {
         </div>
       </Show>
 
-      <div class="flex justify-end items-center gap-1.5 mt-0.5">
-        <span class="text-metadata opacity-60 tabular-nums">
+      <div class="flex flex-wrap justify-end items-center gap-x-2 gap-y-1 mt-0.5">
+        <span class="text-metadata opacity-60 tabular-nums whitespace-nowrap">
           {time()}
         </span>
-        <Show when={isDeleted()}>
-          <span class="text-metadata text-accent">
-            [ DELETED ]
-          </span>
-        </Show>
-        <Show when={m().edits?.length}>
-          <div class="flex items-center gap-1.5 ml-1">
-            <span class="text-metadata text-accent">
-              EDITED
+        <div class="flex items-center gap-1.5 ml-auto">
+          <Show when={isDeleted() || m().edits?.length}>
+            <span class="text-metadata whitespace-nowrap flex items-center gap-1 opacity-80">
+              [ <span class="flex items-center gap-1.5 text-accent">
+                {isDeleted() ? <TrashIcon size={12} /> : ""}
+                {isDeleted() && m().edits?.length ? <span class="text-metadata text-border-visible">|</span> : ""}
+                {m().edits?.length ? <EditIcon size={12} /> : ""}
+              </span> ]
             </span>
+          </Show>
+          <Show when={m().edits?.length}>
             <button
               onClick={() => setShowHistory(!showHistory())}
               class="tag"
             >
               {showHistory() ? "HIDE" : `${m().edits!.length} VERSIONS`}
             </button>
-          </div>
-        </Show>
+          </Show>
+        </div>
       </div>
 
       <Show when={showHistory() && m().edits?.length}>
@@ -527,7 +529,7 @@ export function ImageGroup(props: {
                 href={mediaUrl(msg.media_path!)}
                 download={msg.media_filename || "download"}
                 aria-label="Download photo"
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
               >
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
@@ -549,8 +551,8 @@ export function ImageGroup(props: {
         </div>
       </Show>
 
-      <div class="flex justify-between items-center gap-1.5 mt-2">
-        <div class="flex items-center gap-1.5">
+      <div class="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 mt-2">
+        <div class="flex items-center gap-1.5 whitespace-nowrap">
           <span class="text-metadata">
             {imageCount()} photos
           </span>
@@ -568,7 +570,7 @@ export function ImageGroup(props: {
             </button>
           </Show>
         </div>
-        <span class="text-metadata tabular-nums opacity-60">
+        <span class="text-metadata tabular-nums opacity-60 whitespace-nowrap">
           {time()}
         </span>
       </div>

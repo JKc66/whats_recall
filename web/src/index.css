@@ -360,9 +360,16 @@ html, body, #root {
   border: 1px solid var(--border-visible);
   border-radius: 999px;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .tag-accent {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+@utility mobile-visible {
+  @media (hover: none) {
+    opacity: 1 !important;
+  }
 }
