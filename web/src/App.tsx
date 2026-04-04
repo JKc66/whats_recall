@@ -93,7 +93,7 @@ export default function App() {
             updated[idx] = {
               ...updated[idx],
               name: chatName || updated[idx].name,
-              last_message_preview: (msg.body as string) || `[${msg.type}]`,
+              last_message_preview: (msg.body as string) || `MEDIA_${msg.type?.toUpperCase() || 'CONTENT'}`,
               last_message_sender: senderName,
               last_message_at: new Date().toISOString(),
               total_messages: updated[idx].total_messages + 1,
@@ -107,7 +107,7 @@ export default function App() {
               name: chatName,
               is_group: isGroup ? 1 : 0,
               last_message_at: new Date().toISOString(),
-              last_message_preview: (msg.body as string) || `[${msg.type}]`,
+              last_message_preview: (msg.body as string) || `MEDIA_${msg.type?.toUpperCase() || 'CONTENT'}`,
               last_message_sender: senderName,
               deleted_count: 0,
               total_deleted_count: 0,
@@ -136,8 +136,8 @@ export default function App() {
         const msg = data as Message & { chatName: string; isGroup: number };
 
         notify.deleted(
-          msg.sender_name || "Unknown",
-          msg.body ? msg.body.slice(0, 80) : "[Media]",
+          msg.sender_name || "UNKNOWN",
+          msg.body ? msg.body.slice(0, 80) : "MEDIA_CONTENT",
         );
 
         if (currentChatId() === msg.chat_id) {
@@ -167,7 +167,7 @@ export default function App() {
               name: msg.chatName || msg.sender_name || msg.chat_id,
               is_group: msg.isGroup || 0,
               last_message_at: new Date().toISOString(),
-              last_message_preview: msg.body || "[Deleted message]",
+              last_message_preview: msg.body || "DELETED_MESSAGE",
               last_message_sender: msg.sender_name || null,
               deleted_count: 1,
               total_deleted_count: 1,
@@ -277,13 +277,13 @@ export default function App() {
       <Show
         when={authenticated() !== null}
         fallback={
-          <div class="flex flex-col items-center justify-center min-h-dvh gap-6 animate-entrance bg-black dot-grid">
+          <div class="flex flex-col items-center justify-center min-h-dvh gap-6 animate-entrance bg-bg dot-grid">
             <div class="flex gap-2">
-              <div class="w-2 h-2 technical bg-text-primary animate-pulse" />
-              <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.2s]" />
-              <div class="w-2 h-2 technical bg-text-primary animate-pulse [animation-delay:0.4s]" />
+              <div class="w-2 h-2 rounded-lg bg-text-primary animate-pulse" />
+              <div class="w-2 h-2 rounded-lg bg-text-primary animate-pulse [animation-delay:0.2s]" />
+              <div class="w-2 h-2 rounded-lg bg-text-primary animate-pulse [animation-delay:0.4s]" />
             </div>
-            <span class="text-label opacity-40">LOADING_SYSTEM_UI</span>
+            <span class="text-label opacity-40">Connecting to system...</span>
           </div>
         }
       >
@@ -297,14 +297,14 @@ export default function App() {
         containerStyle={{ "z-index": "2100", "font-family": "var(--font-mono)" }}
         toastOptions={{
           style: {
-            background: "#0A0A0A",
+            background: "#121212",
             color: "#EAEAEA",
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            "border-radius": "0px",
+            "border-radius": "8px",
             "font-size": "11px",
             "text-transform": "uppercase",
             "letter-spacing": "0.1em",
-            "box-shadow": "0 20px 60px -15px rgba(0, 0, 0, 0.9)",
+            "box-shadow": "none",
           },
           duration: 4000,
         }}

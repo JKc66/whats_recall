@@ -1,16 +1,14 @@
 const AVATAR_COLORS = [
-  "#0ea5e9",
-  "#8b5cf6",
-  "#f43f5e",
-  "#f59e0b",
-  "#06b6d4",
-  "#a855f7",
-  "#ec4899",
-  "#10b981",
-  "#6366f1",
-  "#14b8a6",
-  "#f97316",
-  "#84cc16",
+  "#2A2A2A", // Surface 1
+  "#3A3A3A", // Surface 2
+  "#4A4A4A", // Surface 3
+  "#5A5A5A", // Surface 4
+  "#6A6A6A", // Neutral Gray
+  "#D71921", // Nothing Red
+  "#383838", // Border Visible
+  "#1A1A1A", // Surface Raised
+  "#222222", // Background Muted
+  "#444444", // Medium Gray
 ];
 
 export function avatarColor(name: string): string {
@@ -46,7 +44,7 @@ export function formatRelativeDate(date: Date): string {
   const days = Math.floor(diff / 86400000);
 
   if (days === 0) return formatTime(date);
-  if (days === 1) return "Yesterday";
+  if (days === 1) return "YESTERDAY";
   if (days < 7) return dayFormatter.format(date);
   return fullDateFormatter.format(date);
 }
@@ -63,7 +61,7 @@ export function extractJidId(id: string | null | undefined): string {
 
 export function getDisplayName(chat: { name?: string | null; chat_id?: string; id?: string } | undefined, fallbackId?: string): string {
   const id = chat?.chat_id || chat?.id || fallbackId || "";
-  if (!chat && !id) return "Unknown";
+  if (!chat && !id) return "UNKNOWN";
   return chat?.name || extractJidId(id) || id;
 }
 

@@ -152,9 +152,9 @@ export default function ChatView() {
   return (
     <>
       <Show when={!currentChatId()}>
-        <div class="flex-1 flex flex-col items-center justify-center gap-6 p-10 bg-black dot-grid">
+        <div class="flex-1 flex flex-col items-center justify-center gap-6 p-10 bg-bg">
           <div
-            class="flex items-center justify-center w-24 h-24 technical bg-surface border border-border text-text-secondary"
+            class="flex items-center justify-center w-24 h-24 rounded-lg bg-surface border border-border text-text-secondary"
             aria-hidden="true"
           >
             <MessageSquareIcon size={48} stroke-width={1} />
@@ -168,7 +168,7 @@ export default function ChatView() {
             </p>
           </div>
           <button
-            class="flex items-center gap-2 mt-4 px-6 py-3 technical bg-surface hover:bg-surface-raised border border-border text-text-primary text-label transition-all active:tick"
+            class="flex items-center gap-2 mt-4 px-6 py-3 rounded-lg bg-surface hover:bg-surface-raised border border-border text-text-primary text-label transition-all active:tick"
             onClick={() => setView("settings")}
           >
             <SettingsIcon size={14} />
@@ -190,37 +190,37 @@ export default function ChatView() {
         />
 
         <Show when={searchMatchIds().length > 0}>
-          <div class="flex items-center justify-between px-4 py-2 bg-surface-raised/90 border-b border-border text-[12px] text-text-secondary backdrop-blur-md gap-3 shrink-0 shadow-sm animate-in slide-in-from-top-1 duration-200">
+          <div class="flex items-center justify-between px-4 py-2 bg-surface-raised border-b border-border text-[12px] text-text-secondary gap-3 shrink-0 animate-in slide-in-from-top-1 duration-200">
             <div class="flex items-center gap-2">
               <SearchIcon size={13} class="text-accent" />
               <span>
                 <span class="text-text-primary font-semibold tabular-nums">{searchMatchIndex() + 1}</span>
-                {" of "}
-                <span class="text-text-primary font-semibold tabular-nums">{searchMatchIds().length}</span>
-                {" matches"}
+                {" / "}
+                <span class="text-text-primary font-bold tabular-nums">{searchMatchIds().length}</span>
+                {" MATCHES"}
               </span>
             </div>
             <div class="flex items-center gap-1">
               <button
-                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:tick disabled:opacity-30"
                 onClick={() => navigateMatch(-1)}
                 aria-label="Previous match"
               >
-                <ArrowUpIcon size={13} stroke-width={2.5} />
+                <ArrowUpIcon size={12} stroke-width={2} />
               </button>
               <button
-                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:scale-90"
+                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-border border border-border flex items-center justify-center transition-all active:tick"
                 onClick={() => navigateMatch(1)}
                 aria-label="Next match"
               >
-                <ArrowDownIcon size={13} stroke-width={2.5} />
+                <ArrowDownIcon size={12} stroke-width={2} />
               </button>
               <button
-                class="w-7 h-7 rounded-md bg-surface-raised hover:bg-red-500/10 hover:text-red-400 border border-border flex items-center justify-center transition-all active:scale-90 ml-1"
+                class="w-7 h-7 rounded-full bg-surface-raised hover:bg-accent/10 hover:text-accent border border-border flex items-center justify-center transition-all active:tick ml-1"
                 onClick={() => { setSearchMatchIds([]); setSearchMatchIndex(0); }}
-                aria-label="Clear search matches"
+                aria-label="Clear search"
               >
-                <XIcon size={13} />
+                <XIcon size={12} />
               </button>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function ChatView() {
 
         <div class="flex-1 flex flex-col overflow-hidden relative">
           <div
-            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-bg-surface/30 flex flex-col-reverse"
+            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-surface flex flex-col-reverse"
             ref={(el) => (containerRef = el)}
             onScroll={handleScroll}
           >
@@ -236,8 +236,8 @@ export default function ChatView() {
               <Show
                 when={displayMessages().length > 0}
                 fallback={
-                  <div class="flex flex-col items-center justify-center p-12 text-text-disabled text-sm text-center gap-1 italic opacity-60 min-h-full">
-                    No {showOnlyDeleted() ? "deleted " : ""}messages in this chat
+                  <div class="flex flex-col items-center justify-center p-12 text-text-disabled text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-center gap-1 opacity-60 min-h-full">
+                    NO_{showOnlyDeleted() ? "DELETED_" : ""}MESSAGES_LOGGED
                   </div>
                 }
               >
@@ -269,7 +269,7 @@ export default function ChatView() {
           {/* Scroll to Bottom Button - Fixed Position Relative to Parent */}
           <Show when={viewMode() === "messages" && showScrollBottom() && displayMessages().length > 0}>
             <button
-              class="absolute bottom-6 right-6 w-11 h-11 bg-surface text-text-secondary border border-border rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:bg-surface-raised active:scale-95 cursor-pointer backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
+              class="absolute bottom-6 right-6 w-11 h-11 bg-surface text-text-secondary border border-border rounded-full flex items-center justify-center hover:scale-105 hover:bg-surface-raised active:scale-95 cursor-pointer transition-all animate-in fade-in slide-in-from-bottom-2 z-20"
               onClick={() => scrollToBottom()}
               aria-label="Scroll to bottom"
             >
@@ -281,13 +281,13 @@ export default function ChatView() {
 
       <Show when={lightboxSrc()}>
         <div
-          class="fixed inset-0 z-3000 bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-300"
+          class="fixed inset-0 z-3000 bg-bg/95 flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={closeLightbox}
           role="dialog"
           aria-label="Image preview"
         >
           <button
-            class="absolute top-6 right-6 w-12 h-12 bg-surface-raised hover:bg-border rounded-full flex items-center justify-center text-text-primary transition-all active:scale-90 border border-border shadow-2xl"
+            class="absolute top-6 right-6 w-12 h-12 bg-surface-raised hover:bg-border rounded-full flex items-center justify-center text-text-primary transition-all active:scale-90 border border-border "
             onClick={closeLightbox}
             aria-label="Close preview"
           >
@@ -296,7 +296,7 @@ export default function ChatView() {
           <img
             src={lightboxSrc()!}
             alt="Full size preview"
-            class="max-w-full max-h-full object-contain rounded-lg shadow-[0_0_100px_rgba(0,0,0,0.5)]"
+            class="max-w-full max-h-full object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

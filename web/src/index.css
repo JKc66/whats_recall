@@ -21,7 +21,7 @@
   /* Functional Accents */
   --color-accent: var(--accent-color);
   --color-accent-subtle: var(--accent-subtle-color);
-  --color-success: #00FF41; /* Technical Matrix Green */
+  --color-success: #10B981; /* Emerald Green */
   --color-warning: #D4A843;
   --color-error: #D71921;
   --color-interactive: var(--interactive);
@@ -37,14 +37,14 @@
   --spacing-3xl: 64px;
   --spacing-4xl: 96px;
 
-  /* Transitions */
-  --animate-entrance: entrance 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-  --animate-fade-in: fade-in 0.3s ease-out both;
+  /* Transitions & Animations */
+  --animate-entrance: entrance 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade-in: fade-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-tick: tick 0.1s ease-out;
 }
 
 @keyframes entrance {
-  0% { opacity: 0; transform: translateY(8px); }
+  0% { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
@@ -55,12 +55,12 @@
 
 @keyframes tick {
   0% { transform: scale(1); }
-  100% { transform: scale(0.98); }
+  100% { transform: scale(0.97); }
 }
 
 @keyframes status-pulse {
-  0%, 100% { transform: scale(0.95); opacity: 0.3; }
-  50% { transform: scale(1.2); opacity: 0.6; }
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
 }
 
 @utility animate-status-pulse {
@@ -74,19 +74,22 @@
 /* Base Variable Engine - Global Scope */
 :root {
   color-scheme: dark;
-  --black: #000000;
-  --surface: #111111;
-  --surface-raised: #1A1A1A;
-  --border: #222222;
-  --border-visible: #333333;
-  --text-disabled: #666666;
-  --text-secondary: #999999;
-  --text-primary: #E8E8E8;
+  --black: #121212;
+  --surface: #1C1C1C;
+  --surface-raised: #242424;
+  --border: #2A2A2A;
+  --border-visible: #383838;
+  --text-disabled: #555555;
+  --text-secondary: #AAAAAA;
+  --text-primary: #E0E0E0;
   --text-display: #FFFFFF;
   --interactive: #5B9BF6;
-  --accent-color: #ef4444;
-  --accent-subtle-color: rgba(239, 68, 68, 0.15);
+  --accent-color: #D71921;
+  --accent-subtle-color: rgba(215, 25, 33, 0.1);
   
+  --bubble-me: #242424;
+  --bubble-other: #1C1C1C;
+
   --bg: var(--black);
   --text: var(--text-primary);
 }
@@ -103,22 +106,17 @@
   --text-secondary: #444444;
   --text-primary: #121212;
   --text-display: #000000;
-  --accent-color: #C4161C;
-  --accent-subtle-color: rgba(196, 22, 28, 0.08);
+  --accent-color: #D71921;
+  --accent-subtle-color: rgba(215, 25, 33, 0.08);
+
+  --bubble-me: #EFEFEF;
+  --bubble-other: #FFFFFF;
   
   --bg: var(--black);
   --text: var(--text-primary);
 }
 
-@utility dot-grid {
-  background-image: radial-gradient(circle, var(--border-visible) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
 
-@utility dot-grid-subtle {
-  background-image: radial-gradient(circle, var(--border) 0.5px, transparent 0.5px);
-  background-size: 12px 12px;
-}
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
@@ -175,7 +173,7 @@ html, body, #root {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 button, [role="button"] {
@@ -184,8 +182,4 @@ button, [role="button"] {
 
 .pill {
   border-radius: 999px;
-}
-
-.technical {
-  border-radius: 4px;
 }

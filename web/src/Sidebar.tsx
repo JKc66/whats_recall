@@ -112,7 +112,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      class="flex flex-col bg-surface border border-border min-h-0 h-full rounded-lg z-10 overflow-hidden transition-all duration-300 shadow-sm max-md:m-0 max-md:h-dvh max-md:border-none max-md:rounded-none"
+      class="flex flex-col bg-surface border border-border min-h-0 h-full rounded-lg z-10 overflow-hidden transition-all duration-300  max-md:m-0 max-md:h-dvh max-md:border-none max-md:rounded-none"
       classList={{ "max-md:hidden": sidebarHidden() }}
     >
       <header class="flex items-center justify-between p-4 min-h-16 border-b border-border bg-surface-raised/30">
@@ -124,12 +124,12 @@ export default function Sidebar() {
             <span
               class="relative z-10 rounded-full transition-all duration-500"
               classList={{
-                "w-2 h-2 bg-success shadow-[0_0_12px_var(--color-success)]": stats().connected,
+                "w-2 h-2 bg-success": stats().connected,
                 "w-1.5 h-1.5 bg-text-disabled opacity-30": !stats().connected,
               }}
             />
           </div>
-          WHATSAPP LOGGER
+          MESSAGES
         </div>
         <nav class="flex gap-1" aria-label="Sidebar actions">
           <button
@@ -173,11 +173,11 @@ export default function Sidebar() {
           />
           <input
             type="text"
-            placeholder="SEARCH CHATS..."
+            placeholder="SEARCH_CHATS..."
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
             spellcheck={false}
-            class="w-full p-[8px_12px_8px_32px] bg-surface-raised border border-border technical text-text-primary text-[12px] font-mono outline-none transition-all focus:border-border-visible placeholder:text-text-disabled"
+            class="w-full p-[8px_12px_8px_32px] bg-surface-raised border border-border rounded-lg text-text-primary text-[12px] font-mono outline-none transition-all focus:border-border-visible placeholder:text-text-disabled"
           />
         </div>
       </div>
@@ -188,9 +188,9 @@ export default function Sidebar() {
           when={filteredChats().length > 0}
           fallback={
             <div class="flex flex-col items-center justify-center p-12 text-center h-full gap-4">
-              <Show when={isSearchActive()} fallback={<span class="text-label">NO CHATS</span>}>
+              <Show when={isSearchActive()} fallback={<span class="text-label">NO CHATS AVAILABLE</span>}>
                 <span class="text-label">NO RESULTS FOR</span>
-                <span class="text-metadata bg-surface-raised px-2 py-1 technical truncate max-w-40">"{searchQuery().trim()}"</span>
+                <span class="text-metadata bg-surface-raised px-2 py-1 rounded-lg truncate max-w-40">"{searchQuery().trim()}"</span>
                 <button
                   class="mt-2 text-label text-accent hover:underline"
                   onClick={() => setSearchQuery("")}
@@ -230,7 +230,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
 
   return (
     <button
-      class="flex items-center p-3 m-[2px_12px] gap-3 cursor-pointer transition-all border-none technical bg-transparent text-inherit w-[calc(100%-24px)] text-left relative outline-none hover:bg-surface-raised active:tick group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      class="flex items-center p-3 m-[2px_12px] gap-3 cursor-pointer transition-all border-none rounded-lg bg-transparent text-inherit w-[calc(100%-24px)] text-left relative outline-none hover:bg-surface-raised active:tick group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       classList={{ "bg-surface-raised": props.active }}
       onClick={() => props.onClick()}
       aria-current={props.active ? "true" : "false"}
@@ -239,7 +239,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
         <div class="absolute left-0 top-3 bottom-3 w-0.5 bg-accent" />
       )}
       <div
-        class="w-10 h-10 min-w-10 technical flex items-center justify-center text-[12px] font-mono text-white uppercase overflow-hidden"
+        class="w-10 h-10 min-w-10 rounded-lg flex items-center justify-center text-[12px] font-mono text-white uppercase overflow-hidden"
         style={{ background: color(), opacity: 0.8 }}
       >
         <Show when={dpUrl()} fallback={initials()}>
@@ -264,7 +264,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
           {time()}
         </span>
         <Show when={props.chat.deleted_count > 0}>
-          <span class="bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 technical tabular-nums max-h-5 min-w-5 flex items-center justify-center">
+          <span class="bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg tabular-nums max-h-5 min-w-5 flex items-center justify-center">
             {props.chat.deleted_count}
           </span>
         </Show>

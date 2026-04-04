@@ -22,7 +22,7 @@ export default function SettingsHeader(props: SettingsHeaderProps) {
 
         <div class="flex-1 p-6 md:p-8 flex flex-col gap-1 min-w-0">
           <div class="flex items-center gap-3 mb-1">
-            <div class="w-2 h-2 bg-accent shadow-[0_0_8px_var(--color-accent)]" />
+            <div class="w-2 h-2 bg-accent" />
             <h2 class="text-label text-accent">
               SETTINGS
             </h2>

@@ -3,6 +3,7 @@ import type { Message, Reaction } from "../../types";
 import { avatarColor, formatTime, extractJidId, mediaUrl } from "../../utils";
 import { FileIcon, DownloadIcon, TrashIcon, EyeIcon, ImageIcon, VideoIcon, MusicIcon, CheckIcon } from "../Icons";
 import { notify } from "../../notify";
+import AudioPlayer from "./AudioPlayer";
 
 interface MessageBubbleProps {
   msg: Message;
@@ -153,15 +154,20 @@ export function MessageBubble(props: MessageBubbleProps) {
     const mt = (msg.media_type || "").toLowerCase();
     const type = msg.type;
 
-    if (type === "image" || type === "sticker" || mt.startsWith("image/")) {
+    if (
+      type === "image" || 
+      type === "sticker" || 
+      type === "lottieSticker" || 
+      mt.startsWith("image/")
+    ) {
       return (
         <div
           class="group relative rounded-lg overflow-hidden my-1 max-w-80"
-          classList={{ "bg-transparent max-w-[180px]": type === "sticker" }}
+          classList={{ "bg-transparent max-w-[180px]": type === "sticker" || type === "lottieSticker" }}
         >
           <img
             src={src}
-            alt={type === "sticker" ? "Sticker" : "Image"}
+            alt={type.includes("sticker") ? "Sticker" : "Image"}
             loading="lazy"
             class="w-full cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black rounded-sm"
             onClick={() => props.onImageClick(src)}
@@ -177,12 +183,12 @@ export function MessageBubble(props: MessageBubbleProps) {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-          <Show when={type !== "sticker"}>
+          <Show when={!type.includes("sticker")}>
             <a
               href={src}
               download={msg.media_filename || "download"}
-              aria-label="Download image"
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+              aria-label="Download"
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
             >
               <DownloadIcon size={14} stroke-width={2.5} />
             </a>
@@ -191,7 +197,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       );
     }
 
-    if (type === "video" || mt.startsWith("video/")) {
+    if (type === "video" || type === "ptv" || mt.startsWith("video/")) {
       return (
         <div class="group relative rounded-lg overflow-hidden my-1 max-w-80">
           <video
@@ -204,7 +210,7 @@ export function MessageBubble(props: MessageBubbleProps) {
             href={src}
             download={msg.media_filename || "download"}
             aria-label="Download video"
-            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-md outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
           >
             <DownloadIcon size={14} stroke-width={2.5} />
           </a>
@@ -215,7 +221,7 @@ export function MessageBubble(props: MessageBubbleProps) {
     if (type === "audio" || type === "ptt" || mt.startsWith("audio/")) {
       return (
         <div class="flex flex-col gap-2 my-1 max-w-80">
-          <audio src={src} controls preload="metadata" class="w-full" />
+          <AudioPlayer src={src} isMe={isMe()} filename={msg.media_filename || "voice-note"} />
         </div>
       );
     }
@@ -245,7 +251,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
   return (
     <div
-      class="max-w-[85%] p-3 px-4 technical relative mb-1.5 wrap-break-word animate-entrance shadow-sm"
+      class="max-w-[85%] p-3 px-4 rounded-lg relative mb-1.5 wrap-break-word animate-entrance "
       classList={{
         "self-start bg-[var(--bubble-other)] border border-border": !isMe(),
         "self-end bg-[var(--bubble-me)] border border-accent/20": isMe(),
@@ -278,8 +284,8 @@ export function MessageBubble(props: MessageBubbleProps) {
       </Show>
 
       <Show when={isViewOnce()}>
-        <div class="bg-violet-500/10 text-violet-400 text-[10.5px] font-semibold py-0.5 px-2 rounded-full mb-1 inline-flex items-center gap-1.5 border border-violet-500/20">
-          <EyeIcon size={12} /> View once
+        <div class="bg-surface-raised text-text-primary text-[10.5px] font-semibold py-0.5 px-2 rounded-full mb-1 inline-flex items-center gap-1.5 border border-border">
+          <EyeIcon size={12} /> VIEW_ONCE
         </div>
       </Show>
 
@@ -303,7 +309,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           />
           <Show when={formattedReply()?.sender}>
             <div
-              class="text-[11px] font-bold text-accent-bright mb-0.5 uppercase tracking-wider opacity-90 group-hover/reply:opacity-100"
+              class="text-[11px] font-bold text-accent mb-0.5 uppercase tracking-wider opacity-90 group-hover/reply:opacity-100"
               classList={{ "text-accent": isMe() }}
             >
               {extractJidId(formattedReply()!.sender)}
@@ -323,7 +329,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               <ImageIcon size={12} class="shrink-0 text-accent/70 opacity-50" />
             </Show>
             <Show when={formattedReply()!.hasViewOnce}>
-              <EyeIcon size={12} class="shrink-0 text-violet-400" />
+              <EyeIcon size={12} class="shrink-0 text-text-secondary" />
             </Show>
             <span class="truncate">{formattedReply()!.label}</span>
           </div>
@@ -352,12 +358,12 @@ export function MessageBubble(props: MessageBubbleProps) {
           <For each={groupReactions(m().reactions!)}>
             {(group) => (
               <span
-                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
+                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5  hover:scale-110 transition-transform cursor-default"
                 title={group.senders.join(", ")}
               >
                 <span class="text-sm leading-none">{group.emoji}</span>
                 <Show when={group.count > 1}>
-                  <span class="text-[10px] font-mono font-black text-text-primary bg-border-visible rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
+                  <span class="text-[10px] font-mono font-bold text-text-primary bg-border-visible rounded-sm px-1 py-px leading-none scale-90 translate-x-[-2px]">
                     {group.count}
                   </span>
                 </Show>
@@ -372,8 +378,8 @@ export function MessageBubble(props: MessageBubbleProps) {
           {time()}
         </span>
         <Show when={isDeleted()}>
-          <span class="text-[9px] font-bold text-red-500 uppercase tracking-widest px-1.5 py-px bg-red-500/10 rounded-full border border-red-500/15">
-            deleted
+          <span class="text-[9px] font-mono font-bold text-accent uppercase tracking-[0.2em]">
+            [ DELETED ]
           </span>
         </Show>
         <Show when={m().edits?.length}>
@@ -385,7 +391,7 @@ export function MessageBubble(props: MessageBubbleProps) {
               onClick={() => setShowHistory(!showHistory())}
               class="text-[9px] font-medium text-text-secondary hover:text-text-primary px-2 py-0.5 bg-surface-raised rounded-full border border-border hover:bg-border transition-colors uppercase tracking-tight"
             >
-              {showHistory() ? "Hide" : `${m().edits!.length} Historical Version${m().edits!.length > 1 ? 's' : ''}`}
+              {showHistory() ? "HIDE" : `${m().edits!.length} VERSIONS`}
             </button>
           </div>
         </Show>
@@ -399,7 +405,7 @@ export function MessageBubble(props: MessageBubbleProps) {
                 <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-accent opacity-30 group-hover/edit:opacity-100 transition-opacity" />
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-[9px] font-bold text-text-disabled uppercase tracking-widest flex items-center gap-1">
-                    Previous Version
+                    HISTORICAL_RECORD
                   </span>
                 </div>
                 <div class="flex items-end justify-between gap-4">
@@ -472,10 +478,10 @@ export function ImageGroup(props: {
 
   return (
     <div
-      class="max-w-110 p-3 px-4 rounded-2xl relative mb-1.5 shadow-sm animate-in fade-in duration-300"
+      class="max-w-110 p-3 px-4 rounded-2xl relative mb-1.5  animate-in fade-in duration-300"
       classList={{
         "self-start bg-surface border border-border rounded-bl-sm": !isMe(),
-        "self-end bg-accent/20 backdrop-blur-md border border-accent/20 rounded-br-sm":
+        "self-end bg-accent/20  border border-accent/20 rounded-br-sm":
           isMe(),
         "mb-5": props.messages.some(
           (m) => m.reactions && m.reactions.length > 0,
@@ -524,14 +530,14 @@ export function ImageGroup(props: {
                 href={mediaUrl(msg.media_path!)}
                 download={msg.media_filename || "download"}
                 aria-label="Download photo"
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border backdrop-blur-sm z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
               >
                 <DownloadIcon size={12} stroke-width={2.5} />
               </a>
               <Show when={!!msg.is_deleted}>
-                <div class="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <span class="bg-[rgba(0,0,0,0.6)] px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-border">
-                    <TrashIcon size={10} /> Deleted
+                <div class="absolute inset-0 flex items-center justify-center bg-bg/20">
+                  <span class="bg-[rgba(0,0,0,0.6)] px-2 py-1 rounded text-[9px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 border border-border">
+                    <TrashIcon size={10} /> DELETED
                   </span>
                 </div>
               </Show>
@@ -559,9 +565,9 @@ export function ImageGroup(props: {
               disabled={isDownloading()}
             >
               <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} />}>
-                <CheckIcon size={10} class="text-emerald-500 animate-in zoom-in duration-300" />
+                <CheckIcon size={10} class="text-success animate-in zoom-in duration-300" />
               </Show> 
-              {isDownloading() ? "Downloaded" : "Album"}
+              {isDownloading() ? "DOWNLOADED" : "ALBUM"}
             </button>
           </Show>
         </div>
@@ -584,7 +590,7 @@ export function ImageGroup(props: {
           >
             {(group) => (
               <span
-                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5 shadow-md hover:scale-110 transition-transform cursor-default"
+                class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5  hover:scale-110 transition-transform cursor-default"
                 title={group.senders.join(", ")}
               >
                 <span class="text-sm">{group.emoji}</span>

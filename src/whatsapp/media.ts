@@ -103,6 +103,8 @@ function getExtension(type: string): string {
     audio: 'ogg',
     ptt: 'ogg',
     sticker: 'webp',
+    ptv: 'mp4',
+    lottieSticker: 'webp',
     document: 'bin'
   };
   return map[type] || 'bin';

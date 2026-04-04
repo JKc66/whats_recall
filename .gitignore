@@ -8,9 +8,6 @@ nohup.out
 .env
 
 skills-lock.json
-.agents/
-.agent/
-AGENTS.md
 
 *.tsbuildinfo
 dist/

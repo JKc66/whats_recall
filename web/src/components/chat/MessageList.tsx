@@ -122,7 +122,7 @@ export default function MessageList(props: MessageListProps) {
             </Show>
             <Show when={group.showDate}>
               <div class="flex justify-center py-6 mb-2">
-                <span class="bg-surface/80 backdrop-blur-md text-text-secondary text-[11px] font-bold py-1 px-4 rounded-full border border-border uppercase tracking-widest shadow-sm">
+                <span class="bg-surface/80  text-text-secondary text-[11px] font-bold py-1 px-4 rounded-full border border-border uppercase tracking-widest ">
                   {group.dateStr}
                 </span>
               </div>

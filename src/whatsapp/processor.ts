@@ -433,10 +433,20 @@ export class MessageProcessor {
     // Download and store media attachments (images, videos, documents, stickers)
     let mediaPath = null;
     let mediaSha256: string | null = null;
-    const hasMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(messageType);
+    const hasMedia = [
+      'imageMessage', 
+      'videoMessage', 
+      'audioMessage', 
+      'stickerMessage', 
+      'documentMessage', 
+      'ptvMessage', 
+      'lottieStickerMessage'
+    ].includes(messageType);
     
     if (hasMedia) {
-      const mediaResult = await downloadMedia(msg, messageType.replace('Message', ''), this.sock);
+      // Use the raw message type for downloadMedia (ptv, lottieSticker, etc.)
+      const downloadType = messageType.replace('Message', '');
+      const mediaResult = await downloadMedia(msg, downloadType, this.sock);
       if (mediaResult) {
         mediaPath = mediaResult.path;
         mediaSha256 = mediaResult.sha256hex;

@@ -225,7 +225,7 @@ export default function Settings() {
   }
 
   return (
-    <div class="flex-1 flex flex-col h-full bg-bg relative overflow-hidden dot-grid">
+    <div class="flex-1 flex flex-col h-full bg-bg relative overflow-hidden">
       <SettingsHeader
         onBack={() => setView("chats")}
         search={search()}
@@ -233,36 +233,36 @@ export default function Settings() {
         stats={stats()}
       />
 
-      <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 shadow-sm">
+      <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 min-h-14">
         <button
-          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
+          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
-            "bg-surface-raised text-accent": tab() === "config",
+            "bg-text-display text-black": tab() === "config",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "config",
           }}
           onClick={() => setTab("config")}
         >
-          CONFIGURATION
+          {tab() === "config" ? "[ CONFIGURATION ]" : "CONFIGURATION"}
         </button>
         <button
-          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
+          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
-            "bg-surface-raised text-accent": tab() === "monitored",
+            "bg-text-display text-black": tab() === "monitored",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "monitored",
           }}
           onClick={() => setTab("monitored")}
         >
-          MONITORED: {(monitored() || []).length}
+          {tab() === "monitored" ? `[ MONITORED: ${(monitored() || []).length} ]` : `MONITORED: ${(monitored() || []).length}`}
         </button>
         <button
-          class="px-8 py-4 text-label transition-all shrink-0 border-r border-border font-black"
+          class="px-8 py-4 text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
           classList={{
-            "bg-surface-raised text-accent": tab() === "available",
+            "bg-text-display text-black": tab() === "available",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "available",
           }}
           onClick={() => setTab("available")}
         >
-          AVAILABLE: {(available() || []).length}
+          {tab() === "available" ? `[ AVAILABLE: ${(available() || []).length} ]` : `AVAILABLE: ${(available() || []).length}`}
         </button>
       </div>
 

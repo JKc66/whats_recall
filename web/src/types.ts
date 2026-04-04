@@ -8,6 +8,8 @@ export type MessageType =
   | "document"
   | "location"
   | "contact"
+  | "ptv"
+  | "lottieSticker"
   | "revoked"
   | "unknown";
 

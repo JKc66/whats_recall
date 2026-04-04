@@ -52,7 +52,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                         preload="metadata"
                         class="w-full h-full object-cover"
                       />
-                      <div class="absolute inset-0 flex items-center justify-center bg-black/20 text-white">
+                      <div class="absolute inset-0 flex items-center justify-center bg-bg/20 text-white">
                         <PlayIcon size={24} fill="currentColor" stroke="none" />
                       </div>
                     </div>

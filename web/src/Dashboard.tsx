@@ -9,7 +9,7 @@ export default function Dashboard() {
     <div class="grid grid-cols-[340px_1fr] h-dvh relative z-1 p-3 gap-3 bg-bg max-md:flex max-md:flex-col max-md:p-0 max-md:gap-0">
       <Sidebar />
       <main 
-        class="flex-1 flex flex-col bg-bg-surface/55 backdrop-blur-glass border border-white/5 rounded-lg min-w-0 h-[calc(100dvh-24px)] overflow-hidden relative shadow-inner max-md:h-dvh max-md:border-none max-md:rounded-none"
+        class="flex-1 flex flex-col bg-surface border border-border rounded-lg min-w-0 h-[calc(100dvh-24px)] overflow-hidden relative max-md:h-dvh max-md:border-none max-md:rounded-none"
         classList={{ "max-md:hidden": !currentChatId() && view() === "chats" }}
       >
         <Show when={view() === "settings"}>

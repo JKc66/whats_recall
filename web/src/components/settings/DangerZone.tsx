@@ -24,15 +24,15 @@ export default function DangerZone(props: DangerZoneProps) {
 
       <div class="p-4 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 hover:bg-accent/10 transition-colors">
         <div class="flex flex-col gap-1 max-w-140 w-full md:w-auto">
-          <div class="text-[12px] md:text-[14px] font-black text-text-primary uppercase tracking-[0.05em] font-mono">
+          <div class="text-[12px] md:text-[14px] font-bold text-text-primary uppercase tracking-[0.05em] font-mono">
             DATA_WIPE
           </div>
           <div class="text-[8px] md:text-[9px] text-text-disabled uppercase tracking-widest font-mono leading-relaxed opacity-80">
-            [ ACTION: IRREVERSIBLE_ACTION ]
+            IRREVERSIBLE DATA REMOVAL
           </div>
         </div>
         <button
-          class="w-full md:w-auto px-6 md:px-10 py-2.5 md:py-3 bg-accent hover:brightness-110 text-white font-black text-[11px] md:text-[12px] uppercase tracking-[0.3em] font-mono transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-2"
+          class="w-full md:w-auto px-6 md:px-10 py-2.5 md:py-3 bg-accent hover:brightness-110 text-white font-bold text-[11px] md:text-[12px] uppercase tracking-[0.3em] font-mono transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-2"
           disabled={props.clearing}
           onClick={() => props.onClearData()}
         >
@@ -47,8 +47,8 @@ export default function DangerZone(props: DangerZoneProps) {
       </div>
 
       <Show when={props.confirmClear}>
-        <div class="m-4 md:m-8 mt-0 p-4 md:p-6 border-2 border-accent bg-surface animate-in fade-in zoom-in-95 duration-300 shadow-[0_0_40px_var(--color-accent-subtle)] relative z-20">
-          <div class="absolute -top-3 left-4 bg-accent text-white px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+        <div class="m-4 md:m-8 mt-0 p-4 md:p-6 border-2 border-accent bg-surface animate-in fade-in zoom-in-95 duration-300 relative z-20">
+          <div class="absolute -top-3 left-4 bg-accent text-white px-2 md:px-3 py-1 text-[8px] md:text-[9px] font-bold uppercase tracking-widest">
             AUTHORIZATION
           </div>
           
@@ -57,7 +57,7 @@ export default function DangerZone(props: DangerZoneProps) {
               <AlertTriangleIcon size={20} />
             </div>
             <div class="flex flex-col gap-1">
-              <span class="text-[10px] md:text-[11px] font-black text-accent uppercase tracking-widest font-mono">
+              <span class="text-[10px] md:text-[11px] font-bold text-accent uppercase tracking-widest font-mono">
                 CONFIRM_IDENTITY
               </span>
               <p class="text-[9px] md:text-[10px] text-text-secondary uppercase tracking-wider leading-relaxed">
@@ -85,14 +85,14 @@ export default function DangerZone(props: DangerZoneProps) {
             
             <div class="flex flex-col sm:flex-row items-stretch gap-3 md:gap-4">
               <button
-                class="flex-1 py-3 md:py-4 bg-accent hover:brightness-110 text-white font-black text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all disabled:opacity-20 shadow-lg active:scale-95"
+                class="flex-1 py-4 bg-transparent border border-accent text-accent hover:bg-accent hover:text-white font-bold text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all disabled:opacity-20 rounded-full active:tick"
                 disabled={!props.clearPassword}
                 onClick={() => props.onConfirmClearData()}
               >
                 ERASE_ALL_DATA
               </button>
               <button
-                class="px-6 md:px-10 py-3 md:py-4 bg-surface-raised hover:bg-border-visible/50 text-text-primary border border-border font-black text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all active:scale-95"
+                class="px-8 md:px-12 py-4 bg-transparent border border-border-visible text-text-primary hover:bg-surface-raised font-bold text-[12px] md:text-[13px] uppercase tracking-[0.2em] font-mono transition-all active:tick rounded-full"
                 onClick={() => props.onCancelClear()}
               >
                 CANCEL

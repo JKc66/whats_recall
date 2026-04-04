@@ -30,60 +30,60 @@ export default function ChatSelector(props: ChatSelectorProps) {
   return (
     <div class="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
       <Show when={props.type === "available"}>
-        <div class="flex items-stretch border-b border-border bg-surface/80 backdrop-blur-md sticky top-0 z-10 overflow-x-auto no-scrollbar">
+        <div class="flex items-stretch border-b border-border bg-surface/80  sticky top-0 z-10 overflow-x-auto no-scrollbar">
           <div class="flex border-r border-border">
             <button
-              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-black transition-all uppercase tracking-[0.2em] font-mono border-r border-border"
+              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
               classList={{
-                "bg-surface-raised text-accent": props.filterType === "all",
+                "bg-text-display text-black": props.filterType === "all",
                 "text-text-disabled hover:text-text-primary": props.filterType !== "all",
               }}
               onClick={() => props.setFilterType("all")}
             >
-              ALL
+              {props.filterType === "all" ? "[ ALL ]" : "ALL"}
             </button>
             <button
-              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-black transition-all uppercase tracking-[0.2em] font-mono border-r border-border"
+              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
               classList={{
-                "bg-surface-raised text-accent": props.filterType === "chats",
+                "bg-text-display text-black": props.filterType === "chats",
                 "text-text-disabled hover:text-text-primary": props.filterType !== "chats",
               }}
               onClick={() => props.setFilterType("chats")}
             >
-              GRPS
+              {props.filterType === "chats" ? "[ GRP ]" : "GRP"}
             </button>
             <button
-              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-black transition-all uppercase tracking-[0.2em] font-mono border-r border-border md:border-r-0"
+              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border md:border-r-0"
               classList={{
-                "bg-surface-raised text-accent": props.filterType === "contacts",
+                "bg-text-display text-black": props.filterType === "contacts",
                 "text-text-disabled hover:text-text-primary": props.filterType !== "contacts",
               }}
               onClick={() => props.setFilterType("contacts")}
             >
-              PRIV
+              {props.filterType === "contacts" ? "[ PRIV ]" : "PRIV"}
             </button>
           </div>
 
           <div class="flex border-l border-border ml-auto group">
             <button
-              class="hidden sm:flex px-5 py-3 text-[10px] font-black transition-all uppercase tracking-[0.2em] font-mono border-r border-border"
+              class="hidden sm:flex px-5 py-3 text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
               classList={{
-                "bg-surface-raised text-accent": props.sortBy === "recent",
+                "bg-text-display text-black": props.sortBy === "recent",
                 "text-text-disabled hover:text-text-primary": props.sortBy !== "recent",
               }}
               onClick={() => props.setSortBy("recent")}
             >
-              RECENT
+              {props.sortBy === "recent" ? "[ RECENT ]" : "RECENT"}
             </button>
             <button
-              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-black transition-all uppercase tracking-[0.2em] font-mono border-r border-border"
+              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
               classList={{
-                "bg-surface-raised text-accent": props.sortBy === "name",
+                "bg-text-display text-black": props.sortBy === "name",
                 "text-text-disabled hover:text-text-primary": props.sortBy !== "name",
               }}
               onClick={() => props.setSortBy("name")}
             >
-              ALPHA
+              {props.sortBy === "name" ? "[ ALPHA ]" : "ALPHA"}
             </button>
             <button
               class="w-10 md:w-12 flex items-center justify-center hover:bg-surface-raised transition-all text-accent/60"
@@ -108,7 +108,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               <div class="w-1 md:w-1.5 h-1 md:h-1.5 bg-accent animate-pulse [animation-delay:0.4s]" />
             </div>
             <span class="text-[9px] md:text-[10px] font-mono font-bold animate-pulse uppercase tracking-[0.3em] opacity-60">
-              SCRAPING_DATA...
+              SYNCING_CHATS...
             </span>
           </div>
         </Show>
@@ -116,10 +116,10 @@ export default function ChatSelector(props: ChatSelectorProps) {
         <Show when={!props.loading && props.chats.length === 0}>
           <div class="flex flex-col items-center justify-center p-8 md:p-16 text-text-disabled text-center gap-2 border-b border-dashed border-border/50">
             <div class="text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
-              [ ERR: NO_NODES ]
+              NO CHATS FOUND
             </div>
             <div class="text-[8px] md:text-[9px] text-text-secondary uppercase tracking-widest leading-relaxed max-w-48 md:max-w-64">
-              Zero responsive entries detected.
+              NO CONTACTS OR GROUPS DETECTED
             </div>
           </div>
         </Show>
@@ -137,10 +137,10 @@ export default function ChatSelector(props: ChatSelectorProps) {
             return (
               <div class="group flex items-stretch border-b border-border hover:bg-surface-raised/20 transition-all duration-300 relative overflow-hidden">
                 <Show when={isConfirming()}>
-                  <div class="absolute inset-0 z-50 bg-surface/90 backdrop-blur-sm animate-in fade-in slide-in-from-right-4 duration-200 flex items-stretch">
+                  <div class="absolute inset-0 z-50 bg-surface/90 animate-in fade-in slide-in-from-right-4 duration-200 flex items-stretch">
                     <div class="flex-1 flex flex-col justify-center px-4 md:px-8">
                       <span class="text-[9px] md:text-[10px] font-mono font-bold text-accent uppercase tracking-[0.3em] mb-1">
-                        SYSTEM_DETACH_REQ
+                        REMOVE_MONITOR
                       </span>
                       <p class="text-[8px] md:text-[9px] text-text-secondary uppercase tracking-widest font-mono">
                         Irreversible record destruction possible.
@@ -148,19 +148,19 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     </div>
                     <div class="flex border-l border-border">
                       <button
-                        class="px-5 md:px-10 text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] font-mono text-white bg-accent hover:brightness-110 transition-all border-r border-border active:scale-95"
+                        class="px-5 md:px-10 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] font-mono text-white bg-accent hover:brightness-110 transition-all border-r border-border active:scale-95"
                         onClick={() => {
                           props.onRemove(id);
                           setConfirming(null);
                         }}
                       >
-                        CONFIRM_WIPE
+                        REMOVE
                       </button>
                       <button
-                        class="px-6 md:px-8 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] font-mono text-text-disabled hover:bg-surface-raised hover:text-text-primary transition-all"
+                        class="px-6 md:px-8 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] font-mono text-text-disabled hover:bg-surface-raised hover:text-text-primary transition-all"
                         onClick={() => setConfirming(null)}
                       >
-                        ABORT_CMD
+                        CANCEL
                       </button>
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     }
                   >
                     <div
-                      class="relative w-8 h-8 md:w-10 md:h-10 border border-border flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white uppercase overflow-hidden shadow-sm"
+                      class="relative w-8 h-8 md:w-10 md:h-10 border border-border flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white uppercase overflow-hidden "
                       style={{ background: avatarColor(chat.name) }}
                     >
                       <span class="relative z-1">{getInitials(chat.name)}</span>
@@ -216,12 +216,12 @@ export default function ChatSelector(props: ChatSelectorProps) {
                       </span>
                     </Show>
                     <Show when={chat.lid}>
-                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-emerald-600 border border-emerald-600/20 px-1 uppercase bg-emerald-600/5">
+                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-success border border-success/20 px-1 uppercase bg-success/5">
                         LID
                       </span>
                     </Show>
                     <span
-                      class={`text-[7px] md:text-[8px] font-mono font-bold border px-1 uppercase ${(chat.isGroup ?? chat.is_group) ? "text-amber-600 border-amber-600/20 bg-amber-600/5" : "text-blue-600 border-blue-600/20 bg-blue-600/5"}`}
+                      class={`text-[7px] md:text-[8px] font-mono font-bold border px-1 uppercase ${(chat.isGroup ?? chat.is_group) ? "text-warning border-warning/20 bg-warning/5" : "text-interactive border-interactive/20 bg-interactive/5"}`}
                     >
                       {(chat.isGroup ?? chat.is_group) ? "GRP" : "PRIV"}
                     </span>
@@ -234,12 +234,12 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     when={props.type === "available"}
                     fallback={
                       <button
-                        class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] font-mono text-accent hover:bg-accent hover:text-white transition-all disabled:opacity-20"
+                        class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] font-mono text-accent hover:bg-accent hover:text-white transition-all disabled:opacity-20"
                         classList={{ "animate-pulse": isBusy() }}
                         onClick={() => setConfirming(id)}
                         disabled={isBusy()}
                       >
-                        {isBusy() ? "WORK" : "DETACH"}
+                        {isBusy() ? "SYNC" : "REMOVE"}
                       </button>
                     }
                   >
@@ -247,7 +247,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                       when={isAdded()}
                       fallback={
                         <button
-                          class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] font-mono text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-20"
+                          class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] font-mono text-success hover:bg-success hover:text-white transition-all disabled:opacity-20"
                           classList={{ "animate-pulse": isBusy() }}
                           onClick={() => props.onAdd?.(chat)}
                           disabled={isBusy()}
@@ -257,12 +257,12 @@ export default function ChatSelector(props: ChatSelectorProps) {
                       }
                     >
                       <button
-                        class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] font-mono text-text-disabled hover:bg-accent hover:text-white transition-all disabled:opacity-20"
+                        class="h-full px-2 md:px-4 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] font-mono text-text-disabled hover:bg-accent hover:text-white transition-all disabled:opacity-20"
                         classList={{ "animate-pulse": isBusy() }}
                         onClick={() => setConfirming(id)}
                         disabled={isBusy()}
                       >
-                        {isBusy() ? "WORK" : "LINKED"}
+                        {isBusy() ? "SYNC" : "ACTIVE"}
                       </button>
                     </Show>
                   </Show>
