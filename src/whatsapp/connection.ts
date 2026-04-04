@@ -383,18 +383,19 @@ export class WhatsAppConnection {
       const results = await Promise.all(allChats.map(async (c: any) => {
         const isGrp = isJidGroup(c.id);
         let name = c.name || c.notify || '';
-
         if (!name || name === extractJidId(c.id)) {
           name = getChatName(c.id);
         }
-
+        const hasName = name && name !== extractJidId(c.id);
         const ts = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
+
         return {
           id: c.id,
           name: name,
           isGroup: isGrp,
           timestamp: ts,
           isMonitored: monitored.has(c.id),
+          hasName: !!hasName,
           profilePic: (profilePics as any)[c.id] || getDb().getChatProfilePic(c.id),
           lid: c.lids && c.lids.length > 0 ? extractJidId(c.lids[0]) : (c.id.includes('@lid') ? extractJidId(c.id) : null)
         };

@@ -85,6 +85,7 @@ export interface WhatsAppChat {
   isGroup: boolean;
   timestamp: number;
   isMonitored: boolean;
+  hasName?: boolean;
   profilePic?: string | null;
   lid?: string | null;
   profile_pic?: string | null; // Unified with profilePic

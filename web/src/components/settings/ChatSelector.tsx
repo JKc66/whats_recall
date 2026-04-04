@@ -22,6 +22,8 @@ interface ChatSelectorProps {
   setFilterType: (_val: "all" | "chats" | "contacts") => void;
   sortBy: "recent" | "name";
   setSortBy: (_val: "recent" | "name") => void;
+  hideStrangers?: boolean;
+  setHideStrangers?: (_val: boolean) => void;
 }
 
 export default function ChatSelector(props: ChatSelectorProps) {
@@ -64,9 +66,22 @@ export default function ChatSelector(props: ChatSelectorProps) {
             </button>
           </div>
 
-          <div class="flex border-l border-border ml-auto group">
+          <div class="flex border-l border-border ml-auto group items-center">
+            <Show when={props.type === "available"}>
+              <button
+                class="px-4 py-3 text-[9px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border h-full"
+                classList={{
+                  "bg-text-display text-black": props.hideStrangers,
+                  "text-text-disabled hover:text-text-primary": !props.hideStrangers,
+                }}
+                onClick={() => props.setHideStrangers?.(!props.hideStrangers)}
+                title="Hide contacts without names"
+              >
+                {props.hideStrangers ? "[ HIDDEN ]" : "STRANGERS"}
+              </button>
+            </Show>
             <button
-              class="hidden sm:flex px-5 py-3 text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
+              class="hidden sm:flex px-5 py-3 text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border h-full"
               classList={{
                 "bg-text-display text-black": props.sortBy === "recent",
                 "text-text-disabled hover:text-text-primary": props.sortBy !== "recent",
@@ -76,7 +91,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               {props.sortBy === "recent" ? "[ RECENT ]" : "RECENT"}
             </button>
             <button
-              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
+              class="px-4 md:px-5 py-2.5 md:py-3 text-[9px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border h-full"
               classList={{
                 "bg-text-display text-black": props.sortBy === "name",
                 "text-text-disabled hover:text-text-primary": props.sortBy !== "name",
@@ -86,7 +101,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               {props.sortBy === "name" ? "[ ALPHA ]" : "ALPHA"}
             </button>
             <button
-              class="w-10 md:w-12 flex items-center justify-center hover:bg-surface-raised transition-all text-accent/60"
+              class="w-10 md:w-12 flex items-center justify-center hover:bg-surface-raised transition-all text-accent/60 h-full"
               onClick={() => props.onRefetch?.()}
               title="Force sync list"
             >

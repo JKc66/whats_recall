@@ -66,6 +66,7 @@ export default function Settings() {
   const [filterType, setFilterType] = createSignal<
     "all" | "chats" | "contacts"
   >("all");
+  const [hideStrangers, setHideStrangers] = createSignal(true);
 
   const isConnected = createMemo(() => stats().connected);
   createEffect(() => {
@@ -98,6 +99,10 @@ export default function Settings() {
       list = list.filter((c) => c.isGroup);
     else if (filterType() === "contacts")
       list = list.filter((c) => !c.isGroup);
+
+    if (hideStrangers() && filterType() !== "chats") {
+      list = list.filter((c) => c.hasName || c.isGroup);
+    }
     if (q)
       list = list.filter(
         (c) => c.name.toLowerCase().includes(q) || (c.id && c.id.includes(q)),
@@ -319,6 +324,8 @@ export default function Settings() {
             setFilterType={setFilterType}
             sortBy={sortBy()}
             setSortBy={setSortBy}
+            hideStrangers={hideStrangers()}
+            setHideStrangers={setHideStrangers}
           />
         </Show>
 
