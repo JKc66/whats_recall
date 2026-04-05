@@ -28,10 +28,28 @@ export default function MessageList(props: MessageListProps) {
       showDate?: boolean;
     }[] = [];
     let i = 0;
+
+    // Performance Optimization: Cache the current day's boundaries
+    // to avoid calling Intl.DateTimeFormat.format() on every single message.
+    // This reduces format calls from O(N) to O(unique days).
+    let currentDayStart = 0;
+    let currentDayEnd = 0;
+    let cachedDateStr = "";
+
     while (i < msgs.length) {
       const msg = msgs[i];
-      const msgDate = new Date(msg.timestamp * 1000);
-      const dateStr = messageListDateFormatter.format(msgDate);
+      const msgTime = msg.timestamp * 1000;
+
+      if (msgTime < currentDayStart || msgTime > currentDayEnd) {
+        const msgDate = new Date(msgTime);
+        msgDate.setHours(0, 0, 0, 0);
+        currentDayStart = msgDate.getTime();
+        msgDate.setHours(23, 59, 59, 999);
+        currentDayEnd = msgDate.getTime();
+        cachedDateStr = messageListDateFormatter.format(msgDate);
+      }
+
+      const dateStr = cachedDateStr;
       const showDate = dateStr !== lastDate;
       if (showDate) lastDate = dateStr;
 
