@@ -74,10 +74,13 @@ function groupReactions(reactions: Reaction[]) {
 export function MessageBubble(props: MessageBubbleProps) {
   const m = () => props.msg;
   const isMe = () => !!m().is_from_me;
-  const time = () => formatTime(new Date(m().timestamp * 1000));
+  const time = createMemo(() => formatTime(new Date(m().timestamp * 1000)));
   const isDeleted = () => !!m().is_deleted;
   const isViewOnce = () => !!m().is_view_once;
-  const phone = () => (m().sender_id ? extractJidId(m().sender_id!) : "");
+  const phone = createMemo(() => (m().sender_id ? extractJidId(m().sender_id!) : ""));
+  const avatarCol = createMemo(() => avatarColor(m().sender_name || phone()));
+  const phoneAvatarCol = createMemo(() => avatarColor(phone()));
+  const groupedReactions = createMemo(() => groupReactions(m().reactions || []));
   const [showHistory, setShowHistory] = createSignal(false);
 
   const replyData = createMemo(() => {
@@ -261,7 +264,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       <Show when={props.isGroup && !isMe()}>
         <div
           class="text-[12px] font-semibold mb-0.5 tracking-tight flex items-baseline gap-1.5"
-          style={{ color: avatarColor(m().sender_name || phone()) }}
+          style={{ color: avatarCol() }}
         >
           {m().sender_name || phone() || "Unknown"}
           <Show when={phone() && m().sender_name}>
@@ -275,7 +278,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       <Show when={!props.isGroup && !isMe() && !m().sender_name && phone()}>
         <div
           class="text-[12px] font-semibold mb-0.5 tracking-tight"
-          style={{ color: avatarColor(phone()) }}
+          style={{ color: phoneAvatarCol() }}
         >
           {phone()}
         </div>
@@ -353,7 +356,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           class="absolute -bottom-3.5 flex flex-wrap gap-1 z-10"
           classList={{ "right-2": !isMe(), "left-2": isMe() }}
         >
-          <For each={groupReactions(m().reactions!)}>
+          <For each={groupedReactions()}>
             {(group) => (
               <span
                 class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5  hover:scale-110 transition-transform cursor-default"
@@ -434,12 +437,18 @@ export function ImageGroup(props: {
 }) {
   const first = () => props.messages[0];
   const isMe = () => !!first().is_from_me;
-  const time = () =>
+  const time = createMemo(() =>
     formatTime(
       new Date(props.messages[props.messages.length - 1].timestamp * 1000),
-    );
-  const phone = () =>
-    first().sender_id ? extractJidId(first().sender_id!) : "";
+    )
+  );
+  const phone = createMemo(() =>
+    first().sender_id ? extractJidId(first().sender_id!) : ""
+  );
+  const avatarCol = createMemo(() => avatarColor(first().sender_name || phone()));
+  const groupedReactions = createMemo(() =>
+    groupReactions(props.messages.flatMap((m) => m.reactions || []))
+  );
   const imageMessages = createMemo(() =>
     props.messages.filter((m) => m.has_media && m.media_path)
   );
@@ -491,7 +500,7 @@ export function ImageGroup(props: {
       <Show when={props.isGroup && !isMe()}>
         <div
           class="text-[12px] font-semibold mb-1.5 tracking-tight"
-          style={{ color: avatarColor(first().sender_name || phone()) }}
+          style={{ color: avatarCol() }}
         >
           {first().sender_name || phone() || "Unknown"}
         </div>
@@ -582,11 +591,7 @@ export function ImageGroup(props: {
           class="absolute -bottom-3.5 flex flex-wrap gap-1 z-10"
           classList={{ "right-2": !isMe(), "left-2": isMe() }}
         >
-          <For
-            each={groupReactions(
-              props.messages.flatMap((m) => m.reactions || []),
-            )}
-          >
+          <For each={groupedReactions()}>
             {(group) => (
               <span
                 class="inline-flex items-center gap-1 bg-surface border border-border rounded-full px-1.5 py-0.5  hover:scale-110 transition-transform cursor-default"
