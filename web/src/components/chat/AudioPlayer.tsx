@@ -78,6 +78,7 @@ export default function AudioPlayer(props: AudioPlayerProps) {
       
       <button 
         onClick={togglePlay}
+        aria-label={isPlaying() ? "Pause audio" : "Play audio"}
         class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-90 border border-border"
         classList={{
           "bg-surface-raised text-text-primary": !isPlaying(),
@@ -118,6 +119,7 @@ export default function AudioPlayer(props: AudioPlayerProps) {
         download={props.filename || "audio"} 
         class="w-8 h-8 rounded-full border border-border flex items-center justify-center text-text-disabled hover:text-text-primary hover:bg-surface-raised transition-all shrink-0 active:scale-90"
         title="Download"
+        aria-label="Download audio"
       >
         <DownloadIcon size={14} />
       </a>
