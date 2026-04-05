@@ -12,3 +12,8 @@
 **Vulnerability:** The authentication system compared user-provided passwords against the configured server password using standard string comparison operators (`!==`). This allows attackers to perform timing attacks by measuring the time it takes for the comparison to fail, effectively guessing the password one character at a time.
 **Learning:** String comparison operators in JavaScript typically fail fast, meaning they terminate early as soon as a mismatch is found. In authentication paths where secrets are compared, this timing differential is a measurable side-channel.
 **Prevention:** Always use `crypto.timingSafeEqual` for sensitive password or token comparisons to ensure the comparison takes a constant amount of time regardless of where the mismatch occurs. To be fully secure against length-based timing attacks, ensure both buffers are the same length before comparison, and provide a dummy comparison using the same API when lengths differ.
+
+## 2025-01-01 - [JSON Body Parsing DoS and Unhandled Exceptions]
+**Vulnerability:** Unbounded JSON payload sizes and unhandled exceptions in Hono `c.req.json()` calls.
+**Learning:** Hono `c.req.json()` buffers the entire request body into memory. To prevent Denial of Service (DoS) via massive payloads and unhandled exceptions, apply Hono's `bodyLimit` middleware to routes before parsing the body, and always wrap the parsing in a `try...catch` block.
+**Prevention:** Ensure that all endpoints accepting JSON payloads use `bodyLimit` and `try...catch` around `c.req.json()`.
