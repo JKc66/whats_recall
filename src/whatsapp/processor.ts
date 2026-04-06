@@ -1,11 +1,11 @@
-import { extractMessageContent, getContentType, jidNormalizedUser, WAMessage, isJidGroup } from '@whiskeysockets/baileys';
+import { getContentType, jidNormalizedUser, WAMessage, isJidGroup } from '@whiskeysockets/baileys';
 import { log } from '../logger.js';
 import { getDb, getMediaDir } from '../db/database.js';
 import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
-import { getChatNameAsync } from './utils.ts';
+import { getChatNameAsync, normalizeMessage, getMessageBody } from './utils.ts';
 
 export class MessageProcessor {
   constructor(private sock: any, private broadcast: BroadcastFn) {}
@@ -141,32 +141,13 @@ export class MessageProcessor {
       return;
     }
 
-    const content = extractMessageContent(editedMessage);
-    if (!content) {
+    const { content, type: mType } = normalizeMessage(editedMessage);
+    if (!content || !mType) {
       log('PROCESSOR', `Edit aborted: could not extract content for msg ${messageId}`);
       return;
     }
 
-    const mType = getContentType(content);
-    if (!mType) {
-      log('PROCESSOR', `Edit aborted: unknown content type for msg ${messageId}`);
-      return;
-    }
-
-    const inner = (content as any)[mType];
-    let body: string | undefined;
-
-    if (mType === 'conversation') {
-      body = (content as any).conversation;
-    } else if (mType === 'extendedTextMessage') {
-      body = inner.text;
-    } else if (inner && 'caption' in inner) {
-      body = inner.caption;
-    } else if (mType === 'templateButtonReplyMessage') {
-      body = inner.selectedId;
-    } else if (mType === 'buttonsResponseMessage') {
-      body = inner.selectedButtonId;
-    }
+    const body = getMessageBody(content, mType);
 
     if (body !== undefined && body !== null) {
       const oldMsg = getDb().getMessage(messageId);
@@ -282,49 +263,22 @@ export class MessageProcessor {
 
     log('PROCESSOR', `Received [${mType}] from ${rawChatId} (normalized: ${chatId})`);
 
-    // Recursively unwrap message layers (Ephemeral, View-Once, Document wrappers) to reach the core content
-    let tempMsg: any = msg.message;
-    const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
-    let messageType = getContentType(tempMsg);
-    let isViewOnce = false;
-
-    const rawKeys = Object.keys(tempMsg || {});
-
-    // Handle senderKeyDistributionMessage + viewOnce combo (group messages)
-    if (messageType === 'senderKeyDistributionMessage' && rawKeys.length > 1) {
-      const realKey = rawKeys.find(k => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo');
-      if (realKey) {
-        log('PROCESSOR', `Skipping senderKeyDistribution, real content: ${realKey}`);
-        tempMsg = { [realKey]: tempMsg[realKey] };
-        messageType = realKey as any;
-      }
-    }
-
-    while (messageType && wrappers.includes(messageType)) {
-      if (messageType.includes('viewOnce')) isViewOnce = true;
-      log('PROCESSOR', `Unwrapping ${messageType} from ${chatId}...`);
-      tempMsg = extractMessageContent(tempMsg);
-      messageType = getContentType(tempMsg);
-    }
-
-    // Secondary view-once detection on the inner content
-    if (tempMsg && messageType && tempMsg[messageType]?.viewOnce) {
-      isViewOnce = true;
-    }
+    const normalized = normalizeMessage(msg.message);
+    const isViewOnce = normalized.isViewOnce;
+    const messageType = normalized.type || 'stub';
+    const content = normalized.content && normalized.type ? (normalized.content as any)[normalized.type] : null;
 
     if (isViewOnce) {
       log('PROCESSOR', `Confirmed View-Once message (${messageType}) from ${chatId}`);
     }
 
     // Assign back the unwrapped message
-    msg.message = tempMsg;
+    msg.message = normalized.content;
 
-    if (!messageType) {
+    if (!normalized.type) {
       if (isViewOnce) log('PROCESSOR', `Abort: No unwrapped messageType for View-Once`);
       return;
     }
-
-    const content = tempMsg[messageType];
 
     if (messageType === 'protocolMessage') {
       await this.handleProtocolMessage(msg.key, content);
@@ -364,10 +318,7 @@ export class MessageProcessor {
     // Asynchronously fetch and cache the profile picture if not already stored
     this.getProfilePicAsync(chatId);
 
-    let body = '';
-    if (messageType === 'conversation') body = (msg.message as any)?.conversation || '';
-    else if (messageType === 'extendedTextMessage') body = content.text;
-    else if (content && content.caption) body = content.caption;
+    const body = getMessageBody(msg.message, messageType) || '';
 
     // Extract and process quoted message metadata (replies), including view-once content in replies
     const contextInfo = content?.contextInfo || msg.message?.extendedTextMessage?.contextInfo || (msg.message as any)?.imageMessage?.contextInfo || (msg.message as any)?.videoMessage?.contextInfo;
@@ -387,25 +338,10 @@ export class MessageProcessor {
       const quotedStr = JSON.stringify(contextInfo.quotedMessage);
       const quotedIsViewOnce = quotedStr.includes('viewOnce') || quotedStr.includes('viewOnceMessage');
 
-      const qMsg = extractMessageContent(contextInfo.quotedMessage);
-      const qMsgType = getContentType(qMsg);
-      const qContent = qMsg ? (qMsg as any)[qMsgType!] : null;
+      const { content: qMsg, type: qMsgType } = normalizeMessage(contextInfo.quotedMessage);
+      const qContent = qMsg && qMsgType ? (qMsg as any)[qMsgType] : null;
 
-      let preview: string;
-      if (qMsgType === 'conversation') preview = (qMsg as any).conversation;
-      else if (qMsgType === 'extendedTextMessage') preview = qContent?.text;
-      else if (qContent?.caption) preview = qContent.caption;
-      else {
-        const typeLabel = (qMsgType || 'message')
-          .replace('Message', '')
-          .replace('ptt', 'Audio')
-          .replace('audio', 'Audio')
-          .replace('image', 'Photo')
-          .replace('video', 'Video')
-          .replace('sticker', 'Sticker')
-          .replace('document', 'Document');
-        preview = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
-      }
+      let preview = getMessageBody(qMsg, qMsgType, true) || 'Message';
 
       if (quotedIsViewOnce || qContent?.viewOnce) {
         preview = '👁️ View Once ' + (preview.startsWith('👁️') ? preview.slice(2) : preview);

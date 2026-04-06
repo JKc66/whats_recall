@@ -1,6 +1,68 @@
-import { isJidGroup } from '@whiskeysockets/baileys';
+import { isJidGroup, extractMessageContent, getContentType } from '@whiskeysockets/baileys';
+import type { proto } from '@whiskeysockets/baileys';
 import { log } from '../logger.ts';
 import { syncService } from './sync.ts';
+
+/**
+ * Recursively unwraps message layers (Ephemeral, View-Once, etc.) to reach the core content.
+ * Returns the unwrapped message and a flag indicating if it was a View-Once message.
+ */
+export function normalizeMessage(message: proto.IMessage | null | undefined): { content: proto.IMessage | null, isViewOnce: boolean, type: string | null } {
+  if (!message) return { content: null, isViewOnce: false, type: null };
+
+  let tempMsg: any = message;
+  const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
+  let isViewOnce = false;
+
+  const rawKeys = Object.keys(tempMsg);
+  // Handle senderKeyDistributionMessage + viewOnce combo (group messages)
+  if (getContentType(tempMsg) === 'senderKeyDistributionMessage' && rawKeys.length > 1) {
+    const realKey = rawKeys.find(k => k !== 'senderKeyDistributionMessage' && k !== 'messageContextInfo');
+    if (realKey) {
+      tempMsg = { [realKey]: tempMsg[realKey] };
+    }
+  }
+
+  let messageType = getContentType(tempMsg);
+  while (messageType && wrappers.includes(messageType)) {
+    if (messageType.includes('viewOnce')) isViewOnce = true;
+    tempMsg = extractMessageContent(tempMsg);
+    messageType = getContentType(tempMsg);
+  }
+
+  if (tempMsg && messageType && tempMsg[messageType]?.viewOnce) {
+    isViewOnce = true;
+  }
+
+  return { content: tempMsg, isViewOnce, type: messageType || null };
+}
+
+/**
+ * Extracts a human-readable text body from various message content types.
+ */
+export function getMessageBody(content: proto.IMessage | null | undefined, type: string | null, includeLabel = false): string | undefined {
+  if (!content || !type) return undefined;
+  const inner = (content as any)[type];
+  if (type === 'conversation') return (content as any).conversation;
+  if (type === 'extendedTextMessage') return inner.text;
+  if (inner && 'caption' in inner) return inner.caption;
+  if (type === 'templateButtonReplyMessage') return inner.selectedId;
+  if (type === 'buttonsResponseMessage') return inner.selectedButtonId;
+
+  if (includeLabel) {
+    const typeLabel = (type || 'message')
+      .replace('Message', '')
+      .replace('ptt', 'Audio')
+      .replace('audio', 'Audio')
+      .replace('image', 'Photo')
+      .replace('video', 'Video')
+      .replace('sticker', 'Sticker')
+      .replace('document', 'Document');
+    return typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
+  }
+
+  return undefined;
+}
 
 /**
  * Extracts the numerical or ID portion of a WhatsApp JID.

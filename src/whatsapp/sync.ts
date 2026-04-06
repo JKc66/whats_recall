@@ -186,6 +186,108 @@ export class WhatsAppSync {
 
     return Array.from(related);
   }
+
+  /**
+   * Aggregates and returns all available chats, merging metadata from contacts,
+   * groups, and LID/PN mapping services to provide a unified list.
+   */
+  public async getAggregatedChats(sock: any): Promise<any[]> {
+    if (!sock) return [];
+
+    // 1. Sync groups
+    try {
+      const allGroups = await sock.groupFetchAllParticipating();
+      for (const [id, group] of Object.entries(allGroups)) {
+        if (!this.chats.has(id)) {
+          this.chats.set(id, { id, name: (group as any).subject });
+        }
+      }
+    } catch (e: any) {
+      log('SYNC', `Failed to fetch all participating groups: ${e.message}`);
+    }
+
+    // 2. Enrich from contacts
+    const blockedDomains = ['@g.us', '@broadcast', '@newsletter'];
+    await Promise.all(Array.from(this.contacts.entries()).map(async ([id, contact]) => {
+      if (!id || blockedDomains.some(domain => id.endsWith(domain))) return;
+
+      let preferredName = contact.name || contact.verifiedName || contact.notify || contact.pushname || '';
+
+      // Attempt to resolve the Phone Number name for an LID contact if both exist
+      if (!preferredName && id.includes('@lid') && contact.phoneNumber) {
+        const pnInfo = this.contacts.get(contact.phoneNumber + '@s.whatsapp.net') || this.contacts.get(contact.phoneNumber);
+        if (pnInfo) {
+          preferredName = pnInfo.name || pnInfo.verifiedName || pnInfo.notify || pnInfo.pushname || '';
+        }
+      }
+
+      // Resolve LID to Phone Number (PN)
+      const targetId = await this.resolvePN(id, sock);
+
+      if (!this.chats.has(targetId)) {
+        this.chats.set(targetId, { id: targetId, name: preferredName });
+      } else {
+        const c = this.chats.get(targetId);
+        if (preferredName && (!c.name || c.name === extractJidId(targetId) || c.name.includes(extractJidId(targetId)))) {
+          this.chats.set(targetId, { ...c, name: preferredName });
+        }
+      }
+    }));
+
+    // 3. Consolidate (Deduplicate LID and PN)
+    const dedupedMap = new Map();
+    const chatBlockedDomains = ['@broadcast', '@newsletter'];
+
+    for (const [id, c] of this.chats.entries()) {
+      if (!id || chatBlockedDomains.some(domain => id.endsWith(domain))) continue;
+
+      const baseId = await this.resolvePN(id, sock);
+      const existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
+
+      // Retain meaningful names
+      if (c.name && (!existing.name || existing.name === extractJidId(existing.id))) {
+        existing.name = c.name;
+      }
+
+      // Track lids
+      const lidPart = id.includes('@lid') ? extractJidId(id) : null;
+      if (lidPart && !existing.lids.includes(lidPart)) {
+        existing.lids.push(lidPart);
+      }
+
+      // Also check mapped LID for this PN
+      if (baseId.includes('@s.whatsapp.net')) {
+        const m_lid = this.pnToLid.get(baseId) || null;
+        if (m_lid) {
+          const m_lidPart = extractJidId(m_lid);
+          if (!existing.lids.includes(m_lidPart)) {
+            existing.lids.push(m_lidPart);
+          }
+        }
+      }
+
+      // Ensure LID and PN entries for the same contact are permanently merged under the PN
+      if (id !== baseId) {
+        this.chats.delete(id);
+        const currentBaseChat = this.chats.get(baseId);
+        if (!currentBaseChat) {
+          this.chats.set(baseId, existing);
+        } else {
+          this.chats.set(baseId, safeMerge(currentBaseChat, existing));
+          Object.assign(existing, this.chats.get(baseId));
+        }
+      }
+
+      // Timestamp merge
+      const cTs = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
+      const eTs = existing.conversationTimestamp?.low || existing.conversationTimestamp || 0;
+      if (cTs > eTs) existing.conversationTimestamp = cTs;
+
+      dedupedMap.set(baseId, existing);
+    }
+
+    return Array.from(dedupedMap.values());
+  }
 }
 
 export const syncService = new WhatsAppSync();
