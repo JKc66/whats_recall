@@ -36,11 +36,11 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       alt={type === "sticker" ? "Sticker message" : "Image message"}
                       loading="lazy"
                       class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent"
-                      onClick={() => props.onImageClick(src)}
+                      onClick={() => props.onJumpToMessage(msg.message_id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          props.onImageClick(src);
+                          props.onJumpToMessage(msg.message_id);
                         }
                       }}
                       tabIndex={0}
@@ -53,11 +53,11 @@ export default function MediaGallery(props: MediaGalleryProps) {
                   <Show when={type === "video"}>
                     <div
                       class="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent"
-                      onClick={() => props.onImageClick(src)}
+                      onClick={() => props.onJumpToMessage(msg.message_id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          props.onImageClick(src);
+                          props.onJumpToMessage(msg.message_id);
                         }
                       }}
                       tabIndex={0}
