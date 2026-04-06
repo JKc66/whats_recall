@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-deleted-messages-monitor",
-  "version": "1.0.1",
+  "version": "1.0",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
