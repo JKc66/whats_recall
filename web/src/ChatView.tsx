@@ -21,16 +21,18 @@ import {
 } from "./store";
 import { MessageSquareIcon, SettingsIcon, XIcon, ArrowDownIcon, SearchIcon, ArrowUpIcon } from "./components/Icons";
 import ChatHeader from "./components/chat/ChatHeader";
-import MessageList from "./components/chat/MessageList";
+import MessageList, { formatDateForTimestamp } from "./components/chat/MessageList";
 import MediaGallery from "./components/chat/MediaGallery";
 
 export default function ChatView() {
   const [lightboxSrc, setLightboxSrc] = createSignal<string | null>(null);
   const [viewMode, setViewMode] = createSignal<"messages" | "media">("messages");
   const [showScrollBottom, setShowScrollBottom] = createSignal(false);
+  const [stickyDate, setStickyDate] = createSignal<string | null>(null);
   const [searchMatchIds, setSearchMatchIds] = createSignal<string[]>([]);
   const [searchMatchIndex, setSearchMatchIndex] = createSignal(0);
   let containerRef: HTMLDivElement | undefined;
+  let stickyRafId = 0;
 
   const chat = () => chats().find((c) => c.chat_id === currentChatId());
 
@@ -80,13 +82,43 @@ export default function ChatView() {
     scrollToMessage(ids[next]);
   }
 
-  // Track scroll position to show/hide "Scroll to Bottom" button
+  // Track scroll position for scroll-to-bottom button + sticky date
   function handleScroll() {
     if (!containerRef) return;
     const { scrollTop } = containerRef;
     const isAtBottom = Math.abs(scrollTop) < 150;
     setShowScrollBottom(!isAtBottom);
+
+    // Throttled sticky date update via rAF
+    if (stickyRafId) return;
+    stickyRafId = requestAnimationFrame(() => {
+      stickyRafId = 0;
+      updateStickyDate();
+    });
   }
+
+  function updateStickyDate() {
+    if (!containerRef) return;
+    const sentinels = containerRef.querySelectorAll<HTMLElement>("[data-date-sentinel]");
+    if (!sentinels.length) return;
+
+    const containerTop = containerRef.getBoundingClientRect().top + 40;
+    let bestDate: string | null = null;
+    let bestDist = Infinity;
+
+    for (const el of sentinels) {
+      const dist = el.getBoundingClientRect().top - containerTop;
+      if (dist <= 10 && Math.abs(dist) < bestDist) {
+        bestDist = Math.abs(dist);
+        bestDate = el.dataset.dateSentinel || null;
+      }
+    }
+    // If nothing crossed the top yet, use the last sentinel (oldest date at scroll top)
+    if (!bestDate) bestDate = sentinels[sentinels.length - 1].dataset.dateSentinel || null;
+    if (bestDate) setStickyDate(bestDate);
+  }
+
+  onCleanup(() => { if (stickyRafId) cancelAnimationFrame(stickyRafId); });
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     if (containerRef) {
@@ -233,6 +265,15 @@ export default function ChatView() {
         </Show>
 
         <div class="flex-1 flex flex-col overflow-hidden relative">
+          {/* Sticky date header */}
+          <Show when={viewMode() === "messages" && displayMessages().length > 0 && (stickyDate() || displayMessages().length > 0)}>
+            <div class="absolute top-0 left-0 right-0 z-30 flex justify-center pt-3 pb-1 pointer-events-none">
+              <span class="bg-surface/95 text-text-secondary text-[11px] font-bold py-1.5 px-4 rounded-full border border-border uppercase tracking-widest pointer-events-auto transition-all duration-200">
+                {stickyDate() || formatDateForTimestamp(displayMessages()[displayMessages().length - 1].timestamp)}
+              </span>
+            </div>
+          </Show>
+
           <div
             class="flex-1 overflow-y-auto scrollbar-thin bg-surface flex flex-col-reverse"
             ref={(el) => (containerRef = el)}

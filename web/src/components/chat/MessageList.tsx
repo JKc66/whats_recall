@@ -17,6 +17,12 @@ const messageListDateFormatter = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
 });
 
+export function formatDateForTimestamp(ts: number): string {
+  const d = new Date(ts * 1000);
+  d.setHours(23, 59, 59, 999);
+  return messageListDateFormatter.format(d);
+}
+
 export default function MessageList(props: MessageListProps) {
   let lastDate = "";
 
@@ -29,9 +35,6 @@ export default function MessageList(props: MessageListProps) {
     }[] = [];
     let i = 0;
 
-    // Performance Optimization: Cache the current day's boundaries
-    // to avoid calling Intl.DateTimeFormat.format() on every single message.
-    // This reduces format calls from O(N) to O(unique days).
     let currentDayStart = 0;
     let currentDayEnd = 0;
     let cachedDateStr = "";
@@ -139,8 +142,11 @@ export default function MessageList(props: MessageListProps) {
               />
             </Show>
             <Show when={group.showDate}>
-              <div class="flex justify-center py-6 mb-2">
-                <span class="bg-surface/80  text-text-secondary text-[11px] font-bold py-1 px-4 rounded-full border border-border uppercase tracking-widest ">
+              <div
+                class="flex justify-center py-6 mb-2"
+                data-date-sentinel={group.dateStr}
+              >
+                <span class="bg-surface/80 text-text-secondary text-[11px] font-bold py-1 px-4 rounded-full border border-border uppercase tracking-widest">
                   {group.dateStr}
                 </span>
               </div>

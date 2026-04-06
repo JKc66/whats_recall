@@ -257,6 +257,31 @@ export default function App() {
         });
       }
 
+      if (event === "message_updated") {
+        const update = data as {
+          message_id: string;
+          chat_id: string;
+          has_media: number;
+          media_path: string;
+          media_type: string;
+          type: string;
+        };
+        if (currentChatId() === update.chat_id) {
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.message_id !== update.message_id) return m;
+              return {
+                ...m,
+                has_media: update.has_media,
+                media_path: update.media_path,
+                media_type: update.media_type,
+                type: update.type,
+              };
+            }),
+          );
+        }
+      }
+
       if (event === "profile_pic_updated") {
         const update = data as { chat_id: string; profile_pic: string };
         setChats((prev) => {

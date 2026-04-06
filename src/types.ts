@@ -86,6 +86,6 @@ export interface PairingStatus {
   reason?: string;
 }
 
-export type BroadcastEvent = 'status' | 'new_message' | 'message_deleted' | 'message_reaction' | 'message_edited' | 'profile_pic_updated';
+export type BroadcastEvent = 'status' | 'new_message' | 'message_deleted' | 'message_reaction' | 'message_edited' | 'message_updated' | 'profile_pic_updated';
 
 export type BroadcastFn = (event: BroadcastEvent, data: any) => void;

@@ -262,7 +262,7 @@ export class MessageProcessor {
 
     if (!(await this.checkIsMonitored(chatId))) return;
 
-    log('PROCESSOR', `Received [${mType}] from ${rawChatId} (normalized: ${chatId})`);
+    log('PROCESSOR', `[${mType}] ${chatId}`);
 
     const normalized = normalizeMessage(msg.message);
     const isViewOnce = normalized.isViewOnce;
@@ -270,14 +270,14 @@ export class MessageProcessor {
     const content = normalized.content && normalized.type ? (normalized.content as any)[normalized.type] : null;
 
     if (isViewOnce) {
-      log('PROCESSOR', `Confirmed View-Once message (${messageType}) from ${chatId}`);
+      log('PROCESSOR', `📸 View-Once [${messageType}] ${chatId}`);
     }
 
     // Assign back the unwrapped message
     msg.message = normalized.content;
 
     if (!normalized.type) {
-      if (isViewOnce) log('PROCESSOR', `Abort: No unwrapped messageType for View-Once`);
+      if (isViewOnce) log('PROCESSOR', `View-Once abort: no messageType`);
       return;
     }
 
@@ -296,7 +296,6 @@ export class MessageProcessor {
       const senderId = await this.resolveSender(msg, chatId, isGrp);
       const senderName = await getChatNameAsync(senderId, msg.pushName || null, this.sock);
 
-      log('RX_DEBUG', `fromMe: ${msg.key.fromMe}, senderId: ${senderId}, emoji: ${emoji}`);
 
       getDb().addReaction(targetId, senderId, senderName, emoji);
       this.broadcast('message_reaction', {
@@ -345,7 +344,8 @@ export class MessageProcessor {
       quotedStanzaId = contextInfo.stanzaId || null;
       const rawQuotedSender = contextInfo.participant || null;
       if (rawQuotedSender) {
-        quotedSender = await getChatNameAsync(rawQuotedSender, null, this.sock);
+        const resolvedQuotedSender = await syncService.resolvePN(rawQuotedSender, this.sock);
+        quotedSender = await getChatNameAsync(resolvedQuotedSender, null, this.sock);
       }
 
       // Check if quoted message contains view-once media
@@ -363,16 +363,16 @@ export class MessageProcessor {
         // Try to download the quoted view-once media
         const quotedMediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
         if (qMsgType && quotedMediaTypes.includes(qMsgType) && qContent) {
-          log('PROCESSOR', `Attempting to download quoted view-once ${qMsgType}...`);
+          log('PROCESSOR', `Downloading quoted view-once ${qMsgType}...`);
           try {
             const fakeMsg = { message: qMsg, key: { remoteJid: chatId, id: quotedStanzaId, participant: rawQuotedSender } } as any;
             const res = await downloadMedia(fakeMsg, qMsgType.replace('Message', ''), this.sock);
             if (res) {
               quotedViewOnceMedia = { ...res, type: qMsgType.replace('Message', '') };
-              log('PROCESSOR', `Successfully saved quoted view-once media: ${quotedViewOnceMedia.path} (${quotedViewOnceMedia.type})`);
+              log('PROCESSOR', `✅ Quoted view-once → ${quotedViewOnceMedia.path}`);
             }
           } catch (e: any) {
-            log('PROCESSOR', `Failed to download quoted view-once media: ${e.message}`);
+            log('PROCESSOR', `❌ Quoted view-once download failed: ${e.message}`);
           }
         }
       }
@@ -408,6 +408,19 @@ export class MessageProcessor {
     // If replying to a view-once message, save the recovered media to the original message
     if (quotedViewOnceMedia && quotedStanzaId) {
       getDb().updateMessageMedia(quotedStanzaId, quotedViewOnceMedia.path, quotedViewOnceMedia.sha256hex, quotedViewOnceMedia.type || 'image');
+      
+      // Broadcast the updated view-once message so the frontend reflects the recovered media immediately
+      const updatedMsg = getDb().getMessage(quotedStanzaId) || getDb().getMessageByOriginalId(quotedStanzaId);
+      if (updatedMsg) {
+        this.broadcast('message_updated', {
+          message_id: updatedMsg.message_id,
+          chat_id: chatId,
+          has_media: 1,
+          media_path: quotedViewOnceMedia.path,
+          media_type: quotedViewOnceMedia.type || 'image',
+          type: quotedViewOnceMedia.type || 'image',
+        });
+      }
     }
 
     const messageId = msg.key.id!;
@@ -465,7 +478,7 @@ export class MessageProcessor {
       getDb().saveMessage(msgData);
     }
     
-    if (isViewOnce) log('PROCESSOR', `Message cached: ${msgData.type} (view-once) in ${chatName} from ${senderName}`);
+    if (isViewOnce) log('PROCESSOR', `💾 ${msgData.type} (view-once) → ${chatName} [${senderName}]`);
 
     this.broadcast('new_message', {
       ...msgData,
@@ -506,7 +519,7 @@ export class MessageProcessor {
 
           actionsQueue.enqueue(async () => {
             await this.sock.sendMessage(myId, content);
-            log("PROCESSOR", `Sent view-once notification for ${msg.message_id}`);
+            log("PROCESSOR", `📤 View-once notify: ${msg.message_id}`);
           }, `VIEW_ONCE_NOTIFICATION [${msg.message_id}]`);
         }
       }
@@ -550,7 +563,7 @@ export class MessageProcessor {
 
           actionsQueue.enqueue(async () => {
             await this.sock.sendMessage(myId, content);
-            log("PROCESSOR", `Sent media deletion notification for ${msg.message_id}`);
+            log("PROCESSOR", `📤 Deleted media notify: ${msg.message_id}`);
           }, `DELETION_NOTIFICATION_MEDIA [${msg.message_id}]`);
           return;
         }
@@ -558,7 +571,7 @@ export class MessageProcessor {
 
       actionsQueue.enqueue(async () => {
         await this.sock.sendMessage(myId, { text });
-        log("PROCESSOR", `Sent deletion notification for ${msg.message_id}`);
+        log("PROCESSOR", `📤 Deleted text notify: ${msg.message_id}`);
       }, `DELETION_NOTIFICATION_TEXT [${msg.message_id}]`);
     } catch (err: any) {
       log('PROCESSOR', `Failed to send deletion notification: ${err.message}`);

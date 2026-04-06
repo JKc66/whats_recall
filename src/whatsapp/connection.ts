@@ -41,7 +41,7 @@ export class WhatsAppConnection {
     setInterval(() => {
       const s = getDb().getSettings();
       this.notifyWhatsApp = s.whatsapp_notify === 'true';
-    }, 10000);
+    }, 60_000);
   }
 
   public async start() {

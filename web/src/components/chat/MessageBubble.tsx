@@ -74,7 +74,7 @@ export function MessageBubble(props: MessageBubbleProps) {
 
   return (
     <div
-      class="max-w-[85%] p-3 px-4 rounded-lg relative mb-1.5 wrap-break-word animate-entrance"
+      class="max-w-[85%] p-3 px-4 rounded-lg relative mb-1.5 wrap-break-word"
       classList={{
         "self-start bg-[var(--bubble-other)] border border-border": !isMe(),
         "self-end bg-[var(--bubble-me)] border border-accent/20": isMe(),
@@ -118,7 +118,7 @@ export function MessageBubble(props: MessageBubbleProps) {
         >
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" classList={{ "bg-accent/50": isMe() }} />
           <Show when={formattedReply()?.sender}>
-            <div class="text-metadata text-accent mb-0.5 opacity-90 group-hover/reply:opacity-100">{extractJidId(formattedReply()!.sender)}</div>
+            <div class="text-metadata text-accent mb-0.5 opacity-90 group-hover/reply:opacity-100">{formattedReply()!.sender}</div>
           </Show>
           <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis opacity-80 group-hover/reply:opacity-100 transition-opacity">
             <Show when={formattedReply()!.hasPhoto}><ImageIcon size={12} class="shrink-0 text-accent/70" /></Show>
@@ -139,9 +139,15 @@ export function MessageBubble(props: MessageBubbleProps) {
         </div>
       </Show>
 
-      <Show when={isViewOnce() && !m().body && !m().has_media}>
-        <div class="flex items-center gap-2 p-2 bg-surface-raised rounded-lg text-xs text-text-secondary italic">
-          <EyeIcon size={14} /> View-once {m().type || "message"}
+      <Show when={isViewOnce() && !m().has_media}>
+        <div class="flex items-center gap-3 p-3 bg-surface-raised rounded-lg border border-border my-1 min-w-45">
+          <div class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 border border-accent/20 shrink-0">
+            <EyeIcon size={15} class="text-accent/60" />
+          </div>
+          <div class="flex flex-col gap-0.5 min-w-0">
+            <span class="text-[11px] font-mono font-bold text-text-secondary uppercase tracking-wider">VIEW_ONCE_SEALED</span>
+            <span class="text-[9px] font-mono text-text-disabled uppercase tracking-widest">AWAITING_REPLY</span>
+          </div>
         </div>
       </Show>
 
@@ -234,7 +240,7 @@ export function ImageGroup(props: {
 
   return (
     <div
-      class="max-w-110 p-3 px-4 rounded-lg relative mb-1.5 animate-entrance"
+      class="max-w-110 p-3 px-4 rounded-lg relative mb-1.5"
       classList={{
         "self-start bg-[var(--bubble-other)] border border-border": !isMe(),
         "self-end bg-[var(--bubble-me)] border border-accent/20": isMe(),

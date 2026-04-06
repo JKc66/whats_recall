@@ -58,10 +58,12 @@ export function createHonoServer(client: WhatsAppConnection) {
     const start = Date.now();
     await next();
     const ms = Date.now() - start;
-    if (!c.req.path.startsWith('/ws')) {
-      const safePath = c.req.path.replace(/[\n\r]/g, '');
-      log('HTTP', `${c.req.method} ${safePath} - ${c.res.status} (${ms}ms)`);
-    }
+    const path = c.req.path;
+    // Suppress noisy high-frequency polling endpoints
+    if (path.startsWith('/ws')) return;
+    if (c.req.method === 'GET' && (path === '/api/status' || path === '/api/chats') && ms < 50) return;
+    const safePath = path.replace(/[\n\r]/g, '');
+    log('HTTP', `${c.req.method} ${safePath} - ${c.res.status} (${ms}ms)`);
   });
 
   // Periodic cleanup
@@ -154,10 +156,6 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
-    const count = wsClients.size;
-    if (count > 0 && event !== 'status') {
-      log('WS', `Broadcasting "${event}" to ${count} client(s)`);
-    }
     for (const ws of wsClients) {
       try {
         (ws as any).send(payload);
@@ -189,11 +187,9 @@ export function createHonoServer(client: WhatsAppConnection) {
       websocket: {
         open: (ws: any) => {
           wsClients.add(ws);
-          log('WS', `Client connected (total: ${wsClients.size})`);
         },
         close: (ws: any) => {
           wsClients.delete(ws);
-          log('WS', `Client disconnected (total: ${wsClients.size})`);
         },
         message: () => { }
       }

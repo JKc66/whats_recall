@@ -56,6 +56,19 @@
   }
 }
 
+@utility msg-highlight {
+  animation: msg-flash 1.5s ease-out;
+}
+
+@keyframes msg-flash {
+  0%, 30% {
+    background: var(--accent-subtle-color);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 @keyframes fade-in {
   0% {
     opacity: 0;
