@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
+import { bodyLimit } from 'hono/body-limit';
 import { log } from '../logger.ts';
 import auth from './auth.ts';
 import { authMiddleware } from './middleware.ts';
@@ -110,8 +111,17 @@ export function createHonoServer(client: WhatsAppConnection) {
     });
   });
 
-  api.delete('/data', async (c) => {
-    const body = await c.req.json().catch(() => ({}));
+  api.delete('/data', bodyLimit({
+    maxSize: 8192,
+    onError: (c) => c.json({ error: 'Payload too large' }, 413)
+  }), async (c) => {
+    let body;
+    try {
+      body = await c.req.json();
+    } catch (_err) {
+      return c.json({ error: 'Invalid JSON payload' }, 400);
+    }
+
     if (body.password !== password) {
       log('API', 'Clear data rejected: wrong password');
       return c.json({ error: 'Password required to confirm data deletion' }, 403);
