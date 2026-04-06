@@ -146,6 +146,7 @@ export class WhatsAppConnection {
         log('CONN', `Connection closed: ${reason} (code: ${statusCode})`);
         this.isReady = false;
         this.isAuthenticated = false;
+        this.pairingData = { ...this.pairingData, connected: false, authenticated: false };
         this.broadcast('status', { connected: false, authenticated: false, reason });
 
         if (statusCode === 440 || !this.sock) return;

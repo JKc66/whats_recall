@@ -15,7 +15,8 @@ interface ConfigPanelProps {
 }
 
 export default function ConfigPanel(props: ConfigPanelProps) {
-  const isConnected = () => props.stats?.authenticated || props.pairing?.authenticated;
+  const hasSession = () => props.stats?.authenticated || props.pairing?.authenticated;
+  const isOnline = () => props.stats?.connected;
 
   return (
     <div class="flex flex-col animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -29,18 +30,18 @@ export default function ConfigPanel(props: ConfigPanelProps) {
         </div>
 
         <div class="p-3 md:p-8">
-          <div class={`mb-4 md:mb-6 flex flex-col gap-3 md:gap-4 border ${isConnected() ? "border-success/30 bg-success/5" : "border-accent/30 bg-accent/5"}`}>
+          <div class={`mb-4 md:mb-6 flex flex-col gap-3 md:gap-4 border ${isOnline() ? "border-success/30 bg-success/5" : "border-accent/30 bg-accent/5"}`}>
             <div class="p-3 md:p-4 border-b border-inherit flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class={`w-1.5 md:w-2 h-1.5 md:h-2 ${isConnected() ? "bg-success" : "bg-accent"}`} />
-                <span class={`text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] font-mono ${isConnected() ? "text-success" : "text-accent"}`}>
-                  {isConnected() ? "ONLINE" : "OFFLINE"}
+                <div class={`w-1.5 md:w-2 h-1.5 md:h-2 ${isOnline() ? "bg-success" : "bg-accent"}`} />
+                <span class={`text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] font-mono ${isOnline() ? "text-success" : "text-accent"}`}>
+                  {isOnline() ? "ONLINE" : "OFFLINE"}
                 </span>
               </div>
               <span class="text-[7px] md:text-[8px] text-text-disabled font-mono uppercase">ID: {props.stats?.myId || "--"}</span>
             </div>
 
-            <Show when={!isConnected()}>
+            <Show when={!hasSession()}>
               <div class="p-4 md:p-6 flex flex-col items-center gap-4 md:gap-6">
                 <Show when={props.pairing?.type === "qr"}>
                   <div class="flex flex-col items-center gap-4 text-center">
@@ -109,13 +110,13 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 class="btn w-full sm:w-auto min-w-40"
                 classList={{
                   "btn-primary bg-warning text-black border-warning": props.showResetNotice,
-                  "btn-secondary": !props.showResetNotice && isConnected(),
-                  "btn-primary": !props.showResetNotice && !isConnected(),
+                  "btn-secondary": !props.showResetNotice && hasSession(),
+                  "btn-primary": !props.showResetNotice && !hasSession(),
                 }}
                 onClick={() => props.onReset()}
                 disabled={!!props.busy}
               >
-                {isConnected()
+                {hasSession()
                   ? props.showResetNotice
                     ? "APPLY_CHANGES"
                     : "DISCONNECT"
