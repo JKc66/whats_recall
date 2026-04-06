@@ -103,7 +103,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                         {formatTime(new Date(msg.timestamp * 1000))}
                       </span>
                       <Show when={!!msg.is_deleted}>
-                        <div class="mt-1 text-[9px] font-bold text-red-500 uppercase tracking-widest">
+                        <div class="mt-1 text-[9px] font-bold text-accent uppercase tracking-widest">
                           Deleted
                         </div>
                       </Show>

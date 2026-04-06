@@ -228,7 +228,7 @@ export default function ChatView() {
 
         <div class="flex-1 flex flex-col overflow-hidden relative">
           <div
-            class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 bg-surface flex flex-col-reverse"
+            class="flex-1 overflow-y-auto scrollbar-thin bg-surface flex flex-col-reverse"
             ref={(el) => (containerRef = el)}
             onScroll={handleScroll}
           >

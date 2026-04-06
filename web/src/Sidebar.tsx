@@ -117,17 +117,14 @@ export default function Sidebar() {
     >
       <header class="flex items-center justify-between p-4 min-h-16 border-b border-border bg-surface-raised/30">
         <div class="flex items-center gap-3 text-subheading text-text-display">
-          <div class="relative flex items-center justify-center w-5 h-5">
-            <Show when={stats().connected}>
-              <span class="absolute w-full h-full rounded-full bg-success/20 animate-status-pulse" />
-            </Show>
-            <span
-              class="relative z-10 rounded-full transition-all duration-500"
-              classList={{
-                "w-2 h-2 bg-success": stats().connected,
-                "w-1.5 h-1.5 bg-text-disabled opacity-30": !stats().connected,
-              }}
-            />
+          <div
+            class="grid grid-cols-2 gap-[2px] mt-0.5"
+            title={stats().connected ? "System Online" : "System Offline"}
+          >
+            <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300" classList={{ "bg-text-primary": stats().connected, "bg-border-visible": !stats().connected }} />
+            <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300 delay-75" classList={{ "bg-text-primary": stats().connected, "bg-border-visible": !stats().connected }} />
+            <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300 delay-150" classList={{ "bg-text-primary": stats().connected, "bg-border-visible": !stats().connected }} />
+            <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300 delay-200" classList={{ "bg-accent animate-pulse-slow": stats().connected, "bg-border-visible": !stats().connected }} />
           </div>
           MESSAGES
         </div>
@@ -183,7 +180,7 @@ export default function Sidebar() {
       </div>
 
 
-      <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+      <div class="flex-1 overflow-y-auto scrollbar-thin">
         <Show
           when={filteredChats().length > 0}
           fallback={
