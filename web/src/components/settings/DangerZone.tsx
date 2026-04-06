@@ -24,7 +24,7 @@ export default function DangerZone(props: DangerZoneProps) {
 
   return (
     <div 
-      ref={containerRef}
+      ref={(el) => (containerRef = el)}
       class="mt-12 mb-16 border border-accent/20 bg-accent/5 mx-4 md:mx-6 rounded-sm overflow-hidden transition-all duration-500"
       classList={{ "ring-4 ring-accent/10 border-accent/40": props.confirmClear }}
     >
