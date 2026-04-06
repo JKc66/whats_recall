@@ -155,7 +155,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       type === "lottieSticker" || 
       mt.startsWith("image/")
     ) {
-      const isSticker = type.includes("sticker");
+      const isSticker = type.includes("sticker") || mt === "image/webp";
       return (
         <div
           class="group relative rounded-lg overflow-hidden my-1 max-w-80"
@@ -453,6 +453,9 @@ export function ImageGroup(props: {
     props.messages.filter((m) => m.has_media && m.media_path)
   );
   const imageCount = () => imageMessages().length;
+  const isStickerGroup = createMemo(() => 
+    imageMessages().every(m => (m.type || "").includes("sticker") || (m.media_type || "").toLowerCase() === "image/webp")
+  );
 
   const [isDownloading, setIsDownloading] = createSignal(false);
   function downloadAll() {
@@ -534,14 +537,16 @@ export function ImageGroup(props: {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
               />
-              <a
-                href={mediaUrl(msg.media_path!)}
-                download={msg.media_filename || "download"}
-                aria-label="Download photo"
-                class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
-              >
-                <DownloadIcon size={12} stroke-width={2.5} />
-              </a>
+              <Show when={!msg.type.includes("sticker") && (msg.media_type || "").toLowerCase() !== "image/webp"}>
+                <a
+                  href={mediaUrl(msg.media_path!)}
+                  download={msg.media_filename || "download"}
+                  aria-label="Download photo"
+                  class="absolute top-2 right-2 w-7 h-7 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border  z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-2 ring-offset-black"
+                >
+                  <DownloadIcon size={12} stroke-width={2.5} />
+                </a>
+              </Show>
               <Show when={!!msg.is_deleted}>
                 <div class="absolute inset-0 flex items-center justify-center bg-black/60">
                   <span class="tag tag-accent border-accent text-accent">
@@ -562,18 +567,21 @@ export function ImageGroup(props: {
 
       <div class="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 mt-2">
         <div class="flex items-center gap-1.5 whitespace-nowrap">
-          <span class="text-metadata">
-            {imageCount()} photos
+          <span class="text-metadata uppercase">
+            {imageCount()} {isStickerGroup() ? "stickers" : "photos"}
           </span>
           <Show when={imageCount() > 1}>
             <button
               class="tag hover:border-accent hover:text-accent transition-all cursor-pointer"
-              onClick={downloadAll}
-              aria-label={`Download all ${imageCount()} photos`}
-              disabled={isDownloading()}
+              classList={{ "opacity-50 cursor-default pointer-events-none": isStickerGroup() }}
+              onClick={() => !isStickerGroup() && downloadAll()}
+              aria-label={isStickerGroup() ? "Sticker album" : `Download all ${imageCount()} photos`}
+              disabled={isDownloading() || isStickerGroup()}
             >
-              <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} class="mr-1.5" />}>
-                <CheckIcon size={10} class="text-success animate-in zoom-in duration-300 mr-1.5" />
+              <Show when={!isStickerGroup()}>
+                <Show when={isDownloading()} fallback={<DownloadIcon size={10} stroke-width={2.5} class="mr-1.5" />}>
+                  <CheckIcon size={10} class="text-success animate-in zoom-in duration-300 mr-1.5" />
+                </Show>
               </Show>
               {isDownloading() ? "DOWNLOADED" : "ALBUM"}
             </button>
