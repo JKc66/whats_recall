@@ -1,3 +1,4 @@
+import { Show } from "solid-js";
 import { ArrowLeftIcon } from "../Icons";
 
 interface SettingsHeaderProps {
@@ -5,6 +6,7 @@ interface SettingsHeaderProps {
   search: string;
   onSearchChange: (_val: string) => void;
   stats?: any; // Keep the prop but don't use it for the pic
+  showSearch?: boolean;
 }
 
 export default function SettingsHeader(props: SettingsHeaderProps) {
@@ -33,20 +35,22 @@ export default function SettingsHeader(props: SettingsHeaderProps) {
         </div>
       </div>
 
-      <div class="grid grid-cols-[80px_1fr] md:grid-cols-[120px_1fr] border-t border-border group focus-within:bg-border/5 transition-colors">
-        <div class="border-r border-border p-3 md:p-4 text-metadata uppercase text-text-disabled flex items-center justify-center font-mono">
-          SEARCH
+      <Show when={props.showSearch}>
+        <div class="grid grid-cols-[80px_1fr] md:grid-cols-[120px_1fr] border-t border-border group focus-within:bg-border/5 transition-colors">
+          <div class="border-r border-border p-3 md:p-4 text-metadata uppercase text-text-disabled flex items-center justify-center font-mono">
+            SEARCH
+          </div>
+          <input
+            type="text"
+            placeholder="SEARCH_CONTACTS..."
+            value={props.search}
+            onInput={(e) => props.onSearchChange(e.currentTarget.value)}
+            spellcheck={false}
+            aria-label="Search settings"
+            class="w-full bg-transparent p-3 md:p-4 outline-none text-[11px] md:text-[13px] font-mono tracking-widest placeholder:text-text-disabled/40 uppercase text-text-primary"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="SEARCH_SETTINGS..."
-          value={props.search}
-          onInput={(e) => props.onSearchChange(e.currentTarget.value)}
-          spellcheck={false}
-          aria-label="Search settings"
-          class="w-full bg-transparent p-3 md:p-4 outline-none text-[11px] md:text-[13px] font-mono tracking-widest placeholder:text-text-disabled/40 uppercase text-text-primary"
-        />
-      </div>
+      </Show>
     </header>
   );
 }

@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { jidNormalizedUser } from '@whiskeysockets/baileys';
 import { log } from '../logger.js';
-import { getDataDir } from '../db/database.js';
+import { getDataDir, getDb } from '../db/database.js';
 import { safeMerge, extractJidId } from './utils.ts';
 
 const getCacheFile = () => join(getDataDir(), 'baileys_auth', 'store_cache.json');
@@ -28,7 +28,16 @@ export class WhatsAppSync {
           this.updateMappings(cache.contacts);
         }
         if (cache.chats) {
-          cache.chats.forEach((c: any) => this.chats.set(c.id, c));
+          // Cleanup pollution: remove entries from this.chats that have no conversation timestamp and are not groups
+          const activeChats = cache.chats.filter((c: any) => 
+            c.id.endsWith('@g.us') || 
+            (c.conversationTimestamp && (c.conversationTimestamp?.low || c.conversationTimestamp) > 0)
+          );
+          activeChats.forEach((c: any) => this.chats.set(c.id, c));
+          if (activeChats.length < cache.chats.length) {
+            log('SYNC', `Cleaned up ${cache.chats.length - activeChats.length} polluted chat entries.`);
+            this.save();
+          }
         }
         log('SYNC', `Restored ${this.contacts.size} contacts and ${this.chats.size} chats from cache (mappings: ${this.lidToPn.size})`);
       }
@@ -39,19 +48,27 @@ export class WhatsAppSync {
 
   public updateMappings(items: any[]) {
     if (!items) return;
+    let count = 0;
     for (const item of items) {
       if (!item.id) continue;
+      
+      // Standard mapping: LID has a linked phoneNumber field
       if (item.id.includes('@lid') && item.phoneNumber) {
         const pn = jidNormalizedUser(item.phoneNumber.includes('@s.whatsapp.net') ? item.phoneNumber : (item.phoneNumber + '@s.whatsapp.net'));
         this.lidToPn.set(item.id, pn);
         this.pnToLid.set(pn, item.id);
-      } else if (item.id.includes('@s.whatsapp.net') && item.lid) {
+        count++;
+      } 
+      // Reverse mapping: PN has a linked lid field
+      else if (item.id.includes('@s.whatsapp.net') && item.lid) {
         const lid = item.lid.includes('@lid') ? item.lid : (item.lid + '@lid');
         const pn = jidNormalizedUser(item.id);
         this.pnToLid.set(pn, lid);
         this.lidToPn.set(lid, pn);
+        count++;
       }
     }
+    if (count > 0) log('SYNC', `Processed ${count} new LID/PN mappings from contact updates.`);
   }
 
   private syncItems(newItems: any[], map: Map<string, any>, updateMap = false) {
@@ -193,100 +210,142 @@ export class WhatsAppSync {
    */
   public async getAggregatedChats(sock: any): Promise<any[]> {
     if (!sock) return [];
+    
+    log('SYNC', `Aggregating ${this.contacts.size} contacts and ${this.chats.size} chats...`);
 
-    // 1. Sync groups
-    try {
-      const allGroups = await sock.groupFetchAllParticipating();
-      for (const [id, group] of Object.entries(allGroups)) {
-        if (!this.chats.has(id)) {
-          this.chats.set(id, { id, name: (group as any).subject });
-        }
-      }
-    } catch (e: any) {
-      log('SYNC', `Failed to fetch all participating groups: ${e.message}`);
-    }
+    const blockedDomains = ['@broadcast', '@newsletter'];
+    const localMap = new Map<string, any>();
 
-    // 2. Enrich from contacts
-    const blockedDomains = ['@g.us', '@broadcast', '@newsletter'];
-    await Promise.all(Array.from(this.contacts.entries()).map(async ([id, contact]) => {
-      if (!id || blockedDomains.some(domain => id.endsWith(domain))) return;
+    const getBaseId = (id: string): string | null => {
+      if (!id || blockedDomains.some(domain => id.endsWith(domain))) return null;
+      if (id.endsWith('@g.us')) return id;
+      
+      const mapped = this.lidToPn.get(id);
+      if (mapped) return extractJidId(mapped);
+      return extractJidId(id);
+    };
 
-      let preferredName = contact.name || contact.verifiedName || contact.notify || contact.pushname || '';
+    const isNumeric = (s: string) => /^[0-9+ ]+$/.test(s);
+    const isGarbageName = (s: string) => !s || s.trim() === '~' || isNumeric(s);
 
-      // Attempt to resolve the Phone Number name for an LID contact if both exist
-      if (!preferredName && id.includes('@lid') && contact.phoneNumber) {
-        const pnInfo = this.contacts.get(contact.phoneNumber + '@s.whatsapp.net') || this.contacts.get(contact.phoneNumber);
-        if (pnInfo) {
-          preferredName = pnInfo.name || pnInfo.verifiedName || pnInfo.notify || pnInfo.pushname || '';
-        }
-      }
+    // 1. Merge contacts first
+    for (const [id, contact] of this.contacts.entries()) {
+      if (!id || id.endsWith('@g.us')) continue;
+      const baseIdPart = getBaseId(id);
+      if (!baseIdPart) continue;
 
-      // Resolve LID to Phone Number (PN)
-      const targetId = await this.resolvePN(id, sock);
+      const jidId = extractJidId(id);
+      
+      const savedName = (contact.name || '').trim();
+      const pushName = (contact.notify || contact.pushname || '').trim();
+      const bizName = (contact.verifiedName || '').trim();
+      
+      // True saved check: user explicitly gave them a name that isn't just their phone number
+      const isStrictlySaved = !isGarbageName(savedName);
+      
+      // Final display name prioritization
+      const preferredName = isStrictlySaved ? savedName : (bizName || (!isGarbageName(pushName) ? pushName : ''));
 
-      if (!this.chats.has(targetId)) {
-        this.chats.set(targetId, { id: targetId, name: preferredName });
+      let existing = localMap.get(baseIdPart);
+      if (!existing) {
+        existing = {
+          id: id.includes('@lid') ? id : baseIdPart + '@s.whatsapp.net',
+          name: preferredName,
+          isGroup: false,
+          isSaved: isStrictlySaved,
+          isBusiness: !!bizName,
+          timestamp: 0,
+          lids: id.includes('@lid') ? [jidId] : []
+        };
+        localMap.set(baseIdPart, existing);
       } else {
-        const c = this.chats.get(targetId);
-        if (preferredName && (!c.name || c.name === extractJidId(targetId) || c.name.includes(extractJidId(targetId)))) {
-          this.chats.set(targetId, { ...c, name: preferredName });
+        if (preferredName && isGarbageName(existing.name)) {
+          existing.name = preferredName;
+        }
+        if (isStrictlySaved) existing.isSaved = true;
+        if (bizName) existing.isBusiness = true;
+        if (id.includes('@lid') && !existing.lids.includes(jidId)) {
+          existing.lids.push(jidId);
         }
       }
-    }));
-
-    // 3. Consolidate (Deduplicate LID and PN)
-    const dedupedMap = new Map();
-    const chatBlockedDomains = ['@broadcast', '@newsletter'];
-
-    for (const [id, c] of this.chats.entries()) {
-      if (!id || chatBlockedDomains.some(domain => id.endsWith(domain))) continue;
-
-      const baseId = await this.resolvePN(id, sock);
-      const existing = dedupedMap.get(baseId) || { ...c, id: baseId, lids: [] };
-
-      // Retain meaningful names
-      if (c.name && (!existing.name || existing.name === extractJidId(existing.id))) {
-        existing.name = c.name;
-      }
-
-      // Track lids
-      const lidPart = id.includes('@lid') ? extractJidId(id) : null;
-      if (lidPart && !existing.lids.includes(lidPart)) {
-        existing.lids.push(lidPart);
-      }
-
-      // Also check mapped LID for this PN
-      if (baseId.includes('@s.whatsapp.net')) {
-        const m_lid = this.pnToLid.get(baseId) || null;
-        if (m_lid) {
-          const m_lidPart = extractJidId(m_lid);
-          if (!existing.lids.includes(m_lidPart)) {
-            existing.lids.push(m_lidPart);
-          }
-        }
-      }
-
-      // Ensure LID and PN entries for the same contact are permanently merged under the PN
-      if (id !== baseId) {
-        this.chats.delete(id);
-        const currentBaseChat = this.chats.get(baseId);
-        if (!currentBaseChat) {
-          this.chats.set(baseId, existing);
-        } else {
-          this.chats.set(baseId, safeMerge(currentBaseChat, existing));
-          Object.assign(existing, this.chats.get(baseId));
-        }
-      }
-
-      // Timestamp merge
-      const cTs = c.conversationTimestamp?.low || c.conversationTimestamp || 0;
-      const eTs = existing.conversationTimestamp?.low || existing.conversationTimestamp || 0;
-      if (cTs > eTs) existing.conversationTimestamp = cTs;
-
-      dedupedMap.set(baseId, existing);
     }
 
-    return Array.from(dedupedMap.values());
+    // 2. Refresh from active chats
+    for (const [id, chat] of this.chats.entries()) {
+      const baseIdPart = getBaseId(id);
+      if (!baseIdPart) continue;
+      
+      const existing = localMap.get(baseIdPart);
+      const chatTs = (chat.conversationTimestamp?.low || chat.conversationTimestamp || 0);
+
+      // If we didn't see this in contacts, it might be an unsaved chat
+      if (!existing) {
+        localMap.set(baseIdPart, {
+          id,
+          name: chat.name || chat.subject || '',
+          isGroup: id.endsWith('@g.us'),
+          timestamp: chatTs,
+          isSaved: false,
+          lids: id.includes('@lid') ? [extractJidId(id)] : []
+        });
+      } else {
+        if (chatTs > (existing.timestamp || 0)) {
+          existing.timestamp = chatTs;
+        }
+        // If chat has a better name (subject for groups)
+        if (chat.name && (!existing.name || isNumeric(existing.name))) {
+          existing.name = chat.name;
+        }
+      }
+    }
+
+    const allResults = Array.from(localMap.values()).map(c => {
+      // 3. Classification
+      let category: 'contact' | 'chat' | 'group' = 'chat';
+      if (c.isGroup) category = 'group';
+      else if (c.isSaved) category = 'contact';
+
+      const finalId = (c.id.includes('@')) ? c.id : (c.id + '@s.whatsapp.net');
+      return { ...c, id: finalId, category };
+    });
+
+    // 4. PRE-DB PURGE: Filter out garbage before saving
+    const cleanedResult = allResults.filter(c => {
+      // Monitored items ALWAYS stay
+      if (sock?.monitored?.has?.(c.id) || sock?.monitored?.has?.(extractJidId(c.id))) return true;
+      
+      // Groups ALWAYS stay
+      if (c.category === 'group') return true;
+
+      const hasHistory = (c.timestamp && c.timestamp > 0);
+
+      // Final Zero-Tolerance Rule: If it's an unnamed LID, it's GONE even with history
+      const hasRealName = c.name && !isNumeric(c.name) && c.name.trim() !== '~' && c.name.trim() !== '';
+      const isUnnamedLid = c.id.includes('@lid') && !hasRealName;
+
+      const isSaved = c.category === 'contact';
+      const isMonitored = sock?.monitored?.has?.(c.id) || sock?.monitored?.has?.(extractJidId(c.id));
+      
+      // We keep ONLY if:
+      // 1. It's not an unnamed LID (Unless already monitored)
+      // 2. AND (It's a group, saved contact, monitored, or has history)
+      const isUseful = !isUnnamedLid || isMonitored;
+      
+      // Further filter: if it's a stranger, it MUST have history or be a group
+      const strictlyUseful = isUseful && (c.isGroup || isSaved || isMonitored || hasHistory);
+      
+      return strictlyUseful;
+    });
+
+    log('SYNC', `Data Cleaned: Storing ${cleanedResult.length} useful entries in DB (Discarded ${allResults.length - cleanedResult.length} shadows).`);
+
+    try {
+      getDb().saveWaContactsBatch(cleanedResult);
+    } catch (e: any) {
+      log('SYNC', `Failed to save wa_contacts to DB: ${e.message}`);
+    }
+
+    return cleanedResult;
   }
 }
 

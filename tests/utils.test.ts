@@ -1,8 +1,14 @@
-import { expect, test, describe } from "bun:test";
+import { expect, test, describe, beforeEach } from "bun:test";
 import { extractJidId, getChatName, safeMerge, getChatNameAsync } from "../src/whatsapp/utils.ts";
 import { syncService } from "../src/whatsapp/sync.ts";
 
 describe("WhatsApp Utils", () => {
+  beforeEach(() => {
+    syncService.contacts.clear();
+    syncService.chats.clear();
+    syncService.lidToPn.clear();
+    syncService.pnToLid.clear();
+  });
   describe("getChatNameAsync", () => {
     test("should return immediate name if available", async () => {
       const jid = "immediate@s.whatsapp.net";

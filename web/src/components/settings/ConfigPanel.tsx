@@ -1,5 +1,6 @@
-import { Show } from "solid-js";
-import { AlertTriangleIcon, SettingsIcon } from "../Icons";
+import { Show, createSignal } from "solid-js";
+import { AlertTriangleIcon, SettingsIcon, EyeIcon } from "../Icons";
+import RelayPreview from "./RelayPreview";
 
 interface ConfigPanelProps {
   pairing: any;
@@ -15,6 +16,7 @@ interface ConfigPanelProps {
 }
 
 export default function ConfigPanel(props: ConfigPanelProps) {
+  const [showRelayPreview, setShowRelayPreview] = createSignal(false);
   const hasSession = () => props.stats?.authenticated || props.pairing?.authenticated;
   const isOnline = () => props.stats?.connected;
 
@@ -118,7 +120,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               >
                 {hasSession()
                   ? props.showResetNotice
-                    ? "APPLY_CHANGES"
+                  ? "APPLY_CHANGES"
                     : "DISCONNECT"
                   : "CONNECT"}
               </button>
@@ -194,48 +196,68 @@ export default function ConfigPanel(props: ConfigPanelProps) {
         </div>
 
         <div 
-          class="grid grid-cols-[1fr_80px] hover:bg-surface-raised/30 transition-all duration-300 border-t border-border"
-          classList={{ "bg-accent/5": (props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled) }}
+          class="flex flex-col border-t border-border transition-all duration-500"
+          classList={{ "bg-accent/[0.03]": (props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled) }}
         >
-          <div class="p-4 md:p-6 flex flex-col gap-0.5 border-r border-border">
-            <div 
-              class="text-[11px] md:text-[12px] font-bold uppercase tracking-widest font-mono transition-colors"
-              classList={{ "text-accent": (props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled), "text-text-primary": !(props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled) }}
-            >
-              MESSAGE_RELAY
-            </div>
-            <div class="text-[8px] md:text-[9px] text-text-secondary uppercase tracking-widest font-mono">
-              FORWARD_DELETED_CONTENT_TO_SELF
-            </div>
-          </div>
-          <div class="flex items-center justify-center p-4">
-            <label class="relative inline-flex flex-col items-center cursor-pointer group/toggle gap-1.5 antialiased">
-              <input
-                type="checkbox"
-                checked={props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled}
-                onChange={() => props.onToggleNotify()}
-                class="sr-only peer"
-              />
+          <div class="grid grid-cols-[1fr_80px]">
+            <div class="p-4 md:p-6 flex flex-col gap-1 border-r border-border">
               <div 
-                class={`w-12 h-6 border transition-all duration-300 rounded-full relative p-1 flex items-center ${
-                  (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "bg-text-display border-text-display" : "bg-surface border-border-visible"
-                }`}
+                class="text-[11px] md:text-[12px] font-bold uppercase tracking-widest font-mono transition-colors"
+                classList={{ "text-accent": (props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled), "text-text-primary": !(props.config ? props.config?.whatsapp_notify === "true" : props.stats.notifyEnabled) }}
               >
-                <div 
-                  class="h-4 w-4 rounded-full transition-all duration-300"
-                  style={{
-                    "background-color": (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "var(--black)" : "var(--text-disabled)",
-                    "transform": (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "translateX(24px)" : "translateX(0)"
-                  }}
-                />
+                MESSAGE_RELAY
               </div>
-              <span class={`text-[7px] font-mono font-bold tracking-[0.2em] transition-all duration-300 ${
-                (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "text-accent" : "text-text-disabled opacity-40"
-              }`}>
-                {(props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "ON" : "OFF"}
-              </span>
-            </label>
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="text-[8px] md:text-[9px] text-text-secondary uppercase tracking-widest font-mono">
+                    FORWARD_DELETED_CONTENT_TO_SELF
+                </div>
+                <button 
+                    onClick={() => setShowRelayPreview(!showRelayPreview())} 
+                    class="tag border-dashed hover:border-accent hover:text-accent transition-all cursor-pointer h-5 px-2 text-[7px]"
+                    classList={{ "tag-accent border-solid bg-accent/10": showRelayPreview() }}
+                >
+                    <div class="flex items-center gap-1.5 font-bold">
+                        <EyeIcon size={10} />
+                        {showRelayPreview() ? "HIDE_PREVIEW" : "PREVIEW_FLOW"}
+                    </div>
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center justify-center p-4">
+                <label class="relative inline-flex flex-col items-center cursor-pointer group/toggle gap-1.5 antialiased">
+                <input
+                    type="checkbox"
+                    checked={props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled}
+                    onChange={() => props.onToggleNotify()}
+                    class="sr-only peer"
+                />
+                <div 
+                    class={`w-12 h-6 border transition-all duration-300 rounded-full relative p-1 flex items-center ${
+                    (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "bg-text-display border-text-display" : "bg-surface border-border-visible"
+                    }`}
+                >
+                    <div 
+                    class="h-4 w-4 rounded-full transition-all duration-300"
+                    style={{
+                        "background-color": (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "var(--black)" : "var(--text-disabled)",
+                        "transform": (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "translateX(24px)" : "translateX(0)"
+                    }}
+                    />
+                </div>
+                <span class={`text-[7px] font-mono font-bold tracking-[0.2em] transition-all duration-300 ${
+                    (props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "text-accent" : "text-text-disabled opacity-40"
+                }`}>
+                    {(props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled) ? "ON" : "OFF"}
+                </span>
+                </label>
+            </div>
           </div>
+          
+          <Show when={showRelayPreview()}>
+            <div class="px-4 md:px-6 pb-6 md:pb-8 transition-all duration-500">
+                <RelayPreview />
+            </div>
+          </Show>
         </div>
       </div>
     </div>

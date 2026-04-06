@@ -59,10 +59,19 @@ export function extractJidId(id: string | null | undefined): string {
   return id.replace(/@[cgs]\..+$/, "").replace(/@newsletter$/, "");
 }
 
-export function getDisplayName(chat: { name?: string | null; chat_id?: string; id?: string } | undefined, fallbackId?: string): string {
+export function getDisplayName(chat: { name?: string | null; chat_id?: string; id?: string; isMe?: boolean } | undefined, fallbackId?: string): string {
   const id = chat?.chat_id || chat?.id || fallbackId || "";
   if (!chat && !id) return "UNKNOWN";
-  return chat?.name || extractJidId(id) || id;
+  if (chat?.isMe && (!chat?.name || chat.name === extractJidId(id))) return "YOU";
+  
+  const name = chat?.name;
+  const jidId = extractJidId(id);
+  
+  if (!name || name === jidId || name.includes('@lid')) {
+    return jidId || "UNNAMED";
+  }
+  
+  return name;
 }
 
 export const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");

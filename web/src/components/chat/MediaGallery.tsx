@@ -50,9 +50,9 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       }}
                     />
                   </Show>
-                  <Show when={type === "video"}>
+                  <Show when={type === "video" || type === "ptv"}>
                     <div
-                      class="w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent"
+                      class={`w-full h-full relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent ${type === 'ptv' ? 'rounded-full scale-[0.85] overflow-hidden border-2 border-border shadow-inner' : ''}`}
                       onClick={() => props.onJumpToMessage(msg.message_id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -64,12 +64,12 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       role="button"
                     >
                       <video
-                        src={src}
+                        src={`${src}#t=0.5`}
                         preload="metadata"
                         class="w-full h-full object-cover"
                       />
                       <div class="absolute inset-0 flex items-center justify-center bg-bg/20 text-white">
-                        <PlayIcon size={24} fill="currentColor" stroke="none" />
+                        <PlayIcon size={type === 'ptv' ? 20 : 24} fill="currentColor" stroke="none" />
                       </div>
                     </div>
                   </Show>
@@ -97,9 +97,9 @@ export default function MediaGallery(props: MediaGalleryProps) {
                     </div>
                   </Show>
 
-                  <div class="absolute inset-0 bg-[rgba(0,0,0,0.6)] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto">
+                  <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center pointer-events-none group-hover:pointer-events-auto text-white">
                     <div class="mb-4">
-                      <span class="text-[10px] font-mono text-text-primary tabular-nums">
+                      <span class="text-[10px] font-mono tabular-nums opacity-80">
                         {formatTime(new Date(msg.timestamp * 1000))}
                       </span>
                       <Show when={!!msg.is_deleted}>
@@ -109,7 +109,7 @@ export default function MediaGallery(props: MediaGalleryProps) {
                       </Show>
                     </div>
                     <button
-                      class="px-3 py-1.5 bg-border hover:bg-accent hover:text-white border border-border rounded-md text-[11px] font-medium transition-all"
+                      class="px-3 py-1.5 bg-[#222222] hover:bg-accent hover:border-accent hover:text-white border border-[#333333] rounded-md text-[11px] font-bold transition-all text-[#E8E8E8]"
                       onClick={() => props.onJumpToMessage(msg.message_id)}
                     >
                       Jump to message

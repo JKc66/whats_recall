@@ -1,4 +1,4 @@
-import { Show, For, createMemo } from "solid-js";
+import { createMemo } from "solid-js";
 import { Reaction } from "../../types";
 
 export function HighlightedText(props: { text: string; query?: string }) {

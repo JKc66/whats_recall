@@ -75,7 +75,7 @@ export function createHonoServer(client: WhatsAppConnection) {
   const api = new Hono();
   api.route('/auth', auth);
   api.use('*', authMiddleware as any);
-  api.route('/chats', chats);
+  api.route('/chats', chats(client));
   api.route('/monitored', monitored(client));
   api.route('/settings', settings);
   api.route('/whatsapp', whatsappRouter(client));

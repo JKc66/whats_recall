@@ -5,7 +5,8 @@ import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
-import { getChatNameAsync, normalizeMessage, getMessageBody } from './utils.ts';
+import { getChatNameAsync, normalizeMessage, getMessageBody } from "./utils.ts";
+import { actionsQueue } from "./queue.ts";
 
 export class MessageProcessor {
   constructor(private sock: any, private broadcast: BroadcastFn) {}
@@ -313,6 +314,19 @@ export class MessageProcessor {
     const chatName = await getChatNameAsync(chatId, null, this.sock);
     const lid = rawChatId.includes('@lid') ? rawChatId : await syncService.resolveLID(rawChatId, this.sock);
 
+    // Update contacts/chats with push name if we just discovered a better one
+    if (msg.pushName && senderId) {
+      const existing = syncService.contacts.get(senderId);
+      if (!existing || !existing.name || /^[0-9+ ]+$/.test(existing.name)) {
+        syncService.contacts.set(senderId, {
+          ...(existing || {}),
+          id: senderId,
+          notify: msg.pushName
+        });
+        syncService.save();
+      }
+    }
+
     getDb().upsertChat(chatId, chatName, isGrp, lid);
 
     // Asynchronously fetch and cache the profile picture if not already stored
@@ -475,20 +489,25 @@ export class MessageProcessor {
       if (!this.sock) return;
       const myId = jidNormalizedUser(this.sock.user.id);
 
-      const from = msg.sender_name || 'Unknown';
-      const mType = msg.type ? msg.type.toUpperCase() : 'MEDIA';
-      const text = `👁️ *View-Once* from *${from}* (${chatName}) [${mType}]`;
+      const time = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const from = msg.sender_name || "Unknown";
+      const mType = msg.type ? msg.type.toUpperCase() : "MEDIA";
+      const source = from === chatName ? from : `${from} @ ${chatName}`;
+
+      const text = `👁️ *VIEW_ONCE* [${source}] @ ${time} [${mType}]`;
 
       if (msg.has_media && msg.media_path) {
         const fullPath = join(getMediaDir(), msg.media_path);
         if (await Bun.file(fullPath).exists()) {
           const content: any = { caption: text };
-          if (msg.type === 'image') content.image = { url: fullPath };
-          else if (msg.type === 'video') content.video = { url: fullPath };
-          else content.document = { url: fullPath, fileName: msg.media_filename || 'media' };
+          if (msg.type === "image") content.image = { url: fullPath };
+          else if (msg.type === "video") content.video = { url: fullPath };
+          else content.document = { url: fullPath, fileName: msg.media_filename || "media" };
 
-          await this.sock.sendMessage(myId, content);
-          log('PROCESSOR', `Sent view-once notification for ${msg.message_id}`);
+          actionsQueue.enqueue(async () => {
+            await this.sock.sendMessage(myId, content);
+            log("PROCESSOR", `Sent view-once notification for ${msg.message_id}`);
+          }, `VIEW_ONCE_NOTIFICATION [${msg.message_id}]`);
         }
       }
     } catch (err: any) {
@@ -504,14 +523,15 @@ export class MessageProcessor {
       if (!this.sock) return;
       const myId = jidNormalizedUser(this.sock.user.id);
 
-      const time = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const from = msg.sender_name || 'Unknown';
-      const mType = msg.type !== 'chat' && msg.type ? ` [${msg.type.toUpperCase()}]` : '';
+      const time = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const from = msg.sender_name || "Unknown";
+      const mType = msg.type !== "chat" && msg.type ? ` [${msg.type.toUpperCase()}]` : "";
+      const source = from === chatName ? from : `${from} @ ${chatName}`;
 
       const text = [
-        `🗑️ *Deleted* from *${from}* (${chatName}) at ${time}${mType}:`,
-        msg.body ? `> ${msg.body}` : (msg.has_media ? '' : '_No text content_')
-      ].filter((r: string) => r !== '').join('\n');
+        `🗑️ *RECOVERED* [${source}] @ ${time}${mType}:`,
+        msg.body ? `> ${msg.body}` : (msg.has_media ? "" : "_[No Content]_")
+      ].filter((r: string) => r !== "").join("\n");
 
       if (msg.has_media && msg.media_path) {
         const fullPath = join(getMediaDir(), msg.media_path);
@@ -519,24 +539,27 @@ export class MessageProcessor {
           const mediaType = msg.type;
           const content: any = { caption: text };
 
-          if (mediaType === 'image') content.image = { url: fullPath };
-          else if (mediaType === 'video') content.video = { url: fullPath };
-          else if (mediaType === 'audio') {
+          if (mediaType === "image") content.image = { url: fullPath };
+          else if (mediaType === "video") content.video = { url: fullPath };
+          else if (mediaType === "audio") {
             content.audio = { url: fullPath };
-            content.mimetype = 'audio/ogg; codecs=opus';
+            content.mimetype = "audio/ogg; codecs=opus";
             content.ptt = true;
-          }
-          else if (mediaType === 'sticker') content.sticker = { url: fullPath };
-          else content.document = { url: fullPath, fileName: msg.media_filename || 'media' };
+          } else if (mediaType === "sticker") content.sticker = { url: fullPath };
+          else content.document = { url: fullPath, fileName: msg.media_filename || "media" };
 
-          await this.sock.sendMessage(myId, content);
-          log('PROCESSOR', `Sent media deletion notification for ${msg.message_id}`);
+          actionsQueue.enqueue(async () => {
+            await this.sock.sendMessage(myId, content);
+            log("PROCESSOR", `Sent media deletion notification for ${msg.message_id}`);
+          }, `DELETION_NOTIFICATION_MEDIA [${msg.message_id}]`);
           return;
         }
       }
 
-      await this.sock.sendMessage(myId, { text });
-      log('PROCESSOR', `Sent deletion notification for ${msg.message_id}`);
+      actionsQueue.enqueue(async () => {
+        await this.sock.sendMessage(myId, { text });
+        log("PROCESSOR", `Sent deletion notification for ${msg.message_id}`);
+      }, `DELETION_NOTIFICATION_TEXT [${msg.message_id}]`);
     } catch (err: any) {
       log('PROCESSOR', `Failed to send deletion notification: ${err.message}`);
     }

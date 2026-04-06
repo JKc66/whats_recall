@@ -83,6 +83,9 @@ export interface WhatsAppChat {
   id: string;
   name: string;
   isGroup: boolean;
+  isMe?: boolean;
+  isSaved?: boolean;
+  isBusiness?: boolean;
   timestamp: number;
   isMonitored: boolean;
   hasName?: boolean;

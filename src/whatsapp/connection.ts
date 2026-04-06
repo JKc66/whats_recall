@@ -191,11 +191,18 @@ export class WhatsAppConnection {
     });
   }
 
-  public async getWhatsAppChats() {
+  public async getWhatsAppChats(force = false) {
     if (!this.isReady || !this.sock) return [];
     try {
-      const allChats = await syncService.getAggregatedChats(this.sock);
+      // 1. Fast path: check DB cache first
+      let allChats = force ? [] : getDb().getWaContacts();
       const monitored = new Set<string>(getDb().getMonitoredChats().map((m: any) => m.chat_id));
+
+      if (allChats.length === 0) {
+        log('CONN', 'Cache empty or refresh requested. Performing full aggregation sync...');
+        if (force) getDb().clearWaContacts(); // Wipe stale cache on force refresh
+        allChats = await syncService.getAggregatedChats({ ...this.sock, monitored });
+      }
 
       if (this.sock?.signalRepository?.lidMapping) {
         await Promise.all(Array.from(monitored).map(async (jid: any) => {
@@ -207,20 +214,32 @@ export class WhatsAppConnection {
               const lid = await this.sock.signalRepository.lidMapping.getLIDForPN(jid);
               if (lid) monitored.add(lid.includes('@lid') ? lid : lid + '@lid');
             }
-          } catch {}
+          } catch (_e) {
+            /* ignore mapping errors */
+          }
         }));
       }
 
       const profilePics = getDb().getChatProfilePics(allChats.map((c: any) => c.id));
       const results = await Promise.all(allChats.map(async (c: any) => {
-        const name = getChatName(c.id, c.name);
+        let name = getChatName(c.id, c.name);
+        const isMe = this.myId && (c.id === this.myId || (c.id.includes('@lid') && c.id.includes(extractJidId(this.myId))));
+        
+        if (isMe && (!name || name === extractJidId(c.id))) {
+          name = 'YOU';
+        }
+
         return {
           id: c.id,
           name,
-          isGroup: isJidGroup(c.id),
-          timestamp: c.conversationTimestamp || 0,
+          category: c.category || 'chat',
+          isGroup: c.isGroup || isJidGroup(c.id),
+          isMe,
+          isSaved: !!c.isSaved,
+          isBusiness: !!c.isBusiness,
+          timestamp: c.timestamp || 0,
           isMonitored: monitored.has(c.id),
-          hasName: name && name !== extractJidId(c.id),
+          hasName: !!(name && name !== extractJidId(c.id) && name !== 'YOU'),
           profilePic: profilePics[c.id] || getDb().getChatProfilePic(c.id),
           lid: c.lids && c.lids.length > 0 ? c.lids[0] : (c.id.includes('@lid') ? extractJidId(c.id) : null)
         };
@@ -229,6 +248,7 @@ export class WhatsAppConnection {
       // Background refresh for monitored chats
       results.filter(c => c.isMonitored).slice(0, 30).forEach(c => this.getProfilePic(c.id).catch(() => {}));
 
+      log('CONN', `Returning ${results.length} enriched chats (Original: ${allChats.length})`);
       return results.sort((a, b) => b.timestamp - a.timestamp);
     } catch (e: any) {
       log('CONN', `Error getting chats: ${e.message}`);
@@ -253,7 +273,9 @@ export class WhatsAppConnection {
         this.sock.ev.removeAllListeners('connection.update');
         await this.sock.logout();
         this.sock.end();
-      } catch {}
+      } catch (_e) {
+        /* ignore shutdown errors */
+      }
       this.sock = null;
     }
     await rm(getAuthDir(), { recursive: true, force: true });

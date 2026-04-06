@@ -138,10 +138,9 @@ export async function removeMonitored(chatId: string): Promise<void> {
   });
 }
 
-export async function fetchWhatsAppChats(): Promise<WhatsAppChat[]> {
-  const data = await request<{ chats: WhatsAppChat[] }>(
-    `${BASE_URL}/api/whatsapp/chats`,
-  );
+export async function fetchWhatsAppChats(refresh = false): Promise<WhatsAppChat[]> {
+  const url = refresh ? `${BASE_URL}/api/whatsapp/chats?refresh=true` : `${BASE_URL}/api/whatsapp/chats`;
+  const data = await request<{ chats: WhatsAppChat[] }>(url);
   return data.chats;
 }
 

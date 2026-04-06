@@ -98,6 +98,18 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       added_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS wa_contacts (
+      jid TEXT PRIMARY KEY,
+      name TEXT,
+      category TEXT, -- 'contact', 'chat', 'group'
+      is_group INTEGER DEFAULT 0,
+      is_saved INTEGER DEFAULT 0,
+      is_business INTEGER DEFAULT 0,
+      timestamp INTEGER DEFAULT 0,
+      lids TEXT, -- JSON array
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS reactions (
       message_id TEXT NOT NULL,
       sender_id TEXT NOT NULL,
@@ -572,6 +584,55 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
     cleanExpiredSessions() {
       db.query("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
+    },
+
+    getWaContacts() {
+      return db.query('SELECT * FROM wa_contacts ORDER BY timestamp DESC').all().map((c: any) => ({
+        id: c.jid,
+        name: c.name,
+        category: c.category || 'chat',
+        isGroup: c.is_group === 1,
+        is_group: c.is_group === 1,
+        isSaved: c.is_saved === 1,
+        isBusiness: c.is_business === 1,
+        timestamp: c.timestamp,
+        lids: JSON.parse(c.lids || '[]')
+      }));
+    },
+
+    saveWaContactsBatch(contacts: any[]) {
+      const upsert = db.transaction((items) => {
+        const stmt = db.prepare(`
+          INSERT INTO wa_contacts (jid, name, category, is_group, is_saved, is_business, timestamp, lids, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(jid) DO UPDATE SET
+            name = excluded.name,
+            category = excluded.category,
+            is_group = excluded.is_group,
+            is_saved = excluded.is_saved,
+            is_business = excluded.is_business,
+            timestamp = excluded.timestamp,
+            lids = excluded.lids,
+            updated_at = datetime('now')
+        `);
+        for (const c of items) {
+          stmt.run(
+            c.id,
+            c.name,
+            c.category || 'chat',
+            c.isGroup ? 1 : 0,
+            c.isSaved ? 1 : 0,
+            c.isBusiness ? 1 : 0,
+            c.timestamp || 0,
+            JSON.stringify(c.lids || [])
+          );
+        }
+      });
+      upsert(contacts);
+    },
+
+    clearWaContacts() {
+      db.run('DELETE FROM wa_contacts');
     },
 
     close() {

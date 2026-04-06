@@ -102,11 +102,16 @@ export default function ChatView() {
     return msgs;
   });
 
-  const mediaMessages = createMemo(() =>
-    messages().filter(
-      (m) => m.has_media && m.media_path && m.type !== "sticker",
-    ),
-  );
+  const mediaMessages = createMemo(() => {
+    const seen = new Set<string>();
+    return messages().filter((m) => {
+      const path = m.media_path;
+      if (!m.has_media || !path || m.type === "sticker") return false;
+      if (seen.has(path)) return false;
+      seen.add(path);
+      return true;
+    });
+  });
 
   function closeLightbox() {
     setLightboxSrc(null);

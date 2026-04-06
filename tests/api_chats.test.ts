@@ -14,12 +14,16 @@ import { apiRateLimits } from "../src/api/utils.ts";
 
 describe("API /chats", () => {
     let db: any;
+    let mockClient: any;
     let chats: any;
 
     beforeAll(async () => {
         
         db = getDb();
-        chats = chatsApi;
+        mockClient = {
+            myId: "me123@s.whatsapp.net"
+        };
+        chats = chatsApi(mockClient);
     });
 
     beforeEach(async () => {
@@ -43,6 +47,25 @@ describe("API /chats", () => {
         expect(json.chats).toHaveLength(2);
         expect(json.chats.map((c: any) => c.chat_id)).toContain("chat1");
         expect(json.chats.map((c: any) => c.chat_id)).toContain("chat2");
+    });
+
+    test("GET / should correctly identify isMe", async () => {
+        db.upsertChat(mockClient.myId, "Me", false);
+        db.upsertChat("lid123@lid", "LID Variant", false); // Test LID variant matching my number part
+        // mockClient.myId = me123@s.whatsapp.net, number part is me123
+        db.upsertChat("me123@lid", "LID of Me", false);
+
+        const res = await chats.request("/");
+        const json = await res.json();
+        
+        const myChat = json.chats.find((c: any) => c.chat_id === mockClient.myId);
+        expect(myChat.isMe).toBe(true);
+
+        const lidOfMe = json.chats.find((c: any) => c.chat_id === "me123@lid");
+        expect(lidOfMe.isMe).toBe(true);
+
+        const otherLid = json.chats.find((c: any) => c.chat_id === "lid123@lid");
+        expect(otherLid.isMe).toBe(false);
     });
 
     test("GET /search should find messages", async () => {

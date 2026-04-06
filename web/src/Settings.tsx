@@ -49,8 +49,14 @@ export default function Settings() {
 
   const [monitored, { refetch: refetchMonitored }] =
     createResource(fetchMonitored);
-  const [available, { refetch: refetchAvailable }] =
-    createResource(fetchWhatsAppChats);
+  
+  const [available, { refetch: refetchAvailableResource }] = createResource(() => fetchWhatsAppChats(false));
+
+  const refetchAvailable = async () => {
+    await fetchWhatsAppChats(true); // Force sync on server
+    refetchAvailableResource();     // Reload resource
+  };
+
   const [busy, setBusy] = createSignal<string | null>(null);
   const [confirmClear, setConfirmClear] = createSignal(false);
   const [clearing, setClearing] = createSignal(false);
@@ -64,9 +70,9 @@ export default function Settings() {
   const [isWaitingForPairing, setIsWaitingForPairing] = createSignal(false);
   const [sortBy, setSortBy] = createSignal<"recent" | "name">("recent");
   const [filterType, setFilterType] = createSignal<
-    "all" | "chats" | "contacts"
+    "all" | "contacts" | "chats" | "groups"
   >("all");
-  const [hideStrangers, setHideStrangers] = createSignal(true);
+
 
   const isConnected = createMemo(() => stats().connected);
   createEffect(() => {
@@ -95,20 +101,28 @@ export default function Settings() {
   const filteredAvailable = createMemo(() => {
     const q = search().toLowerCase().trim();
     let list = [...(available() || [])];
-    if (filterType() === "chats")
-      list = list.filter((c) => c.isGroup);
-    else if (filterType() === "contacts")
-      list = list.filter((c) => !c.isGroup);
-
-    if (hideStrangers() && filterType() !== "chats") {
-      list = list.filter((c) => c.hasName || c.isGroup);
+    
+    // 2. Apply Category Filter (Tabs)
+    if (filterType() === "contacts") {
+      list = list.filter((c: any) => c.category === "contact");
+    } else if (filterType() === "chats") {
+      list = list.filter((c: any) => c.category === "chat");
+    } else if (filterType() === "groups") {
+      list = list.filter((c: any) => c.category === "group");
     }
-    if (q)
+
+    // 3. Apply Search Filter
+    if (q) {
       list = list.filter(
-        (c) => c.name.toLowerCase().includes(q) || (c.id && c.id.includes(q)),
+        (c: any) => 
+          (c.name && c.name.toLowerCase().includes(q)) || 
+          (c.id && c.id.toLowerCase().includes(q))
       );
+    }
+    
     if (sortBy() === "name") list.sort((a, b) => a.name.localeCompare(b.name));
     else list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    
     return list;
   });
 
@@ -236,6 +250,7 @@ export default function Settings() {
         search={search()}
         onSearchChange={setSearch}
         stats={stats()}
+        showSearch={tab() !== "config"}
       />
 
       <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 min-h-14">
@@ -257,7 +272,7 @@ export default function Settings() {
           }}
           onClick={() => setTab("monitored")}
         >
-          {tab() === "monitored" ? `[ MON: ${(monitored() || []).length} ]` : `MON: ${(monitored() || []).length}`}
+          {tab() === "monitored" ? `[ MON: ${filteredMonitored().length} ]` : `MON: ${filteredMonitored().length}`}
         </button>
         <button
           class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
@@ -267,7 +282,7 @@ export default function Settings() {
           }}
           onClick={() => setTab("available")}
         >
-          {tab() === "available" ? `[ AVAIL: ${(available() || []).length} ]` : `AVAIL: ${(available() || []).length}`}
+          {tab() === "available" ? `[ AVAIL: ${filteredAvailable().length} ]` : `AVAIL: ${filteredAvailable().length}`}
         </button>
       </div>
 
@@ -293,6 +308,18 @@ export default function Settings() {
                 config()?.whatsapp_notify === "true" ? "false" : "true",
               )
             }
+          />
+          <DangerZone
+            clearing={clearing()}
+            confirmClear={confirmClear()}
+            clearPassword={clearPassword()}
+            onClearData={() => {
+              setClearPassword("");
+              setConfirmClear(true);
+            }}
+            onConfirmClearData={confirmClearData}
+            onSetClearPassword={setClearPassword}
+            onCancelClear={() => setConfirmClear(false)}
           />
         </Show>
 
@@ -324,23 +351,8 @@ export default function Settings() {
             setFilterType={setFilterType}
             sortBy={sortBy()}
             setSortBy={setSortBy}
-            hideStrangers={hideStrangers()}
-            setHideStrangers={setHideStrangers}
           />
         </Show>
-
-        <DangerZone
-          clearing={clearing()}
-          confirmClear={confirmClear()}
-          clearPassword={clearPassword()}
-          onClearData={() => {
-            setClearPassword("");
-            setConfirmClear(true);
-          }}
-          onConfirmClearData={confirmClearData}
-          onSetClearPassword={setClearPassword}
-          onCancelClear={() => setConfirmClear(false)}
-        />
       </div>
     </div>
   );

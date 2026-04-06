@@ -13,7 +13,8 @@ export default function (client: WhatsAppConnection) {
   });
 
   whatsapp.get('/chats', async (c) => {
-    const chats = await client.getWhatsAppChats();
+    const refresh = c.req.query('refresh') === 'true';
+    const chats = await client.getWhatsAppChats(refresh);
     return c.json({ chats });
   });
 

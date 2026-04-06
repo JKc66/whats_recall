@@ -18,16 +18,17 @@ interface ChatSelectorProps {
   onAdd?: (_chat: WhatsAppChat) => void;
   onRemove: (_chatId: string) => void;
   onRefetch?: () => void;
-  filterType: "all" | "chats" | "contacts";
-  setFilterType: (_val: "all" | "chats" | "contacts") => void;
+  filterType: "all" | "contacts" | "chats" | "groups";
+  setFilterType: (_val: "all" | "contacts" | "chats" | "groups") => void;
   sortBy: "recent" | "name";
   setSortBy: (_val: "recent" | "name") => void;
-  hideStrangers?: boolean;
-  setHideStrangers?: (_val: boolean) => void;
 }
 
 export default function ChatSelector(props: ChatSelectorProps) {
   const [confirming, setConfirming] = createSignal<string | null>(null);
+  const [displayLimit, setDisplayLimit] = createSignal(100);
+
+  const displayedChats = () => props.chats.slice(0, displayLimit());
 
   return (
     <div class="flex flex-col h-full animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -47,39 +48,37 @@ export default function ChatSelector(props: ChatSelectorProps) {
             <button
               class="px-2 md:px-5 py-2.5 md:py-3 text-[8px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
               classList={{
-                "bg-text-display text-black": props.filterType === "chats",
-                "text-text-disabled hover:text-text-primary": props.filterType !== "chats",
-              }}
-              onClick={() => props.setFilterType("chats")}
-            >
-              {props.filterType === "chats" ? "[ GRP ]" : "GRP"}
-            </button>
-            <button
-              class="px-2 md:px-5 py-2.5 md:py-3 text-[8px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border md:border-r-0"
-              classList={{
                 "bg-text-display text-black": props.filterType === "contacts",
                 "text-text-disabled hover:text-text-primary": props.filterType !== "contacts",
               }}
               onClick={() => props.setFilterType("contacts")}
             >
-              {props.filterType === "contacts" ? "[ PRIV ]" : "PRIV"}
+              {props.filterType === "contacts" ? "[ CONTACTS ]" : "CONTACTS"}
+            </button>
+            <button
+              class="px-2 md:px-5 py-2.5 md:py-3 text-[8px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
+              classList={{
+                "bg-text-display text-black": props.filterType === "chats",
+                "text-text-disabled hover:text-text-primary": props.filterType !== "chats",
+              }}
+              onClick={() => props.setFilterType("chats")}
+            >
+              {props.filterType === "chats" ? "[ CHATS ]" : "CHATS"}
+            </button>
+            <button
+              class="px-2 md:px-5 py-2.5 md:py-3 text-[8px] md:text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border"
+              classList={{
+                "bg-text-display text-black": props.filterType === "groups",
+                "text-text-disabled hover:text-text-primary": props.filterType !== "groups",
+              }}
+              onClick={() => props.setFilterType("groups")}
+            >
+              {props.filterType === "groups" ? "[ GROUPS ]" : "GROUPS"}
             </button>
           </div>
 
           <div class="flex border-l border-border ml-auto group items-center">
-            <Show when={props.type === "available"}>
-              <button
-                class="px-2 md:px-4 py-3 text-[8px] md:text-[9px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border h-full"
-                classList={{
-                  "bg-text-display text-black": props.hideStrangers,
-                  "text-text-disabled hover:text-text-primary": !props.hideStrangers,
-                }}
-                onClick={() => props.setHideStrangers?.(!props.hideStrangers)}
-                title="Hide contacts without names"
-              >
-                {props.hideStrangers ? "[ HIDDEN ]" : "STRANGERS"}
-              </button>
-            </Show>
+
             <button
               class="hidden sm:flex px-5 py-3 text-[10px] font-mono font-bold transition-all uppercase tracking-[0.2em] border-r border-border h-full"
               classList={{
@@ -146,7 +145,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
           </div>
         </Show>
 
-        <For each={props.chats}>
+        <For each={displayedChats()}>
           {(chat) => {
             const id = chat.chat_id || chat.id;
             const isAdded = () => props.monitoredIds?.has(id);
@@ -222,7 +221,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     </div>
                   </Show>
                   <span class="text-[6px] md:text-[7px] font-mono text-text-disabled text-center truncate w-full tracking-tighter opacity-60">
-                    {extractJidId(id)}
+                    {chat.isMe ? "YOU" : extractJidId(id)}
                   </span>
                 </div>
 
@@ -232,18 +231,28 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     {getDisplayName(chat)}
                   </div>
                   <div class="flex items-center gap-2 md:gap-3 no-scrollbar overflow-x-auto">
-                    <Show when={phone() && chat.name !== phone()}>
+                    <Show when={phone() && getDisplayName(chat) !== phone()}>
                       <span class="text-[9px] md:text-[10px] font-mono text-text-secondary tracking-wider">
                         {phone()}
                       </span>
                     </Show>
+                    <Show when={chat.isSaved}>
+                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-success border border-success/30 px-1.5 py-0.5 uppercase bg-success/10 rounded-sm">
+                        SAVED
+                      </span>
+                    </Show>
                     <Show when={chat.lid}>
-                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-success border border-success/20 px-1 uppercase bg-success/5">
+                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-interactive border border-interactive/30 px-1.5 py-0.5 uppercase bg-interactive/10 rounded-sm">
                         LID
                       </span>
                     </Show>
+                    <Show when={chat.isBusiness}>
+                      <span class="text-[7px] md:text-[8px] font-mono font-bold text-accent border border-accent/40 px-1.5 py-0.5 uppercase bg-accent/10 rounded-sm">
+                        BIZ
+                      </span>
+                    </Show>
                     <span
-                      class={`text-[7px] md:text-[8px] font-mono font-bold border px-1 uppercase ${(chat.isGroup ?? chat.is_group) ? "text-warning border-warning/20 bg-warning/5" : "text-interactive border-interactive/20 bg-interactive/5"}`}
+                      class={`text-[7px] md:text-[8px] font-mono font-bold border px-1.5 py-0.5 uppercase rounded-sm ${(chat.isGroup ?? chat.is_group) ? "text-accent border-accent/40 bg-accent/5" : "text-text-disabled border-border bg-transparent"}`}
                     >
                       {(chat.isGroup ?? chat.is_group) ? "GRP" : "PRIV"}
                     </span>
@@ -293,6 +302,17 @@ export default function ChatSelector(props: ChatSelectorProps) {
             );
           }}
         </For>
+
+        <Show when={props.chats.length > displayLimit()}>
+          <div class="p-8 flex justify-center border-t border-border bg-surface-raised/5">
+            <button
+              class="px-8 py-3 text-[10px] font-mono font-bold text-accent border border-accent/20 hover:bg-accent hover:text-white transition-all uppercase tracking-[0.2em]"
+              onClick={() => setDisplayLimit((n) => n + 100)}
+            >
+              LOAD_MORE_RESULTS ({props.chats.length - displayLimit()} REMAINING)
+            </button>
+          </div>
+        </Show>
       </div>
     </div>
   );

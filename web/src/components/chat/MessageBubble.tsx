@@ -84,12 +84,14 @@ export function MessageBubble(props: MessageBubbleProps) {
       data-msg-id={m().message_id}
     >
       <Show when={props.isGroup && !isMe()}>
-        <div class="flex items-baseline gap-2 mb-0.5 max-w-full">
-          <span class="text-[12px] font-semibold tracking-tight truncate min-w-0 shrink" style={{ color: avatarCol() }} dir="auto">
+        <div class="flex items-center gap-2 mb-1.5 max-w-full">
+          <span class="text-[12px] font-bold tracking-tight truncate min-w-0 shrink-0" style={{ color: avatarCol() }} dir="auto">
             {m().sender_name || phone() || "Unknown"}
           </span>
           <Show when={phone() && m().sender_name}>
-            <span class="text-[9px] font-normal text-text-disabled font-mono shrink-0 tracking-wider">+{phone()}</span>
+            <span class="text-[9px] font-mono text-text-disabled shrink min-w-0 truncate tracking-widest opacity-80 leading-none">
+              [ +{phone()} ]
+            </span>
           </Show>
         </div>
       </Show>
@@ -241,12 +243,14 @@ export function ImageGroup(props: {
       data-msg-id={first().message_id}
     >
       <Show when={props.isGroup && !isMe()}>
-        <div class="flex items-baseline gap-2 mb-1.5 max-w-full">
-          <span class="text-[12px] font-semibold tracking-tight truncate min-w-0 shrink" style={{ color: avatarCol() }} dir="auto">
+        <div class="flex items-center gap-2 mb-2 max-w-full">
+          <span class="text-[12px] font-bold tracking-tight truncate min-w-0 shrink-0" style={{ color: avatarCol() }} dir="auto">
             {first().sender_name || phone() || "Unknown"}
           </span>
           <Show when={phone() && first().sender_name}>
-            <span class="text-[9px] font-normal text-text-disabled font-mono shrink-0 tracking-wider">+{phone()}</span>
+            <span class="text-[9px] font-mono text-text-disabled shrink min-w-0 truncate tracking-widest opacity-80 leading-none">
+              [ +{phone()} ]
+            </span>
           </Show>
         </div>
       </Show>
