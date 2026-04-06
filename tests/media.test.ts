@@ -48,36 +48,35 @@ describe("Media Utils", () => {
         }
     });
 
-    test("downloadProfilePic should download and save profile picture", async () => {
+    test("downloadProfilePic should download and save profile picture in profile/", async () => {
         const sock = {
             profilePictureUrl: async () => "https://example.com/pic.jpg"
         };
         
+        db.upsertChat("user1@s.whatsapp.net", "User 1", false);
         const result = await downloadProfilePic("user1@s.whatsapp.net", sock);
         expect(result).not.toBeNull();
         expect(result?.isNew).toBe(true);
+        expect(result?.filename).toMatch(/^profile\/[a-f0-9]{16}\.jpg$/);
         expect(existsSync(join(process.env.MEDIA_DIR!, result?.filename!))).toBe(true);
         
         const dbPic = db.getChatProfilePic("user1@s.whatsapp.net");
         expect(dbPic).toBe(result?.filename);
     });
 
-    test("downloadProfilePic should reuse existing profile picture", async () => {
-        const filename = "existing.jpg";
-        const filepath = join(process.env.MEDIA_DIR!, filename);
-        writeFileSync(filepath, "existing data");
-        db.upsertChat("user2@s.whatsapp.net", "User 2", false);
-        db.updateChatProfilePic("user2@s.whatsapp.net", filename);
+    test("downloadProfilePic should reuse existing profile picture from disk", async () => {
+        const sock = {
+            profilePictureUrl: async () => "https://example.com/pic.jpg"
+        };
         
-        expect(db.getChatProfilePic("user2@s.whatsapp.net")).toBe(filename);
-        
-        const result = await downloadProfilePic("user2@s.whatsapp.net", {});
-        expect(result).not.toBeNull();
-        expect(result?.isNew).toBe(false);
-        expect(result?.filename).toBe(filename);
+        const result1 = await downloadProfilePic("user2@s.whatsapp.net", sock);
+        const result2 = await downloadProfilePic("user3@s.whatsapp.net", sock);
+
+        expect(result1?.filename).toBe(result2?.filename);
+        expect(result2?.isNew).toBe(false);
     });
 
-    test("downloadMedia should download and save media", async () => {
+    test("downloadMedia should download and save media in images/", async () => {
         const message = {
             message: {
                 imageMessage: {
@@ -89,10 +88,11 @@ describe("Media Utils", () => {
         const result = await downloadMedia(message as any, "image");
         expect(result).not.toBeNull();
         expect(result?.sha256hex).toBe(Buffer.from("fake-sha256").toString('hex'));
+        expect(result?.path).toStartWith("images/");
         expect(existsSync(join(process.env.MEDIA_DIR!, result?.path!))).toBe(true);
     });
 
-    test("downloadMedia should handle viewOnceMessage", async () => {
+    test("downloadMedia should handle viewOnceMessage and put in videos/", async () => {
         const message = {
             message: {
                 viewOnceMessage: {
@@ -108,6 +108,7 @@ describe("Media Utils", () => {
         const result = await downloadMedia(message as any, "video");
         expect(result).not.toBeNull();
         expect(result?.sha256hex).toBe(Buffer.from("video-sha256").toString('hex'));
+        expect(result?.path).toStartWith("videos/");
     });
 
     test("downloadMedia should return null if no media found", async () => {

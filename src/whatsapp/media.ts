@@ -1,13 +1,24 @@
 import { downloadMediaMessage, WAMessage, downloadContentFromMessage } from '@whiskeysockets/baileys';
-import { writeFile} from 'fs/promises';
-import { join } from 'path';
-import { getDb, getDataDir } from '../db/database.js';
-import { log } from '../logger.js';
+import { writeFile } from 'fs/promises';
+import { mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { getDb, getDataDir } from '../db/database.ts';
+import { log } from '../logger.ts';
 
 function getMediaDir() {
   return process.env.MEDIA_DIR || join(getDataDir(), 'media');
 }
 
+const SUBDIR_MAP: Record<string, string> = {
+  image: 'images',
+  video: 'videos',
+  audio: 'audio',
+  ptt: 'audio',
+  sticker: 'stickers',
+  ptv: 'videos',
+  lottieSticker: 'stickers',
+  document: 'documents'
+};
 
 let hashWorker: Worker | null = null;
 const hashPending = new Map<string, (hash: string) => void>();
@@ -32,8 +43,15 @@ async function computeHash(buffer: Buffer): Promise<string> {
   const worker = getHashWorker();
   return new Promise((resolve) => {
     hashPending.set(id, resolve);
-    worker.postMessage({ id, buffer: buffer.buffer }, [buffer.buffer]);
+    worker.postMessage({ id, buffer: buffer.buffer });
   });
+}
+
+function ensureDir(path: string) {
+  const dir = dirname(path);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
 }
 
 export async function downloadMedia(message: WAMessage, type: string, sock?: any): Promise<{ path: string, sha256hex: string | null } | null> {
@@ -97,11 +115,13 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
       }
     }
 
-    const filename = crypto.randomUUID();
+    const subdir = SUBDIR_MAP[type] || 'others';
+    const filename = sha256hex ? sha256hex.slice(0, 16) : crypto.randomUUID();
     const extension = getExtension(type);
-    const relativePath = `${filename}.${extension}`;
+    const relativePath = `${subdir}/${filename}.${extension}`;
     const fullPath = join(getMediaDir(), relativePath);
 
+    ensureDir(fullPath);
     await writeFile(fullPath, buffer);
     return { path: relativePath, sha256hex };
   } catch (err: any) {
@@ -126,20 +146,42 @@ function getExtension(type: string): string {
 
 export async function downloadProfilePic(jid: string, sock: any): Promise<{ filename: string, isNew: boolean } | null> {
   const db = getDb();
-  // Check if we already have it (this helper handles DB check, disk check, and self-healing)
-  const existing = db.getChatProfilePic(jid);
-  if (existing) return { filename: existing, isNew: false };
+  // Check if we already have it in DB
+  const existingPath = db.getChatProfilePic(jid);
+  if (existingPath) {
+    const fullPath = join(getMediaDir(), existingPath);
+    if (existsSync(fullPath)) return { filename: existingPath, isNew: false };
+  }
 
   try {
     const url = await sock.profilePictureUrl(jid, 'image').catch(() => null);
     if (!url) return null;
 
-    const filename = `dp_${jid.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
-    const filepath = join(getMediaDir(), filename);
     const res = await fetch(url);
     if (!res.ok) return null;
 
-    await writeFile(filepath, Buffer.from(await res.arrayBuffer()));
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const sha256hex = await computeHash(buffer);
+
+    // Check for deduplication by SHA256 in messages (might be the same image)
+    const existingMedia = db.getMediaBySha256(sha256hex);
+    if (existingMedia && (existingMedia.media_path.startsWith('images/') || existingMedia.media_path.startsWith('profile/'))) {
+      log('MEDIA', `Reusing existing media for profile pic: ${sha256hex.slice(0, 8)}…`);
+      db.updateChatProfilePic(jid, existingMedia.media_path);
+      return { filename: existingMedia.media_path, isNew: false };
+    }
+
+    const filename = `profile/${sha256hex.slice(0, 16)}.jpg`;
+    const fullPath = join(getMediaDir(), filename);
+
+    // Check if file already exists on disk (but not found in messages table)
+    if (existsSync(fullPath)) {
+      db.updateChatProfilePic(jid, filename);
+      return { filename, isNew: false };
+    }
+
+    ensureDir(fullPath);
+    await writeFile(fullPath, buffer);
     db.updateChatProfilePic(jid, filename);
     return { filename, isNew: true };
   } catch (e: any) {
@@ -147,3 +189,4 @@ export async function downloadProfilePic(jid: string, sock: any): Promise<{ file
     return null;
   }
 }
+
