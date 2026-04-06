@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
+import { secureHeaders } from 'hono/secure-headers';
 import { log } from '../logger.ts';
 import auth from './auth.ts';
 import { authMiddleware } from './middleware.ts';
@@ -30,23 +31,19 @@ export function createHonoServer(client: WhatsAppConnection) {
   const app = new Hono();
 
   // Security headers middleware
-  app.use('*', async (c, next) => {
-    await next();
-    c.header('X-Content-Type-Options', 'nosniff');
-    c.header('X-Frame-Options', 'DENY');
-    c.header('X-XSS-Protection', '1; mode=block');
-    c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-    c.header('Content-Security-Policy', "default-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.qrserver.com https://pps.whatsapp.net; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' ws: wss:;");
-  });
+  app.use('*', secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https://api.qrserver.com', 'https://pps.whatsapp.net'],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://static.cloudflareinsights.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      connectSrc: ["'self'", 'ws:', 'wss:'],
+    }
+  }));
 
   // CORS for cross-port development (e.g. Vite on 5173, Backend on 3001)
   app.use('*', cors({
-    origin: (origin) => {
-      // Allow development environment origins to connect
-      if (process.env.NODE_ENV === 'development') return origin || '*';
-      // Disallow overly permissive CORS in production by default
-      return '';
-    },
+    origin: (origin) => process.env.NODE_ENV === 'development' ? origin || '*' : '',
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-Fingerprint', 'X-Auth-Token'],
