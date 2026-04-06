@@ -326,13 +326,13 @@ html, body, #root {
 
 .btn-destructive {
   background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
 }
 
 .btn-destructive:hover {
-  background: var(--accent);
-  color: white;
+  background: var(--accent-color);
+  color: var(--black);
 }
 
 .btn-ghost {
