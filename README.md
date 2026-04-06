@@ -2,7 +2,7 @@
 
 # WhatsApp Deleted Messages Monitor
 
-[![Version](https://img.shields.io/badge/version-1.0.1-10B981)](https://github.com/your-repo)
+[![Version](https://img.shields.io/badge/version-1.0-10B981)](https://github.com/your-repo)
 [![Runtime](https://img.shields.io/badge/Runtime-Bun-000?logo=bun&logoColor=white)](https://bun.sh)
 [![Frontend](https://img.shields.io/badge/Frontend-SolidJS-2c4f7c?logo=solid&logoColor=fff)](https://www.solidjs.com/)
 [![Backend](https://img.shields.io/badge/Backend-Hono-E36002?logo=hono&logoColor=white)](https://hono.dev/)
@@ -149,6 +149,7 @@ Privacy is a core design principle:
 - **Session Fingerprinting**: Access tokens are cryptographically bound to the device's unique hardware fingerprint via **ThumbmarkJS**.
 - **Secure Auth**: Dashboards are protected by standard-compliant session management with `HttpOnly` and `SameSite=Strict` cookie flags.
 - **Zero Extinction**: Deleted messages are preserved in WAL mode, ensuring durability even during sudden restarts.
+- **Payload Boundaries**: Rejects oversized JSON payloads automatically to prevent memory-based Denial of Service (DoS) attacks.
 
 ---
 
@@ -166,9 +167,3 @@ Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`, adjust your domain, and relo
 ```bash
 sudo systemctl reload caddy
 ```
-
----
-
-<div align="center">
-  MIT License • Created for educational and personal archival purposes.
-</div>

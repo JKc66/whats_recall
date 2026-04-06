@@ -21,7 +21,7 @@ The UI follows a **Softened Nothing Design System**, adhering exactly to the **N
   - **Typography**: `.text-display-lg`, `.text-subheading`, `.text-body-sm`, `.text-label`, `.text-metadata`.
   - **Buttons**: `.btn` with variants `.btn-primary`, `.btn-secondary`, `.btn-destructive`.
   - **Controls**: `.segmented-control` + `.segmented-item` (with brackets), and `.tag` for badges.
-- **Anti-Patterns**: No gradients, no glassmorphism (backdrop-blur), no heavy shadows. No generic Tailwind colors (`text-red-500`) — use strictly defined variables (`--accent`, `--success`, `--warning`).
+- **Anti-Patterns**: No gradients, no glassmorphism (backdrop-blur), no heavy shadows. No generic Tailwind colors (`text-red-500`), and no secondary colors (success/warning hues) — use ONLY strictly defined variables representing monochrome or the allowed accent (`--accent`).
 - **Communication**: Use clear, functional, and uppercase interface text (e.g., `NO_MESSAGES_LOGGED` instead of "No messages found").
 
 ---
@@ -49,6 +49,7 @@ The UI follows a **Softened Nothing Design System**, adhering exactly to the **N
 - **Authentication**: `AUTH_PASSWORD` (env) is used for both dashboard login and destructive operation authorization.
 - **Fingerprinting**: Client-side hardware fingerprinting via **ThumbmarkJS** is mandatory for session binding.
 - **Privacy**: All media deduplication is done strictly via local SHA-256 hashing.
+- **Payload Boundaries (DoS)**: All mutation endpoints (`POST`, `DELETE`) must implement Hono `bodyLimit` wrapper (e.g., `8192` bytes) and wrap `c.req.json()` in try/catch to gracefully handle malformed JSON memory attacks.
 
 ---
 
