@@ -41,7 +41,7 @@ export default function DangerZone(props: DangerZoneProps) {
         </span>
       </div>
 
-      <div class="relative min-h-[140px] flex items-stretch">
+      <div class="relative min-h-35 flex items-stretch">
         <Show 
           when={!props.confirmClear}
           fallback={
@@ -56,9 +56,9 @@ export default function DangerZone(props: DangerZoneProps) {
                   </p>
                 </div>
 
-                <div class="flex flex-col gap-3 w-full md:w-auto min-w-[280px]">
+                <div class="flex flex-col gap-3 w-full md:w-auto min-w-70">
                   <div class="grid grid-cols-[80px_1fr] border border-border focus-within:border-accent transition-colors bg-surface h-12">
-                    <div class="border-r border-border flex items-center justify-center text-[9px] tracking-[0.1em] text-text-disabled font-bold uppercase font-mono bg-surface/50">
+                    <div class="border-r border-border flex items-center justify-center text-[9px] tracking-widest text-text-disabled font-bold uppercase font-mono bg-surface/50">
                       PASS
                     </div>
                     <input
