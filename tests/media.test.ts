@@ -57,7 +57,7 @@ describe("Media Utils", () => {
         const result = await downloadProfilePic("user1@s.whatsapp.net", sock);
         expect(result).not.toBeNull();
         expect(result?.isNew).toBe(true);
-        expect(result?.filename).toMatch(/^profile\/[a-f0-9]{16}\.jpg$/);
+        expect(result?.filename).toMatch(/^profile\/dp_[a-f0-9]{16}\.jpg$/);
         expect(existsSync(join(process.env.MEDIA_DIR!, result?.filename!))).toBe(true);
         
         const dbPic = db.getChatProfilePic("user1@s.whatsapp.net");

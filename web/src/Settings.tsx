@@ -141,7 +141,7 @@ export default function Settings() {
     setBusy(chat.id);
     try {
       await addMonitored(chat.id, chat.name, !!chat.isGroup);
-      const updatedChats = await fetchWhatsAppChats(true); // Optional: if we want to sync available
+      await fetchWhatsAppChats(true); // Optional: if we want to sync available
       const globalChats = await fetchChats(undefined, true);
       if (globalChats) setChats(globalChats);
       
