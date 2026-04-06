@@ -18,11 +18,15 @@ import {
   setView,
   setAuthenticated,
   setMessages,
+  messages,
   setJumpToQuery,
   searchQuery,
   setSearchQuery,
   searchResults,
   setSearchResults,
+  messageCache,
+  prefetchInProgress,
+  setIsFetchingMessages,
 } from "./store";
 import {
   avatarColor,
@@ -75,12 +79,35 @@ export default function Sidebar() {
 
   const isSearchActive = () => searchQuery().trim().length >= 2;
 
+  async function prefetchChat(chatId: string) {
+    if (messageCache.has(chatId) || prefetchInProgress.has(chatId)) return;
+    prefetchInProgress.add(chatId);
+    try {
+      const msgs = await fetchMessages(chatId, 200, true);
+      if (msgs) messageCache.set(chatId, msgs);
+    } catch { /* ignored */ }
+    finally { prefetchInProgress.delete(chatId); }
+  }
+
   async function openChat(chatId: string) {
     const q = searchQuery().trim();
     setJumpToQuery(q.length >= 2 ? q : null);
 
+    // Instant switch if we have cached data
+    const cached = messageCache.get(chatId);
+    if (cached) {
+      setMessages(cached);
+      setIsFetchingMessages(false);
+    } else {
+      setMessages([]); // Clear if no cache
+      setIsFetchingMessages(true);
+    }
+
     setCurrentChatId(chatId);
     setView("chats");
+    
+    // ... mark chat as read ... (omitting for brevity in this chunk search)
+    // Actually I should just find the right lines to replace.
 
     const chatList = chats();
     const chatToUpdate = chatList.find((c) => c.chat_id === chatId);
@@ -95,9 +122,24 @@ export default function Sidebar() {
 
     try {
       const msgs = await fetchMessages(chatId);
-      if (msgs) setMessages(msgs);
+      if (msgs) {
+        const currentMsgs = messages();
+        const hasChanged = currentMsgs.length !== msgs.length || 
+                          (msgs.length > 0 && currentMsgs.length > 0 && 
+                           msgs[msgs.length-1].message_id !== currentMsgs[currentMsgs.length-1].message_id);
+
+        messageCache.set(chatId, msgs);
+        // Only trigger a re-render if the content actually changed or we aren't displaying this chat yet
+        if (currentChatId() === chatId && (hasChanged || currentMsgs.length === 0)) {
+          setMessages(msgs);
+        }
+      }
     } catch {
       /* handled */
+    } finally {
+      if (currentChatId() === chatId) {
+        setIsFetchingMessages(false);
+      }
     }
   }
 
@@ -205,6 +247,7 @@ export default function Sidebar() {
                 chat={chat}
                 active={currentChatId() === chat.chat_id}
                 onClick={() => openChat(chat.chat_id)}
+                onMouseEnter={() => prefetchChat(chat.chat_id)}
               />
             )}
           </For>
@@ -214,7 +257,12 @@ export default function Sidebar() {
   );
 }
 
-function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
+function ChatRow(props: { 
+  chat: Chat; 
+  active: boolean; 
+  onClick: () => void;
+  onMouseEnter: () => void;
+}) {
   const displayName = () => getDisplayName(props.chat);
   const color = () => avatarColor(displayName());
   const initials = () => getInitials(displayName());
@@ -230,6 +278,7 @@ function ChatRow(props: { chat: Chat; active: boolean; onClick: () => void }) {
       class="flex items-center p-3 m-[2px_12px] gap-3 cursor-pointer transition-all border-none rounded-lg bg-transparent text-inherit w-[calc(100%-24px)] text-left relative outline-none hover:bg-surface-raised active:tick group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       classList={{ "bg-surface-raised": props.active }}
       onClick={() => props.onClick()}
+      onMouseEnter={() => props.onMouseEnter()}
       aria-current={props.active ? "true" : "false"}
     >
       {props.active && (

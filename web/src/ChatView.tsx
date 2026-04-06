@@ -17,6 +17,7 @@ import {
   jumpToQuery,
   setJumpToQuery,
   searchQuery,
+  isFetchingMessages,
 } from "./store";
 import { MessageSquareIcon, SettingsIcon, XIcon, ArrowDownIcon, SearchIcon, ArrowUpIcon } from "./components/Icons";
 import ChatHeader from "./components/chat/ChatHeader";
@@ -242,7 +243,7 @@ export default function ChatView() {
                 when={displayMessages().length > 0}
                 fallback={
                   <div class="flex flex-col items-center justify-center p-12 text-text-disabled text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-center gap-1 opacity-60 min-h-full">
-                    NO_{showOnlyDeleted() ? "DELETED_" : ""}MESSAGES_LOGGED
+                    {isFetchingMessages() ? "LOADING_MESSAGES..." : `NO_${showOnlyDeleted() ? "DELETED_" : ""}MESSAGES_LOGGED`}
                   </div>
                 }
               >

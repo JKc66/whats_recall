@@ -116,7 +116,18 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
     }
 
     const subdir = SUBDIR_MAP[type] || 'others';
-    const filename = sha256hex ? sha256hex.slice(0, 16) : crypto.randomUUID();
+    const prefixMap: Record<string, string> = {
+      image: 'img_',
+      video: 'vid_',
+      audio: 'aud_',
+      ptt: 'ptt_',
+      sticker: 'stk_',
+      ptv: 'ptv_',
+      document: 'doc_'
+    };
+    const prefix = prefixMap[type] || 'med_';
+    const hashPart = sha256hex ? sha256hex.slice(0, 16) : crypto.randomUUID();
+    const filename = `${prefix}${hashPart}`;
     const extension = getExtension(type);
     const relativePath = `${subdir}/${filename}.${extension}`;
     const fullPath = join(getMediaDir(), relativePath);
@@ -171,7 +182,7 @@ export async function downloadProfilePic(jid: string, sock: any): Promise<{ file
       return { filename: existingMedia.media_path, isNew: false };
     }
 
-    const filename = `profile/${sha256hex.slice(0, 16)}.jpg`;
+    const filename = `profile/dp_${sha256hex.slice(0, 16)}.jpg`;
     const fullPath = join(getMediaDir(), filename);
 
     // Check if file already exists on disk (but not found in messages table)

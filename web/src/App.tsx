@@ -14,6 +14,7 @@ import {
   setStats,
   currentChatId,
   setMessages,
+  messageCache,
 } from "./store";
 import { notify } from "./notify";
 import type { Message, Chat } from "./types";
@@ -50,7 +51,10 @@ export default function App() {
     const chatId = currentChatId();
     if (chatId) {
       const msgs = await fetchMessages(chatId, 200, true);
-      if (msgs) setMessages(msgs);
+      if (msgs) {
+        messageCache.set(chatId, msgs);
+        if (currentChatId() === chatId) setMessages(msgs);
+      }
     }
   }
 

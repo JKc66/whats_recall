@@ -9,6 +9,9 @@ export const [currentChatId, setCurrentChatId] = createSignal<string | null>(
   null,
 );
 export const [messages, setMessages] = createSignal<Message[]>([]);
+export const [isFetchingMessages, setIsFetchingMessages] = createSignal(false);
+export const messageCache = new Map<string, Message[]>();
+export const prefetchInProgress = new Set<string>();
 export const [stats, setStats] = createSignal<Stats>({
   connected: false,
   authenticated: false,

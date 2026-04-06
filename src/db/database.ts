@@ -220,7 +220,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       return rows.map(row => {
         let pic = row.profile_pic;
         if (!pic) {
-          const filename = `dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+          const filename = `profile/dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
           const fullPath = join(currentMediaDir, filename);
           if (existsSync(fullPath)) {
             dbMethods.updateChatProfilePic(row.chat_id, filename);
@@ -382,16 +382,17 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
 
     getMonitoredChats() {
       const rows = db.query(`
-        SELECT mc.*, c.lid, c.profile_pic 
+        SELECT mc.*, c.lid, c.profile_pic, wc.is_saved AS isSaved, wc.is_business AS isBusiness, wc.category
         FROM monitored_chats mc 
         LEFT JOIN chats c ON mc.chat_id = c.chat_id 
+        LEFT JOIN wa_contacts wc ON mc.chat_id = wc.jid
         ORDER BY mc.added_at DESC
       `).all() as any[];
 
       return rows.map(row => {
         let pic = row.profile_pic;
         if (!pic) {
-          const filename = `dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
+          const filename = `profile/dp_${row.chat_id.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`;
           const fullPath = join(currentMediaDir, filename);
           if (existsSync(fullPath)) {
             dbMethods.updateChatProfilePic(row.chat_id, filename);

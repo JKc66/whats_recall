@@ -11,6 +11,7 @@ import {
   fetchMonitored,
   addMonitored,
   removeMonitored,
+  fetchChats,
   clearData,
   fetchSettings,
   updateSetting,
@@ -140,6 +141,10 @@ export default function Settings() {
     setBusy(chat.id);
     try {
       await addMonitored(chat.id, chat.name, !!chat.isGroup);
+      const updatedChats = await fetchWhatsAppChats(true); // Optional: if we want to sync available
+      const globalChats = await fetchChats(undefined, true);
+      if (globalChats) setChats(globalChats);
+      
       refetchMonitored();
       refetchAvailable();
     } finally {
@@ -151,6 +156,9 @@ export default function Settings() {
     setBusy(chatId);
     try {
       await removeMonitored(chatId);
+      const globalChats = await fetchChats(undefined, true);
+      if (globalChats) setChats(globalChats);
+
       refetchMonitored();
       refetchAvailable();
     } finally {
