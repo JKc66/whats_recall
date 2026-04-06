@@ -99,11 +99,14 @@ export default function Login() {
         {/* Top Header Bar */}
         <div class="border-b border-border px-4 md:px-6 py-3 md:py-4 flex items-center justify-between text-label bg-surface-raised/50">
           <div class="flex items-center gap-3">
-            <span class="text-success">● ONLINE</span>
+            <div class="flex items-center gap-1.5 text-text-primary">
+              <span class="w-1.25 h-1.25 bg-accent rounded-[1px] animate-pulse-slow" />
+              <span>ONLINE</span>
+            </div>
             <span class="opacity-50">ARCHIVE</span>
           </div>
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+            class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             onClick={toggleTheme}
             title={theme() === "dark" ? "Light Mode" : "Dark Mode"}
             aria-label={theme() === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -197,7 +200,7 @@ export default function Login() {
           <div class="border-r border-border p-4 md:p-5 flex flex-col gap-1">
             <span class="text-metadata uppercase opacity-40">STATUS</span>
             <div class="flex items-center gap-2">
-               <div class="w-1.5 h-1.5 bg-success" />
+               <div class="w-1.25 h-1.25 bg-accent rounded-[1px]" />
               <span class="text-label text-text-primary">ACTIVE</span>
             </div>
           </div>
