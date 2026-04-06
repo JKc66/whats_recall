@@ -84,17 +84,19 @@ export function MessageBubble(props: MessageBubbleProps) {
       data-msg-id={m().message_id}
     >
       <Show when={props.isGroup && !isMe()}>
-        <div class="text-[12px] font-semibold mb-0.5 tracking-tight flex items-baseline gap-1.5" style={{ color: avatarCol() }}>
-          {m().sender_name || phone() || "Unknown"}
+        <div class="flex items-baseline gap-2 mb-0.5 max-w-full">
+          <span class="text-[12px] font-semibold tracking-tight truncate min-w-0 shrink" style={{ color: avatarCol() }} dir="auto">
+            {m().sender_name || phone() || "Unknown"}
+          </span>
           <Show when={phone() && m().sender_name}>
-            <span class="text-[10px] font-normal text-text-secondary font-mono">{phone()}</span>
+            <span class="text-[9px] font-normal text-text-disabled font-mono shrink-0 tracking-wider">+{phone()}</span>
           </Show>
         </div>
       </Show>
 
       <Show when={!props.isGroup && !isMe() && !m().sender_name && phone()}>
-        <div class="text-[12px] font-semibold mb-0.5 tracking-tight" style={{ color: phoneAvatarCol() }}>
-          {phone()}
+        <div class="text-[12px] font-semibold mb-0.5 tracking-tight" style={{ color: phoneAvatarCol() }} dir="auto">
+          +{phone()}
         </div>
       </Show>
 
@@ -230,16 +232,23 @@ export function ImageGroup(props: {
 
   return (
     <div
-      class="max-w-110 p-3 px-4 rounded-2xl relative mb-1.5 animate-in fade-in duration-300"
+      class="max-w-110 p-3 px-4 rounded-lg relative mb-1.5 animate-entrance"
       classList={{
-        "self-start bg-surface border border-border rounded-bl-sm": !isMe(),
-        "self-end bg-accent/20 border border-accent/20 rounded-br-sm": isMe(),
+        "self-start bg-[var(--bubble-other)] border border-border": !isMe(),
+        "self-end bg-[var(--bubble-me)] border border-accent/20": isMe(),
         "mb-5": props.messages.some((m) => m.reactions && m.reactions.length > 0),
       }}
       data-msg-id={first().message_id}
     >
       <Show when={props.isGroup && !isMe()}>
-        <div class="text-[12px] font-semibold mb-1.5 tracking-tight" style={{ color: avatarCol() }}>{first().sender_name || phone() || "Unknown"}</div>
+        <div class="flex items-baseline gap-2 mb-1.5 max-w-full">
+          <span class="text-[12px] font-semibold tracking-tight truncate min-w-0 shrink" style={{ color: avatarCol() }} dir="auto">
+            {first().sender_name || phone() || "Unknown"}
+          </span>
+          <Show when={phone() && first().sender_name}>
+            <span class="text-[9px] font-normal text-text-disabled font-mono shrink-0 tracking-wider">+{phone()}</span>
+          </Show>
+        </div>
       </Show>
 
       <div class="grid gap-0.5 rounded-lg overflow-hidden my-1" classList={{ "grid-cols-1": imageCount() === 1, "grid-cols-2": imageCount() > 1 }}>

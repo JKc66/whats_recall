@@ -4,25 +4,41 @@ import { Reaction } from "../../types";
 export function HighlightedText(props: { text: string; query?: string }) {
   const query = createMemo(() => props.query?.trim() || "");
 
-  const parts = createMemo(() => {
+  const renderTextWithHighlights = (text: string) => {
     const q = query();
-    if (!q) return [props.text];
-    return props.text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    if (!q) return text;
+    const parts = text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')})`, 'gi'));
+    return parts.map(part => 
+      part.toLowerCase() === q.toLowerCase()
+        ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
+        : part
+    );
+  };
+
+  const URL_REGEX = /((?:https?:\/\/|www\.)[^\s"']*[^\s"',.:;)]|(?<!@)\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s"']*[^\s"',.:;)])?)/gi;
+
+  const content = createMemo(() => {
+    const parts = props.text.split(URL_REGEX);
+    return parts.map((part, i) => {
+      if (i % 2 === 1) { // Captured URL
+        const href = part.toLowerCase().startsWith("http") ? part : `https://${part}`;
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent hover:underline hover:text-accent/80 transition-colors break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {renderTextWithHighlights(part)}
+          </a>
+        );
+      }
+      return renderTextWithHighlights(part);
+    });
   });
 
-  return (
-    <Show when={query()} fallback={<span>{props.text}</span>}>
-      <span>
-        <For each={parts()}>
-          {(part) => (
-            part.toLowerCase() === query().toLowerCase()
-              ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
-              : part
-          )}
-        </For>
-      </span>
-    </Show>
-  );
+  return <span>{content()}</span>;
 }
 
 export function groupReactions(reactions: Reaction[]) {
