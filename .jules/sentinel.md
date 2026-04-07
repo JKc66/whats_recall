@@ -17,3 +17,8 @@
 **Vulnerability:** Unbounded JSON payload sizes and unhandled exceptions in Hono `c.req.json()` calls.
 **Learning:** Hono `c.req.json()` buffers the entire request body into memory. To prevent Denial of Service (DoS) via massive payloads and unhandled exceptions, apply Hono's `bodyLimit` middleware to routes before parsing the body, and always wrap the parsing in a `try...catch` block.
 **Prevention:** Ensure that all endpoints accepting JSON payloads use `bodyLimit` and `try...catch` around `c.req.json()`.
+
+## 2025-04-06 - Unhandled NaN and Unbounded SQLite Limits
+**Vulnerability:** URL query parameters (like `limit` or `before`) were extracted and parsed using `parseInt` without checking for `NaN` or clamping the values. Providing non-numeric strings resulted in `NaN` which triggered a SQLite `datatype mismatch` crash. Providing extremely large numbers could lead to Denial of Service (DoS) by executing unbounded queries.
+**Learning:** `parseInt` will return `NaN` for invalid input, and passing `NaN` directly to a prepared statement in `bun:sqlite` triggers a fatal exception. Additionally, without an upper bound, a malicious user could pass a massive `limit`, fetching excessive records and exhausting server memory or database connections.
+**Prevention:** Always check if a parsed query parameter is `NaN` (`Number.isNaN`) and establish a fallback value. Furthermore, explicitly clamp pagination parameters (e.g., maximum limit of 1000) to ensure predictable performance and prevent resource exhaustion.

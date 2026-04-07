@@ -36,7 +36,10 @@ const chatsRouter = (client: WhatsAppConnection) => {
 
   chats.get('/deleted', async (c) => {
     const db = getDb();
-    const limit = parseInt(c.req.query('limit') || '50', 10);
+    let limit = parseInt(c.req.query('limit') || '50', 10);
+    if (isNaN(limit) || limit <= 0) limit = 50;
+    if (limit > 1000) limit = 1000;
+
     const messages = db.getDeletedMessages(limit);
     return c.json({ messages });
   });
@@ -44,8 +47,14 @@ const chatsRouter = (client: WhatsAppConnection) => {
   chats.get('/:chatId/messages', async (c) => {
     const db = getDb();
     const chatId = c.req.param('chatId') as string;
-    const limit = parseInt(c.req.query('limit') || '200', 10);
-    const before = c.req.query('before') ? parseInt(c.req.query('before') as string, 10) : null;
+
+    let limit = parseInt(c.req.query('limit') || '200', 10);
+    if (isNaN(limit) || limit <= 0) limit = 200;
+    if (limit > 1000) limit = 1000;
+
+    let before: number | null = c.req.query('before') ? parseInt(c.req.query('before') as string, 10) : null;
+    if (before !== null && (isNaN(before) || before < 0)) before = null;
+
     return c.json({ messages: db.getMessages(chatId, limit, before) });
   });
 
