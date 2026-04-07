@@ -216,6 +216,7 @@ export default function Sidebar() {
             value={searchQuery()}
             onInput={(e) => setSearchQuery(e.currentTarget.value)}
             spellcheck={false}
+            aria-label="Search chats"
             class="w-full p-[8px_12px_8px_32px] bg-surface-raised border border-border rounded-lg text-text-primary text-caption outline-none transition-all focus:border-border-visible placeholder:text-text-disabled"
           />
         </div>
