@@ -265,7 +265,12 @@ export function ImageGroup(props: {
         <For each={imageMessages()}>
           {(msg, idx) => (
             <div class="relative aspect-square cursor-pointer overflow-hidden group" classList={{ "opacity-60 grayscale": !!msg.is_deleted, "row-span-2 aspect-auto": imageCount() === 3 && idx() === 0 }}>
-              <img src={mediaUrl(msg.media_path!)} alt="Image" loading="lazy" class="w-full h-full object-cover transition-opacity hover:opacity-90" onClick={() => props.onImageClick(mediaUrl(msg.media_path!))} />
+              <img src={mediaUrl(msg.media_path!)} alt="Image" loading="lazy" class="w-full h-full object-cover transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent" onClick={() => props.onImageClick(mediaUrl(msg.media_path!))} role="button" tabIndex={0} onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  props.onImageClick(mediaUrl(msg.media_path!));
+                }
+              }} />
               <Show when={!msg.type.includes("sticker") && (msg.media_type || "").toLowerCase() !== "image/webp"}>
                 <a href={mediaUrl(msg.media_path!)} download={msg.media_filename || "download"} class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-accent border border-border z-10"><DownloadIcon size={12} stroke-width={2.5} /></a>
               </Show>

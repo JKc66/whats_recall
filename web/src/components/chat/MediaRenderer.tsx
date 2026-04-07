@@ -58,7 +58,12 @@ export function MediaRenderer(props: MediaRendererProps) {
             </Show>
           }>
             <div class="group relative rounded-lg overflow-hidden my-1 max-w-80" classList={{ "bg-transparent max-w-[180px]": type().includes("sticker") || mt() === "image/webp" }}>
-              <img src={s()} alt="Media" loading="lazy" class="w-full cursor-pointer hover:opacity-90 transition-opacity rounded-sm" onClick={() => props.onImageClick(s())} />
+              <img src={s()} alt="Media" loading="lazy" class="w-full cursor-pointer hover:opacity-90 transition-opacity rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent" onClick={() => props.onImageClick(s())} role="button" tabIndex={0} onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  props.onImageClick(s());
+                }
+              }} />
               <Show when={!type().includes("sticker") && mt() !== "image/webp"}>
                 <a href={s()} download={m().media_filename || "download"} aria-label="Download" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-[rgba(0,0,0,0.4)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 mobile-visible focus-visible:opacity-100 focus-visible:bg-accent transition-all hover:bg-accent border border-border">
                   <DownloadIcon size={14} stroke-width={2.5} />
