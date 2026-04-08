@@ -2,6 +2,28 @@ import { initLogger, log as elog } from "evlog";
 import { createFsDrain } from "evlog/fs";
 import { inspect, styleText } from "util";
 
+type Style = Parameters<typeof styleText>[0];
+
+/** Stable hue per category (no giant map). SECURITY stays red for visibility. */
+function categoryStyle(category: string): Style {
+    if (category === "SECURITY") return "redBright";
+    const palette: Style[] = [
+        "cyan",
+        "green",
+        "yellow",
+        "blue",
+        "magenta",
+        "greenBright",
+        "cyanBright",
+        "yellowBright",
+    ];
+    let h = 0;
+    for (let i = 0; i < category.length; i++) {
+        h = (h + category.charCodeAt(i)) % 65521;
+    }
+    return palette[h % palette.length]!;
+}
+
 function ansiOn(): boolean {
     if (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== "") {
         return false;
@@ -130,7 +152,7 @@ export function log(category: string, message: string, ...args: any[]) {
         const line = `${timePart} ${cat} ${message}`;
         console.log(
             color
-                ? `${styleText("dim", timePart)} ${styleText("cyan", cat)} ${message}`
+                ? `${styleText("dim", timePart)} ${styleText(categoryStyle(category), cat)} ${message}`
                 : line,
             ...cleanedArgs,
         );

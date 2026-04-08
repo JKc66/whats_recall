@@ -1,7 +1,6 @@
 module.exports = {
   apps: [{
     name: 'msg-monitor',
-    cwd: __dirname,
     script: 'src/index.ts',
     interpreter: 'bun',
     env: {
