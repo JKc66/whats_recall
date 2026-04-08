@@ -47,8 +47,17 @@ export default function VideoNotePlayer(props: VideoNotePlayerProps) {
 
   return (
     <div 
-      class="group relative aspect-square w-64 rounded-full overflow-hidden bg-bg border-2 border-border-visible my-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      class="group relative aspect-square w-64 rounded-full overflow-hidden bg-bg border-2 border-border-visible my-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ring-accent"
       onClick={togglePlay}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          togglePlay(e as unknown as MouseEvent);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={isPlaying() ? "Pause video note" : "Play video note"}
     >
       <video
         ref={el => videoRef = el}
@@ -78,9 +87,10 @@ export default function VideoNotePlayer(props: VideoNotePlayerProps) {
 
       {/* Mute Toggle Button (Corner - Shifted in to avoid circle clipping) */}
       <button 
-        class="absolute bottom-10 right-10 w-10 h-10 flex items-center justify-center bg-surface-raised rounded-full border border-border text-text-primary z-10 hover:bg-border transition-all hover:scale-110 active:scale-95"
+        class="absolute bottom-10 right-10 w-10 h-10 flex items-center justify-center bg-surface-raised rounded-full border border-border text-text-primary z-10 hover:bg-border transition-all hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 ring-accent"
         onClick={toggleMute}
         title={isMuted() ? "Unmute" : "Mute"}
+        aria-label={isMuted() ? "Unmute" : "Mute"}
       >
         {isMuted() ? (
           <VolumeOffIcon size={20} class="opacity-60" />
