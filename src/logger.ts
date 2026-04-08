@@ -1,23 +1,128 @@
-import { initLogger, log as elog } from 'evlog';
-import { createFsDrain } from 'evlog/fs';
+import { initLogger, log as elog } from "evlog";
+import { createFsDrain } from "evlog/fs";
+import { inspect } from "util";
+
+/** Matches package name — used as `service` on every drained wide event (evlog / NDJSON). */
+const SERVICE_NAME = "whatsapp-deleted-messages-monitor";
 
 initLogger({
-  env: { service: 'logger' },
-  silent: true, // We handle console output manually for compactness
-  drain: createFsDrain({
-    dir: '.evlog/logs',
-  }),
+    env: {
+        service: SERVICE_NAME,
+        environment:
+            process.env.NODE_ENV === "production"
+                ? "production"
+                : "development",
+    },
+    silent: true, // Console: custom compact line below; evlog still drains structured events
+    drain: createFsDrain({
+        dir: ".evlog/logs",
+    }),
 });
 
+const lastLogs = new Map<string, number>();
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+    return (
+        v !== null &&
+        typeof v === "object" &&
+        !Array.isArray(v) &&
+        Object.getPrototypeOf(v) === Object.prototype
+    );
+}
+
+/**
+ * Map app categories + message text to evlog levels so drains can filter (error/warn/info).
+ */
+function pickElogLevel(
+    category: string,
+    message: string,
+): "error" | "warn" | "info" {
+    const m = message.toLowerCase();
+    if (
+        category === "SECURITY" ||
+        m.includes("fatal") ||
+        m.includes("critical")
+    ) {
+        return "error";
+    }
+    if (
+        m.startsWith("failed ") ||
+        m.includes(" failed:") ||
+        m.includes("failed to") ||
+        m.includes("unhandled") ||
+        m.includes("error getting chats") ||
+        /^error\b/.test(m)
+    ) {
+        return "warn";
+    }
+    return "info";
+}
+
+/**
+ * Emit to evlog using the public API: tagged `(category, message)` or a wide event object.
+ * See: evlog tagged logs → `{ tag, message }` on the wire; objects merge as structured fields.
+ */
+function emitEvlog(category: string, message: string, args: unknown[]) {
+    const level = pickElogLevel(category, message);
+    const emit = elog[level] as typeof elog.info;
+
+    if (args.length === 0) {
+        emit(category, message);
+        return;
+    }
+
+    if (args.length === 1 && isPlainObject(args[0])) {
+        emit({
+            category,
+            message,
+            context: args[0],
+        });
+        return;
+    }
+
+    emit({
+        category,
+        message,
+        details: args,
+    });
+}
+
 export function log(category: string, message: string, ...args: any[]) {
-  const isTest = process.env.NODE_ENV === "test";
-  const isVerbose = process.env.VERBOSE === "true";
-  
-  if (!isTest || isVerbose) {
-    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    console.log(`[${time}] [${category}] ${message}`, ...args);
-  }
-  
-  const logger = (elog as any)[category.toLowerCase()] || elog.info;
-  logger(`[${category}] ${message}`, ...args);
+    const isTest = process.env.NODE_ENV === "test";
+    const isVerbose = process.env.VERBOSE === "true";
+
+    // Basic deduplication: avoid repeating exact same message within 3 seconds unless verbose
+    const logKey = `${category}:${message}`;
+    const now = Date.now();
+    if (
+        !isVerbose &&
+        lastLogs.has(logKey) &&
+        now - lastLogs.get(logKey)! < 3000
+    )
+        return;
+    lastLogs.set(logKey, now);
+
+    if (!isTest || isVerbose) {
+        const time = new Date().toLocaleTimeString("en-GB", { hour12: false });
+        const cleanedArgs = args.map((arg) => {
+            if (typeof arg === "object" && arg !== null) {
+                const inspected = inspect(arg, {
+                    depth: 1,
+                    colors: true,
+                    breakLength: Infinity,
+                    compact: true,
+                });
+                return inspected.length > 400
+                    ? inspected.slice(0, 400) + "... (truncated)"
+                    : inspected;
+            }
+            return arg;
+        });
+        console.log(
+            `[${time}] [${category.padEnd(9)}] ${message}`,
+            ...cleanedArgs,
+        );
+    }
+
+    emitEvlog(category, message, args);
 }

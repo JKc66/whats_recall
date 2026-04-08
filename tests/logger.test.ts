@@ -29,7 +29,7 @@ describe("logger", () => {
         log("TEST", "Hello World");
 
         const received = stripAnsi(consoleSpy.mock.calls[0][0]);
-        expect(received).toBe("[10:20:30] [TEST] Hello World");
+        expect(received).toBe("[10:20:30] [TEST     ] Hello World");
     });
 
     test("should handle single digit month/day/hour/minute/second", () => {
@@ -38,7 +38,7 @@ describe("logger", () => {
         log("DEBUG", "Minimalist");
 
         const received = stripAnsi(consoleSpy.mock.calls[0][0]);
-        expect(received).toBe("[03:04:05] [DEBUG] Minimalist");
+        expect(received).toBe("[03:04:05] [DEBUG    ] Minimalist");
     });
 
     test("should forward additional arguments to console.log", () => {
@@ -50,8 +50,9 @@ describe("logger", () => {
         const receivedMessage = stripAnsi(consoleSpy.mock.calls[0][0]);
         const receivedExtra = consoleSpy.mock.calls[0][1];
         
-        expect(receivedMessage).toBe("[10:20:30] [INFO] Message");
-        expect(receivedExtra).toEqual(extraData);
+        expect(receivedMessage).toBe("[10:20:30] [INFO     ] Message");
+        // Objects are inspected for compact console output (not passed through raw)
+        expect(stripAnsi(String(receivedExtra))).toBe("{ key: 'value' }");
     });
 
     test("should forward multiple additional arguments to console.log", () => {
@@ -60,8 +61,8 @@ describe("logger", () => {
         log("ERROR", "Something went wrong", "Error details", { code: 500 });
 
         const call = consoleSpy.mock.calls[0];
-        expect(stripAnsi(call[0])).toBe("[10:20:30] [ERROR] Something went wrong");
+        expect(stripAnsi(call[0])).toBe("[10:20:30] [ERROR    ] Something went wrong");
         expect(call[1]).toBe("Error details");
-        expect(call[2]).toEqual({ code: 500 });
+        expect(stripAnsi(String(call[2]))).toBe("{ code: 500 }");
     });
 });
