@@ -37,7 +37,7 @@ const chatsRouter = (client: WhatsAppConnection) => {
     const ip = getClientIp(c);
     if (!checkApiRateLimit(ip, 'search', 30, 60_000)) {
       const logger = c.get('log');
-      logger.set({ error: 'rate_limited' });
+      logger.set({ outcome: { error: 'rate_limited' } });
       logger.warn(`Search rate-limited for ${ip}`);
       throw createError({
         message: 'Too many search requests',

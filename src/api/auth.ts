@@ -28,7 +28,7 @@ auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
   
   if (!checkApiRateLimit(ip, 'login', MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS)) {
     const logger = c.get('log');
-    logger.set({ error: 'rate_limited' });
+    logger.set({ outcome: { error: 'rate_limited' } });
     logger.warn(`Login rate-limited for IP ${ip}`);
     throw createError({
       message: 'Too many login attempts',
@@ -46,7 +46,7 @@ auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
 
   if (typeof password !== 'string' || password.length > maxPasswordLength) {
     const logger = c.get('log');
-    logger.set({ error: 'invalid_password_format' });
+    logger.set({ outcome: { error: 'invalid_password_format' } });
     logger.warn(`Login failed from ${ip}: invalid password format or length`);
     throw createError({
       message: 'Invalid password format',
@@ -69,7 +69,7 @@ auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
 
   if (!isMatch) {
     const logger = c.get('log');
-    logger.set({ error: 'wrong_password' });
+    logger.set({ outcome: { error: 'wrong_password' } });
     logger.warn(`Login failed from ${ip}`);
     throw createError({
       message: 'Invalid password',
@@ -108,7 +108,10 @@ auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
     });
   }
 
-  c.get('log').set({ success: true, fingerprint_provided: !!fingerprint });
+  c.get('log').set({ 
+    outcome: { success: true }, 
+    client: { fingerprint_provided: !!fingerprint } 
+  });
   log('AUTH', `Login success from ${ip}, fingerprint: ${fingerprint ? 'yes' : 'none'}`);
   return c.json({ success: true, token });
 });

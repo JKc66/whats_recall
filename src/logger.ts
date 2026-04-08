@@ -56,6 +56,47 @@ initLogger({
 
 const lastLogs = new Map<string, number>();
 
+const SENSITIVE_KEYS = [
+    "password",
+    "token",
+    "secret",
+    "apikey",
+    "authorization",
+    "cookie",
+    "auth_password",
+    "auth_token",
+];
+
+/**
+ * Recursively removes sensitive fields from an object.
+ */
+function deepSanitize(obj: any): any {
+    if (obj === null || typeof obj !== "object") return obj;
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+        const lowerKey = key.toLowerCase();
+        if (SENSITIVE_KEYS.some((k) => lowerKey.includes(k))) {
+            result[key] = "[REDACTED]";
+        } else if (typeof value === "object" && value !== null) {
+            result[key] = deepSanitize(value);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+}
+
+/** Masks email: john.doe@example.com → j***.d**@e***.com */
+export function maskEmail(email: string): string {
+    const [local, domain] = email.split("@");
+    if (!domain) return "***";
+    const [domainName, tld] = domain.split(".");
+    if (!local || !domainName || !tld) return "***";
+    return `${local[0]}***@${domainName[0]}***.${tld}`;
+}
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
     return (
         v !== null &&
@@ -106,12 +147,14 @@ function emitEvlog(category: string, message: string, args: unknown[]) {
         return;
     }
 
+    const sanitizedArgs = args.map(deepSanitize);
+
     emit({
         category,
         message,
-        ...(args.length === 1 && isPlainObject(args[0])
-            ? { context: args[0] }
-            : { details: args }),
+        ...(sanitizedArgs.length === 1 && isPlainObject(sanitizedArgs[0])
+            ? { context: sanitizedArgs[0] }
+            : { details: sanitizedArgs }),
     });
 }
 
@@ -135,7 +178,8 @@ export function log(category: string, message: string, ...args: any[]) {
         const color = ansiOn();
         const cleanedArgs = args.map((arg) => {
             if (typeof arg === "object" && arg !== null) {
-                const inspected = inspect(arg, {
+                const sanitized = deepSanitize(arg);
+                const inspected = inspect(sanitized, {
                     depth: 1,
                     colors: color,
                     breakLength: Infinity,

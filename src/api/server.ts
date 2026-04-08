@@ -43,8 +43,10 @@ export function createHonoServer(client: WhatsAppConnection) {
     const logger = c.get('log');
     if (logger) {
       logger.set({
-        ip: getClientIp(c),
-        fingerprint: c.req.header('X-Fingerprint') || undefined
+        client: {
+          ip: getClientIp(c),
+          fingerprint: c.req.header('X-Fingerprint') || undefined,
+        },
       });
     }
     await next();
