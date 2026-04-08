@@ -4,6 +4,7 @@ import { unlink } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { WhatsAppChat, WhatsAppMessage, AppSettings } from '../types.ts';
+import { log } from '../logger.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -414,7 +415,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     // Reactions
     addReaction(messageId: string, senderId: string, senderName: string, emoji: string) {
       if (process.env.VERBOSE === 'true') {
-        console.log(`[DB] Adding reaction: msg=${messageId}, sender=${senderId}, emoji=${emoji}`);
+        log('DB', `Adding reaction: msg=${messageId}, sender=${senderId}, emoji=${emoji}`);
       }
       if (emoji) {
         db.query(`
@@ -512,7 +513,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
             }
           }));
         } catch (err) {
-          console.error('Error deleting media files:', err);
+          log('DB', `Error deleting media files: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     },
@@ -526,7 +527,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       if (process.env.NODE_ENV === 'test') {
         const isTmp = currentDbPath.includes('/tmp/') || currentDbPath.includes('/var/tmp/') || currentDbPath.includes('whatsapp-test');
         if (!isTmp && !testDbPath) {
-           console.error(`CRITICAL: clearAllData attempted on potential production path: ${currentDbPath}`);
+           log('SECURITY', `CRITICAL: clearAllData attempted on potential production path: ${currentDbPath}`);
            throw new Error('Safety check failed: clearAllData attempted on non-temporary path in test mode');
         }
       }
@@ -544,7 +545,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         if (process.env.NODE_ENV === 'test') {
             const isTmpMedia = currentMediaDir.includes('/tmp/') || currentMediaDir.includes('/var/tmp/') || currentMediaDir.includes('whatsapp-test');
             if (!isTmpMedia && !testMediaDir) {
-                console.error(`CRITICAL: clearAllData media sync attempted on potential production path: ${currentMediaDir}`);
+                log('SECURITY', `CRITICAL: clearAllData media sync attempted on potential production path: ${currentMediaDir}`);
                 return; // Skip media deletion but continue
             }
         }

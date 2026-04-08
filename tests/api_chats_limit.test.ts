@@ -21,16 +21,22 @@ describe("API /chats limit parameters", () => {
         db = getDb();
         mockClient = { myId: "me123@s.whatsapp.net" };
         chats = chatsApi(mockClient);
+
+        // Optimization: Perform bulk insertion once in beforeAll using a transaction
+        await db.clearAllData();
+        db.upsertChat("chat1", "User 1", false);
+        
+        const insertTx = db.raw.transaction((count: number) => {
+            const stmt = db.raw.prepare("INSERT INTO messages (message_id, chat_id, body, timestamp, is_deleted) VALUES (?, ?, ?, datetime('now', '-' || ? || ' seconds'), 1)");
+            for (let i = 0; i < count; i++) {
+                stmt.run(`msg-${i}`, "chat1", `Msg ${i}`, i);
+            }
+        });
+        insertTx(1500);
     });
 
     beforeEach(async () => {
-        await db.clearAllData();
         apiRateLimits.clear();
-        db.upsertChat("chat1", "User 1", false);
-        for (let i = 0; i < 1500; i++) {
-            db.raw.query("INSERT INTO messages (message_id, chat_id, body, timestamp, is_deleted) VALUES (?, ?, ?, datetime('now', '-' || ? || ' seconds'), 1)")
-              .run(`msg-${i}`, "chat1", `Msg ${i}`, i);
-        }
     });
 
     afterAll(() => {
