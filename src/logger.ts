@@ -1,6 +1,19 @@
 import { initLogger, log as elog } from "evlog";
 import { createFsDrain } from "evlog/fs";
-import { inspect } from "util";
+import { inspect, styleText } from "util";
+
+function ansiOn(): boolean {
+    if (process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== "") {
+        return false;
+    }
+    if (process.env.FORCE_COLOR === "1" || process.env.FORCE_COLOR === "true") {
+        return true;
+    }
+    if (process.env.pm_id !== undefined) {
+        return true;
+    }
+    return process.stdout.isTTY === true;
+}
 
 /** Matches package name — used as `service` on every drained wide event (evlog / NDJSON). */
 const SERVICE_NAME = "whatsapp-deleted-messages-monitor";
@@ -88,11 +101,12 @@ function emitEvlog(category: string, message: string, args: unknown[]) {
 }
 
 export function log(category: string, message: string, ...args: any[]) {
+    const tag = String(category).trim().replace(/\s+/g, " ");
     const isTest = process.env.NODE_ENV === "test";
     const isVerbose = process.env.VERBOSE === "true";
 
     // Basic deduplication: avoid repeating exact same message within 3 seconds unless verbose
-    const logKey = `${category}:${message}`;
+    const logKey = `${tag}:${message}`;
     const now = Date.now();
     if (
         !isVerbose &&
@@ -104,11 +118,12 @@ export function log(category: string, message: string, ...args: any[]) {
 
     if (!isTest || isVerbose) {
         const time = new Date().toLocaleTimeString("en-GB", { hour12: false });
+        const color = ansiOn();
         const cleanedArgs = args.map((arg) => {
             if (typeof arg === "object" && arg !== null) {
                 const inspected = inspect(arg, {
                     depth: 1,
-                    colors: true,
+                    colors: color,
                     breakLength: Infinity,
                     compact: true,
                 });
@@ -118,11 +133,13 @@ export function log(category: string, message: string, ...args: any[]) {
             }
             return arg;
         });
-        console.log(
-            `[${time}] [${category.padEnd(9)}] ${message}`,
-            ...cleanedArgs,
-        );
+        const cat = `[${tag}]`;
+        const plain = `[${time}] ${cat} ${message}`;
+        const out = color
+            ? `${styleText("dim", `[${time}]`)} ${styleText("cyan", cat)} ${message}`
+            : plain;
+        console.log(out, ...cleanedArgs);
     }
 
-    emitEvlog(category, message, args);
+    emitEvlog(tag, message, args);
 }
