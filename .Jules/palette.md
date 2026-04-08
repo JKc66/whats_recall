@@ -1,0 +1,3 @@
+## 2024-05-15 - Missing ARIA labels on icon-only utilities and search inputs
+**Learning:** Found instances where utility buttons (like the force sync refresh button) and general utility inputs (like the search bar) were missing ARIA labels, despite some standard navigation buttons having them. The lack of associated labels or `aria-label`s on generic inputs creates a barrier for screen reader users trying to understand the functionality.
+**Action:** Always verify that icon-only buttons (such as refresh, delete, or theme toggles) and standalone search or filter inputs have proper `aria-label` attributes if there's no visible accompanying label element.

@@ -103,6 +103,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
               class="w-10 md:w-12 flex items-center justify-center hover:bg-surface-raised transition-all text-accent/60 h-full"
               onClick={() => props.onRefetch?.()}
               title="Force sync list"
+              aria-label="Force sync list"
             >
               <RefreshIcon
                 size={14}
