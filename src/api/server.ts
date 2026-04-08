@@ -18,6 +18,7 @@ import { safePath, pruneApiRateLimits, verifySession, getClientIp } from './util
 import { mutationBodyLimit, readJsonBody } from './mutation-helpers.ts';
 import { evlog, type EvlogVariables } from 'evlog/hono';
 import { createError, parseError } from 'evlog';
+import * as crypto_node from 'crypto';
 
 
 export function createHonoServer(client: WhatsAppConnection) {
@@ -128,7 +129,43 @@ export function createHonoServer(client: WhatsAppConnection) {
   api.delete('/data', bodyLimit(mutationBodyLimit), async (c) => {
     const body = (await readJsonBody(c)) as { password?: unknown };
 
-    if (body.password !== password) {
+    if (body.password === undefined) {
+       // if it's undefined, it's considered empty
+       body.password = '';
+    }
+
+    if (typeof body.password !== 'string') {
+      throw createError({
+        message: 'Invalid password format',
+        status: 400,
+        why: 'The password provided is not a string',
+        fix: 'Provide a valid string password'
+      });
+    }
+
+    const serverPassword = password || '';
+    const maxPasswordLength = Math.max(1024, serverPassword.length * 2);
+
+    if (body.password.length > maxPasswordLength) {
+      throw createError({
+        message: 'Invalid password format',
+        status: 400,
+        why: 'The password provided is too long',
+        fix: 'Provide a valid string password'
+      });
+    }
+
+    const passwordBuffer = Buffer.from(body.password);
+    const serverPasswordBuffer = Buffer.from(serverPassword);
+
+    let isMatch = false;
+    if (passwordBuffer.length === serverPasswordBuffer.length) {
+      isMatch = crypto_node.timingSafeEqual(passwordBuffer, serverPasswordBuffer);
+    } else {
+      crypto_node.timingSafeEqual(serverPasswordBuffer, serverPasswordBuffer);
+    }
+
+    if (!isMatch) {
       log('API', 'Clear data rejected: wrong password');
       throw createError({
         message: 'Password required',

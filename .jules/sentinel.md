@@ -22,3 +22,8 @@
 **Vulnerability:** URL query parameters (like `limit` or `before`) were extracted and parsed using `parseInt` without checking for `NaN` or clamping the values. Providing non-numeric strings resulted in `NaN` which triggered a SQLite `datatype mismatch` crash. Providing extremely large numbers could lead to Denial of Service (DoS) by executing unbounded queries.
 **Learning:** `parseInt` will return `NaN` for invalid input, and passing `NaN` directly to a prepared statement in `bun:sqlite` triggers a fatal exception. Additionally, without an upper bound, a malicious user could pass a massive `limit`, fetching excessive records and exhausting server memory or database connections.
 **Prevention:** Always check if a parsed query parameter is `NaN` (`Number.isNaN`) and establish a fallback value. Furthermore, explicitly clamp pagination parameters (e.g., maximum limit of 1000) to ensure predictable performance and prevent resource exhaustion.
+
+## 2025-04-06 - Strict Type Checks Breaking APIs
+**Vulnerability:** Adding strict `typeof x === 'string'` checks on parsed JSON request bodies to prevent object or array injection.
+**Learning:** If a JSON field was previously optional or clients legitimately sent empty payloads `{}` (making the property `undefined`), strict string checks will break the API and return 400 Bad Request.
+**Prevention:** When securing API endpoints with strict type or length checks, explicitly handle optional properties by coercing `undefined` to a safe fallback (e.g., `if (body.password === undefined) body.password = '';`) before applying validation.
