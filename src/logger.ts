@@ -72,8 +72,8 @@ function pickElogLevel(
 }
 
 /**
- * Emit to evlog using the public API: tagged `(category, message)` or a wide event object.
- * See: evlog tagged logs → `{ tag, message }` on the wire; objects merge as structured fields.
+ * Emit to evlog. The two-string form is evlog’s tagged API; the first argument is stored as `tag` in drained NDJSON.
+ * Extra args become a wide event with `category`, `message`, and either `context` (single plain object) or `details`.
  */
 function emitEvlog(category: string, message: string, args: unknown[]) {
     const level = pickElogLevel(category, message);
@@ -84,29 +84,21 @@ function emitEvlog(category: string, message: string, args: unknown[]) {
         return;
     }
 
-    if (args.length === 1 && isPlainObject(args[0])) {
-        emit({
-            category,
-            message,
-            context: args[0],
-        });
-        return;
-    }
-
     emit({
         category,
         message,
-        details: args,
+        ...(args.length === 1 && isPlainObject(args[0])
+            ? { context: args[0] }
+            : { details: args }),
     });
 }
 
 export function log(category: string, message: string, ...args: any[]) {
-    const tag = String(category).trim().replace(/\s+/g, " ");
     const isTest = process.env.NODE_ENV === "test";
     const isVerbose = process.env.VERBOSE === "true";
 
     // Basic deduplication: avoid repeating exact same message within 3 seconds unless verbose
-    const logKey = `${tag}:${message}`;
+    const logKey = `${category}:${message}`;
     const now = Date.now();
     if (
         !isVerbose &&
@@ -133,13 +125,16 @@ export function log(category: string, message: string, ...args: any[]) {
             }
             return arg;
         });
-        const cat = `[${tag}]`;
-        const plain = `[${time}] ${cat} ${message}`;
-        const out = color
-            ? `${styleText("dim", `[${time}]`)} ${styleText("cyan", cat)} ${message}`
-            : plain;
-        console.log(out, ...cleanedArgs);
+        const timePart = `[${time}]`;
+        const cat = `[${category}]`;
+        const line = `${timePart} ${cat} ${message}`;
+        console.log(
+            color
+                ? `${styleText("dim", timePart)} ${styleText("cyan", cat)} ${message}`
+                : line,
+            ...cleanedArgs,
+        );
     }
 
-    emitEvlog(tag, message, args);
+    emitEvlog(category, message, args);
 }
