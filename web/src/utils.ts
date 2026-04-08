@@ -1,17 +1,19 @@
 const AVATAR_COLORS = [
-  "#2A2A2A", // Surface 1
-  "#3A3A3A", // Surface 2
-  "#4A4A4A", // Surface 3
-  "#5A5A5A", // Surface 4
-  "#6A6A6A", // Neutral Gray
-  "#D71921", // Nothing Red
-  "#383838", // Border Visible
-  "#1A1A1A", // Surface Raised
-  "#222222", // Background Muted
-  "#444444", // Medium Gray
+  "#FF5C5C", // Sentinel Red
+  "#5CFF9D", // Emerald Green
+  "#5C9DFF", // Sky Blue
+  "#FFD15C", // Amber Gold
+  "#D15CFF", // Royal Purple
+  "#5CFFEA", // Cyan Mint
+  "#FF8E5C", // Coral Orange
+  "#FF5C9D", // Rose Pink
+  "#A8FF5C", // Lime Flash
+  "#5C61FF", // Deep Indigo
+  "#E8E8E8", // Pristine White
 ];
 
 export function avatarColor(name: string): string {
+  if (!name) return AVATAR_COLORS[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
