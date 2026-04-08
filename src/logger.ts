@@ -65,6 +65,8 @@ const SENSITIVE_KEYS = [
     "cookie",
     "auth_password",
     "auth_token",
+    "pairing",
+    "otp",
 ];
 
 /**
