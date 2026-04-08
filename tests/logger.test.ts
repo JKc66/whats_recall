@@ -1,18 +1,18 @@
 import { expect, test, describe, spyOn, afterEach, beforeEach, setSystemTime } from "bun:test";
+// Set VERBOSE=true before importing logger to ensure evlog is not silent during tests
+process.env.VERBOSE = "true";
 import { log } from "../src/logger.ts";
 
 describe("logger", () => {
     let consoleSpy: any;
 
     beforeEach(() => {
-        process.env.VERBOSE = "true";
         consoleSpy = spyOn(console, "log").mockImplementation(() => {});
     });
 
     afterEach(() => {
-        delete process.env.VERBOSE;
         if (consoleSpy) consoleSpy.mockRestore();
-        setSystemTime(); // Reset system time to normal clock
+        setSystemTime();
     });
 
     function mockSystemDate(isoString: string) {

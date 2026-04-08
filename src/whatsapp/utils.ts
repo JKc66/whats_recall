@@ -7,8 +7,8 @@ import { syncService } from './sync.ts';
  * Recursively unwraps message layers (Ephemeral, View-Once, etc.) to reach the core content.
  * Returns the unwrapped message and a flag indicating if it was a View-Once message.
  */
-export function normalizeMessage(message: proto.IMessage | null | undefined): { content: proto.IMessage | null, isViewOnce: boolean, type: string | null } {
-  if (!message) return { content: null, isViewOnce: false, type: null };
+export function normalizeMessage(message: proto.IMessage | null | undefined): { content: proto.IMessage | null, isViewOnce: boolean, type: string | null, contextInfo: any | null } {
+  if (!message) return { content: null, isViewOnce: false, type: null, contextInfo: null };
 
   let tempMsg: any = message;
   const wrappers = ['ephemeralMessage', 'documentWithCaptionMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension'];
@@ -34,7 +34,9 @@ export function normalizeMessage(message: proto.IMessage | null | undefined): { 
     isViewOnce = true;
   }
 
-  return { content: tempMsg, isViewOnce, type: messageType || null };
+  const contextInfo = tempMsg && messageType ? (tempMsg[messageType]?.contextInfo || tempMsg.contextInfo) : null;
+
+  return { content: tempMsg, isViewOnce, type: messageType || null, contextInfo };
 }
 
 /**
@@ -62,6 +64,21 @@ export function getMessageBody(content: proto.IMessage | null | undefined, type:
   }
 
   return undefined;
+}
+
+/**
+ * Resolves WhatsApp mentions (@phone) in a text body to human-readable names.
+ */
+export async function enrichMentions(text: string, mentionedJid: string[] | undefined | null, sock: any): Promise<string> {
+  if (!text || !mentionedJid || mentionedJid.length === 0) return text;
+  let enriched = text;
+  for (const jid of mentionedJid) {
+    const name = await getChatNameAsync(jid, null, sock);
+    const mentionId = jid.split('@')[0];
+    const mention = `@${mentionId}`;
+    enriched = enriched.split(mention).join(`@${name}`);
+  }
+  return enriched;
 }
 
 /**

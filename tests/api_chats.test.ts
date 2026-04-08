@@ -8,9 +8,13 @@ const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-api-chats-test-"));
 process.env.DATA_DIR = tempDir;
 process.env.DB_PATH = join(tempDir, "messages.db");
 
-import { getDb, dbInstances } from "../src/db/database.ts";
+import { getDb} from "../src/db/database.ts";
 import chatsApi from "../src/api/chats.ts";
 import { apiRateLimits } from "../src/api/utils.ts";
+
+import { Hono } from 'hono';
+import { evlog, type EvlogVariables } from "evlog/hono";
+import { parseError } from "evlog";
 
 describe("API /chats", () => {
     let db: any;
@@ -23,7 +27,16 @@ describe("API /chats", () => {
         mockClient = {
             myId: "me123@s.whatsapp.net"
         };
-        chats = chatsApi(mockClient);
+        const router = chatsApi(mockClient);
+        chats = new Hono<EvlogVariables>();
+        chats.use('*', evlog());
+        
+        chats.onError((err: Error, c: any) => {
+            const parsed = parseError(err);
+            return c.json({ error: parsed.message }, (parsed.status as any) || 500);
+        });
+
+        chats.route('/', router);
     });
 
     beforeEach(async () => {

@@ -357,7 +357,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     },
 
     getMediaBySha256(sha256: string) {
-      return db.query('SELECT media_path, media_type, media_filename FROM messages WHERE media_sha256 = ? AND media_path IS NOT NULL LIMIT 1').get(sha256);
+      return db.query('SELECT media_path, media_type, media_filename FROM messages WHERE media_sha256 = ? AND media_path IS NOT NULL').all(sha256) as { media_path: string, media_type: string, media_filename: string }[];
     },
 
     getStats() {

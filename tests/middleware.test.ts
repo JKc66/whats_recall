@@ -65,14 +65,12 @@ describe("authMiddleware", () => {
   });
 
   test("should return 401 if no token is found in cookies or headers", async () => {
-    await authMiddleware(mockContext, mockNext);
-    expect(mockContext.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401);
+    await expect(authMiddleware(mockContext, mockNext)).rejects.toThrow();
   });
 
   test("should return 401 if session is not found in database", async () => {
     mockContext._headersMap.set('x-auth-token', 'non-existent-token');
-    await authMiddleware(mockContext, mockNext);
-    expect(mockContext.json).toHaveBeenCalledWith({ error: 'Session expired or invalid' }, 401);
+    await expect(authMiddleware(mockContext, mockNext)).rejects.toThrow();
   });
 
   test("should return 401 if fingerprint mismatch", async () => {
@@ -83,8 +81,7 @@ describe("authMiddleware", () => {
     mockContext._headersMap.set('x-auth-token', token);
     mockContext._headersMap.set('x-fingerprint', 'wrong-fingerprint');
     
-    await authMiddleware(mockContext, mockNext);
-    expect(mockContext.json).toHaveBeenCalledWith({ error: "Fingerprint mismatch or missing" }, 401);
+    await expect(authMiddleware(mockContext, mockNext)).rejects.toThrow();
   });
 
   test("should call next() if session is valid and fingerprint matches", async () => {

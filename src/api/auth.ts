@@ -5,8 +5,10 @@ import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
 import * as crypto_node from 'crypto';
+import { type EvlogVariables } from 'evlog/hono';
+import { createError } from 'evlog';
 
-const auth = new Hono();
+const auth = new Hono<EvlogVariables>();
 
 const startTime = Date.now();
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days
@@ -27,15 +29,27 @@ auth.post('/login', bodyLimit({
   const ip = getClientIp(c);
   
   if (!checkApiRateLimit(ip, 'login', MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS)) {
-    log('AUTH', `Login rate-limited for IP ${ip}`);
-    return c.json({ error: 'Too many login attempts. Try again later.' }, 429);
+    const logger = c.get('log');
+    logger.set({ error: 'rate_limited' });
+    logger.warn(`Login rate-limited for IP ${ip}`);
+    throw createError({
+      message: 'Too many login attempts',
+      status: 429,
+      why: 'Maximum login attempts exceeded for this IP',
+      fix: 'Try again in 15 minutes'
+    });
   }
 
   let body;
   try {
     body = await c.req.json();
   } catch (_err) {
-    return c.json({ error: 'Invalid JSON payload' }, 400);
+    throw createError({
+      message: 'Invalid JSON payload',
+      status: 400,
+      why: 'Request body could not be parsed as JSON',
+      fix: 'Ensure request body is valid JSON'
+    });
   }
 
   const { password, fingerprint } = body;
@@ -43,8 +57,15 @@ auth.post('/login', bodyLimit({
   const maxPasswordLength = Math.max(1024, serverPassword.length * 2);
 
   if (typeof password !== 'string' || password.length > maxPasswordLength) {
-    log('AUTH', `Login failed from ${ip}: invalid password format or length`);
-    return c.json({ error: 'Invalid password format or length' }, 400);
+    const logger = c.get('log');
+    logger.set({ error: 'invalid_password_format' });
+    logger.warn(`Login failed from ${ip}: invalid password format or length`);
+    throw createError({
+      message: 'Invalid password format',
+      status: 400,
+      why: 'The password provided is not a string or is too long',
+      fix: 'Provide a valid string password'
+    });
   }
 
   const passwordBuffer = Buffer.from(password);
@@ -59,8 +80,15 @@ auth.post('/login', bodyLimit({
   }
 
   if (!isMatch) {
-    log('AUTH', `Login failed from ${ip}`);
-    return c.json({ error: 'Invalid password' }, 401);
+    const logger = c.get('log');
+    logger.set({ error: 'wrong_password' });
+    logger.warn(`Login failed from ${ip}`);
+    throw createError({
+      message: 'Invalid password',
+      status: 401,
+      why: 'The provided password does not match AUTH_PASSWORD',
+      fix: 'Double check your AUTH_PASSWORD environment variable'
+    });
   }
 
   // Success: reset attempts in central rate limiter
@@ -92,6 +120,7 @@ auth.post('/login', bodyLimit({
     });
   }
 
+  c.get('log').set({ success: true, fingerprint_provided: !!fingerprint });
   log('AUTH', `Login success from ${ip}, fingerprint: ${fingerprint ? 'yes' : 'none'}`);
   return c.json({ success: true, token });
 });

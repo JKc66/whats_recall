@@ -3,8 +3,11 @@ import { bodyLimit } from 'hono/body-limit';
 import { getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
+import { type EvlogVariables } from 'evlog/hono';
+import { createError } from 'evlog';
+
 const monitoredRouter = (client: WhatsAppConnection) => {
-  const monitored = new Hono();
+  const monitored = new Hono<EvlogVariables>();
 
   monitored.get('/', async (c) => {
     const db = getDb();
@@ -21,17 +24,32 @@ const monitoredRouter = (client: WhatsAppConnection) => {
     try {
       body = await c.req.json();
     } catch (_err) {
-      return c.json({ error: 'Invalid JSON payload' }, 400);
+    throw createError({
+      message: 'Invalid JSON payload',
+      status: 400,
+      why: 'Request body could not be parsed as JSON',
+      fix: 'Ensure request body is valid JSON'
+    });
     }
 
     const { chatId, name, isGroup } = body;
 
     if (typeof chatId !== 'string' || typeof name !== 'string') {
-      return c.json({ error: 'chatId and name must be strings' }, 400);
+      throw createError({
+        message: 'Invalid request body',
+        status: 400,
+        why: 'chatId and name must be strings',
+        fix: 'Provide chatId and name as strings'
+      });
     }
 
     if (chatId.length > 1024 || name.length > 1024) {
-      return c.json({ error: 'chatId or name exceeds maximum length' }, 400);
+      throw createError({
+        message: 'Payload too large',
+        status: 400,
+        why: 'chatId or name exceeds 1024 characters',
+        fix: 'Use shorter IDs or names'
+      });
     }
     
     // Ensure the chat row exists in the metadata table so DPs can be persisted

@@ -2,6 +2,7 @@ import { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { getDb } from '../db/database.ts';
 import { verifySession } from './utils.ts';
+import { createError } from 'evlog';
 
 export async function authMiddleware(c: Context, next: Next) {
   const db = getDb();
@@ -16,7 +17,12 @@ export async function authMiddleware(c: Context, next: Next) {
   const { authenticated, error } = verifySession(db, token, fingerprint);
 
   if (!authenticated) {
-    return c.json({ error }, 401);
+    throw createError({
+      message: 'Unauthorized',
+      status: 401,
+      why: error || 'Valid session token or fingerprint required',
+      fix: 'Please log in again'
+    });
   }
 
   await next();

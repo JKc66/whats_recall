@@ -14,6 +14,10 @@ import { getDb, dbInstances } from "../src/db/database.ts";
 import authApi from "../src/api/auth.ts";
 import { apiRateLimits } from "../src/api/utils.ts";
 
+import { Hono } from 'hono';
+import { evlog, type EvlogVariables } from "evlog/hono";
+import { parseError } from "evlog";
+
 describe("API /auth", () => {
     let db: any;
     let auth: any;
@@ -21,7 +25,16 @@ describe("API /auth", () => {
     beforeAll(async () => {
         
         db = getDb();
-        auth = authApi;
+        const router = authApi;
+        auth = new Hono<EvlogVariables>();
+        auth.use('*', evlog());
+        
+        auth.onError((err: Error, c: any) => {
+            const parsed = parseError(err);
+            return c.json({ error: parsed.message }, (parsed.status as any) || 500);
+        });
+
+        auth.route('/', router);
         // apiRateLimits is already imported directly
     });
 

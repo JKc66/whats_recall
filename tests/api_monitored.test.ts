@@ -10,6 +10,9 @@ process.env.DB_PATH = join(tempDir, "messages.db");
 
 import { getDb } from "../src/db/database.ts";
 import monitoredRouter from "../src/api/monitored.ts";
+import { Hono } from 'hono';
+import { evlog, type EvlogVariables } from "evlog/hono";
+import { parseError } from "evlog";
 
 describe("API /monitored", () => {
     let db: any;
@@ -23,7 +26,14 @@ describe("API /monitored", () => {
                 db.removeMonitoredChat(chatId);
             }
         };
-        monitored = monitoredRouter(mockClient);
+        const router = monitoredRouter(mockClient);
+        monitored = new Hono<EvlogVariables>();
+        monitored.use('*', evlog());
+        monitored.onError((err: Error, c: any) => {
+            const parsed = parseError(err);
+            return c.json({ error: parsed.message }, (parsed.status as any) || 500);
+        });
+        monitored.route('/', router);
     });
 
     beforeEach(async () => {

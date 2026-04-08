@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "evlog": "^2.11.0",
     "hono": "^4.7.0",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",

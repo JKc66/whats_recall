@@ -4,8 +4,11 @@ import { getClientIp, checkApiRateLimit } from './utils.ts';
 import { log } from '../logger.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
+import { type EvlogVariables } from 'evlog/hono';
+import { createError } from 'evlog';
+
 const chatsRouter = (client: WhatsAppConnection) => {
-  const chats = new Hono();
+  const chats = new Hono<EvlogVariables>();
 
   chats.get('/', async (c) => {
     const db = getDb();
@@ -25,8 +28,15 @@ const chatsRouter = (client: WhatsAppConnection) => {
     const db = getDb();
     const ip = getClientIp(c);
     if (!checkApiRateLimit(ip, 'search', 30, 60_000)) {
-      log('API', `Search rate-limited for ${ip}`);
-      return c.json({ error: 'Too many search requests. Please wait a minute.' }, 429);
+      const logger = c.get('log');
+      logger.set({ error: 'rate_limited' });
+      logger.warn(`Search rate-limited for ${ip}`);
+      throw createError({
+        message: 'Too many search requests',
+        status: 429,
+        why: 'Maximum search requests exceeded for this IP',
+        fix: 'Please wait a minute before trying again'
+      });
     }
     const query = c.req.query('q') || '';
     if (query.length < 2) return c.json({ messages: [] });

@@ -5,7 +5,7 @@ import { syncService } from './sync.ts';
 import { downloadMedia, downloadProfilePic } from './media.ts';
 import { join } from 'path';
 import { BroadcastFn, WhatsAppMessage } from '../types.ts';
-import { getChatNameAsync, normalizeMessage, getMessageBody } from "./utils.ts";
+import { getChatNameAsync, normalizeMessage, getMessageBody, enrichMentions } from "./utils.ts";
 import { actionsQueue } from "./queue.ts";
 
 export class MessageProcessor {
@@ -142,13 +142,16 @@ export class MessageProcessor {
       return;
     }
 
-    const { content, type: mType } = normalizeMessage(editedMessage);
-    if (!content || !mType) {
+    const { content: editContent, type: mType, isViewOnce: _evt, contextInfo: editContext } = normalizeMessage(editedMessage) as any;
+    if (!editContent || !mType) {
       log('PROCESSOR', `Edit aborted: could not extract content for msg ${messageId}`);
       return;
     }
 
-    const body = getMessageBody(content, mType);
+    let body = getMessageBody(editedMessage, mType);
+    if (body && editContext?.mentionedJid?.length) {
+      body = await enrichMentions(body, editContext.mentionedJid, this.sock);
+    }
 
     if (body !== undefined && body !== null) {
       const oldMsg = getDb().getMessage(messageId);
@@ -268,6 +271,7 @@ export class MessageProcessor {
     const isViewOnce = normalized.isViewOnce;
     const messageType = normalized.type || 'stub';
     const content = normalized.content && normalized.type ? (normalized.content as any)[normalized.type] : null;
+    const contextInfo = normalized.contextInfo;
 
     if (isViewOnce) {
       log('PROCESSOR', `📸 View-Once [${messageType}] ${chatId}`);
@@ -331,10 +335,12 @@ export class MessageProcessor {
     // Asynchronously fetch and cache the profile picture if not already stored
     this.getProfilePicAsync(chatId);
 
-    const body = getMessageBody(msg.message, messageType) || '';
+    let body = getMessageBody(msg.message, messageType) || '';
+    if (body && contextInfo?.mentionedJid?.length) {
+      body = await enrichMentions(body, contextInfo.mentionedJid, this.sock);
+    }
 
     // Extract and process quoted message metadata (replies), including view-once content in replies
-    const contextInfo = content?.contextInfo || msg.message?.extendedTextMessage?.contextInfo || (msg.message as any)?.imageMessage?.contextInfo || (msg.message as any)?.videoMessage?.contextInfo;
     let quotedStanzaId: string | null = null;
     let quotedSender: string | null = null;
     let quotedPreview: string | null = null;
@@ -352,10 +358,14 @@ export class MessageProcessor {
       const quotedStr = JSON.stringify(contextInfo.quotedMessage);
       const quotedIsViewOnce = quotedStr.includes('viewOnce') || quotedStr.includes('viewOnceMessage');
 
-      const { content: qMsg, type: qMsgType } = normalizeMessage(contextInfo.quotedMessage);
+      const { content: qMsg, type: qMsgType, contextInfo: qContext } = normalizeMessage(contextInfo.quotedMessage) as any;
       const qContent = qMsg && qMsgType ? (qMsg as any)[qMsgType] : null;
 
       let preview = getMessageBody(qMsg, qMsgType, true) || 'Message';
+
+      if (qContext?.mentionedJid?.length) {
+        preview = await enrichMentions(preview, qContext.mentionedJid, this.sock);
+      }
 
       if (quotedIsViewOnce || qContent?.viewOnce) {
         preview = '👁️ View Once ' + (preview.startsWith('👁️') ? preview.slice(2) : preview);

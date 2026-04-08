@@ -1,4 +1,6 @@
 import { expect, test, describe, spyOn } from "bun:test";
+// Setup for log verification
+process.env.VERBOSE = "true";
 import { log } from "../src/logger.ts";
 
 describe("Log Forging Mitigation", () => {

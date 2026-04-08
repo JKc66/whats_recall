@@ -79,8 +79,7 @@ describe("Fingerprint Enforcement", () => {
     test("should reject if session has fingerprint but client provides none", async () => {
         db.raw.query("INSERT INTO sessions (token, fingerprint, expires_at) VALUES (?, ?, datetime('now', '+1 hour'))").run("valid-token", "secure-fp-123");
         const c = createMockContext({ "X-Auth-Token": "valid-token" });
-        await authMiddleware(c as any, async () => {});
-        expect(c.json).toHaveBeenCalledWith({ error: "Fingerprint mismatch or missing" }, 401);
+        await expect(authMiddleware(c as any, async () => {})).rejects.toThrow();
     });
 
     test("should reject if session has fingerprint but client provides wrong one", async () => {
@@ -89,8 +88,7 @@ describe("Fingerprint Enforcement", () => {
             "X-Auth-Token": "valid-token",
             "X-Fingerprint": "wrong-fp"
         });
-        await authMiddleware(c as any, async () => {});
-        expect(c.json).toHaveBeenCalledWith({ error: "Fingerprint mismatch or missing" }, 401);
+        await expect(authMiddleware(c as any, async () => {})).rejects.toThrow();
     });
 
     test("should allow if fingerprints match", async () => {

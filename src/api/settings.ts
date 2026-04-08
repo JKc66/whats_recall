@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { getDb } from '../db/database.ts';
+import { type EvlogVariables } from 'evlog/hono';
 
-const settings = new Hono();
+const settings = new Hono<EvlogVariables>();
 
 settings.get('/', async (c) => {
   const db = getDb();

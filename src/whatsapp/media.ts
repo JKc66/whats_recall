@@ -72,11 +72,15 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
     let sha256hex: string | null = null;
     if (mediaObj.fileSha256) {
       sha256hex = Buffer.from(mediaObj.fileSha256).toString('hex');
-      const existing = db.getMediaBySha256(sha256hex);
-      if (existing) {
-        log('MEDIA', `Reusing existing media for SHA256: ${sha256hex.slice(0, 8)}…`);
-        return { path: existing.media_path, sha256hex };
+      const candidates = db.getMediaBySha256(sha256hex);
+      for (const existing of candidates) {
+        const fullPath = join(getMediaDir(), existing.media_path);
+        if (existsSync(fullPath)) {
+          log('MEDIA', `Reusing existing media for SHA256: ${sha256hex.slice(0, 8)}…`);
+          return { path: existing.media_path, sha256hex };
+        }
       }
+      log('MEDIA', `Deduplication suggested for ${sha256hex.slice(0, 8)} but no valid file found. Proceeding to download...`);
     }
 
     let buffer: Buffer;
@@ -108,10 +112,13 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
     // Verify SHA256 if not provided in message (offloaded to worker)
     if (!sha256hex) {
       sha256hex = await computeHash(buffer);
-      const existing = db.getMediaBySha256(sha256hex);
-      if (existing) {
-        log('MEDIA', `Reusing existing media for calculated SHA256: ${sha256hex.slice(0, 8)}…`);
-        return { path: existing.media_path, sha256hex };
+      const candidates = db.getMediaBySha256(sha256hex);
+      for (const existing of candidates) {
+        const fullPath = join(getMediaDir(), existing.media_path);
+        if (existsSync(fullPath)) {
+          log('MEDIA', `Reusing existing media for calculated SHA256: ${sha256hex.slice(0, 8)}…`);
+          return { path: existing.media_path, sha256hex };
+        }
       }
     }
 
@@ -175,11 +182,16 @@ export async function downloadProfilePic(jid: string, sock: any): Promise<{ file
     const sha256hex = await computeHash(buffer);
 
     // Check for deduplication by SHA256 in messages (might be the same image)
-    const existingMedia = db.getMediaBySha256(sha256hex);
-    if (existingMedia && (existingMedia.media_path.startsWith('images/') || existingMedia.media_path.startsWith('profile/'))) {
-      log('MEDIA', `Reusing existing media for profile pic: ${sha256hex.slice(0, 8)}…`);
-      db.updateChatProfilePic(jid, existingMedia.media_path);
-      return { filename: existingMedia.media_path, isNew: false };
+    const candidates = db.getMediaBySha256(sha256hex);
+    for (const existingMedia of candidates) {
+      if (existingMedia.media_path.startsWith('images/') || existingMedia.media_path.startsWith('profile/')) {
+        const fullPath = join(getMediaDir(), existingMedia.media_path);
+        if (existsSync(fullPath)) {
+          log('MEDIA', `Reusing existing media for profile pic: ${sha256hex.slice(0, 8)}…`);
+          db.updateChatProfilePic(jid, existingMedia.media_path);
+          return { filename: existingMedia.media_path, isNew: false };
+        }
+      }
     }
 
     const filename = `profile/dp_${sha256hex.slice(0, 16)}.jpg`;

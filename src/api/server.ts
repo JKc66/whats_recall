@@ -14,7 +14,9 @@ import { join } from 'path';
 import { getMediaDir, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
-import { safePath, pruneApiRateLimits, verifySession } from './utils.ts';
+import { safePath, pruneApiRateLimits, verifySession, getClientIp } from './utils.ts';
+import { evlog, type EvlogVariables } from 'evlog/hono';
+import { createError, parseError } from 'evlog';
 
 
 export function createHonoServer(client: WhatsAppConnection) {
@@ -28,7 +30,24 @@ export function createHonoServer(client: WhatsAppConnection) {
     process.exit(1);
   }
 
-  const app = new Hono();
+  const app = new Hono<EvlogVariables>();
+
+  // Global logging and wide events
+  app.use('*', evlog({
+    exclude: ['/ws', '/api/status', '/api/chats']
+  }));
+
+  // Context enrichment for logs
+  app.use('*', async (c, next) => {
+    const logger = c.get('log');
+    if (logger) {
+      logger.set({
+        ip: getClientIp(c),
+        fingerprint: c.req.header('X-Fingerprint') || undefined
+      });
+    }
+    await next();
+  });
 
   // Security headers middleware
   app.use('*', secureHeaders({
@@ -53,18 +72,6 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   const wsClients = new Set<any>();
 
-  // Logging Middleware
-  app.use('*', async (c, next) => {
-    const start = Date.now();
-    await next();
-    const ms = Date.now() - start;
-    const path = c.req.path;
-    // Suppress noisy high-frequency polling endpoints
-    if (path.startsWith('/ws')) return;
-    if (c.req.method === 'GET' && (path === '/api/status' || path === '/api/chats') && ms < 50) return;
-    const safePath = path.replace(/[\n\r]/g, '');
-    log('HTTP', `${c.req.method} ${safePath} - ${c.res.status} (${ms}ms)`);
-  });
 
   // Periodic cleanup
   setInterval(() => {
@@ -87,7 +94,12 @@ export function createHonoServer(client: WhatsAppConnection) {
     const mediaDir = getMediaDir();
     const filepath = safePath(mediaDir, filename);
     if (!filepath) {
-      return c.json({ error: 'Invalid path' }, 400);
+      throw createError({
+        message: 'Invalid path',
+        status: 400,
+        why: 'The requested media path is malformed or attempts traversal',
+        fix: 'Check the filename parameter'
+      });
     }
 
     const file = Bun.file(filepath);
@@ -118,12 +130,22 @@ export function createHonoServer(client: WhatsAppConnection) {
     try {
       body = await c.req.json();
     } catch (_err) {
-      return c.json({ error: 'Invalid JSON payload' }, 400);
+      throw createError({
+        message: 'Invalid JSON payload',
+        status: 400,
+        why: 'The request body could not be parsed as JSON',
+        fix: 'Ensure the Content-Type header is set to application/json'
+      });
     }
 
     if (body.password !== password) {
       log('API', 'Clear data rejected: wrong password');
-      return c.json({ error: 'Password required to confirm data deletion' }, 403);
+      throw createError({
+        message: 'Password required',
+        status: 403,
+        why: 'Wrong password provided for data wipe',
+        fix: 'Provide the correct AUTH_PASSWORD'
+      });
     }
     const db = getDb();
     await db.clearAllData(true);
@@ -132,6 +154,29 @@ export function createHonoServer(client: WhatsAppConnection) {
   });
 
   app.route('/api', api);
+
+  // Global Error Handler
+  app.onError((error, c) => {
+    const logger = c.get('log');
+    if (logger) {
+      logger.error(error);
+    } else {
+      log('SERVER', `Unhandled error: ${error.message}`);
+    }
+
+    const parsed = parseError(error);
+
+    return c.json(
+      {
+        error: parsed.message, // Backward compatibility
+        message: parsed.message,
+        why: parsed.why,
+        fix: parsed.fix,
+        link: parsed.link,
+      },
+      (parsed.status as any) || 500,
+    );
+  });
 
   // Static files middleware first
   app.use('/*', serveStatic({ root: './public' }));
