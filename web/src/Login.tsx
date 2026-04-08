@@ -2,7 +2,7 @@ import { createSignal, Show, onMount, onCleanup } from "solid-js";
 import { login, fetchUptime } from "./api";
 import { setAuthenticated } from "./store";
 import { notify } from "./notify";
-import { EyeIcon, MoonIcon, SunIcon } from "./components/Icons";
+import { EyeIcon, SunColoredIcon, MoonColoredIcon } from "./components/Icons";
 import { theme, setTheme } from "./store";
 
 export default function Login() {
@@ -111,8 +111,8 @@ export default function Login() {
             title={theme() === "dark" ? "Light Mode" : "Dark Mode"}
             aria-label={theme() === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Show when={theme() === "dark"} fallback={<MoonIcon size={16} />}>
-              <SunIcon size={16} />
+            <Show when={theme() === "dark"} fallback={<MoonColoredIcon size={16} />}>
+              <SunColoredIcon size={16} />
             </Show>
           </button>
         </div>

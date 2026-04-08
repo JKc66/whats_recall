@@ -37,7 +37,7 @@ import {
   getDisplayName,
 } from "./utils";
 import type { Chat } from "./types";
-import { SettingsIcon, LogoutIcon, SearchIcon, MoonIcon, SunIcon } from "./components/Icons";
+import { SettingsIcon, LogoutIcon, SearchIcon, SunColoredIcon, MoonColoredIcon } from "./components/Icons";
 import { theme, setTheme } from "./store";
 
 export default function Sidebar() {
@@ -177,8 +177,8 @@ export default function Sidebar() {
             title={theme() === "dark" ? "Light Mode" : "Dark Mode"}
             aria-label={theme() === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Show when={theme() === "dark"} fallback={<MoonIcon size={16} />}>
-              <SunIcon size={16} />
+            <Show when={theme() === "dark"} fallback={<MoonColoredIcon size={16} />}>
+              <SunColoredIcon size={16} />
             </Show>
           </button>
           <button
