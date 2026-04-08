@@ -15,6 +15,7 @@ import { getMediaDir, getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 import { BroadcastEvent } from '../types.ts';
 import { safePath, pruneApiRateLimits, verifySession, getClientIp } from './utils.ts';
+import { mutationBodyLimit, readJsonBody } from './mutation-helpers.ts';
 import { evlog, type EvlogVariables } from 'evlog/hono';
 import { createError, parseError } from 'evlog';
 
@@ -122,21 +123,8 @@ export function createHonoServer(client: WhatsAppConnection) {
     });
   });
 
-  api.delete('/data', bodyLimit({
-    maxSize: 8192,
-    onError: (c) => c.json({ error: 'Payload too large' }, 413)
-  }), async (c) => {
-    let body;
-    try {
-      body = await c.req.json();
-    } catch (_err) {
-      throw createError({
-        message: 'Invalid JSON payload',
-        status: 400,
-        why: 'The request body could not be parsed as JSON',
-        fix: 'Ensure the Content-Type header is set to application/json'
-      });
-    }
+  api.delete('/data', bodyLimit(mutationBodyLimit), async (c) => {
+    const body = (await readJsonBody(c)) as { password?: unknown };
 
     if (body.password !== password) {
       log('API', 'Clear data rejected: wrong password');

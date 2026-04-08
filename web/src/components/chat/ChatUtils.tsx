@@ -7,11 +7,13 @@ export function HighlightedText(props: { text: string; query?: string }) {
   const renderTextWithHighlights = (text: string) => {
     const q = query();
     if (!q) return text;
-    const parts = text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')})`, 'gi'));
-    return parts.map(part => 
-      part.toLowerCase() === q.toLowerCase()
-        ? <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
-        : part
+    const parts = text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")})`, "gi"));
+    return parts.map((part) =>
+      part.toLowerCase() === q.toLowerCase() ? (
+        <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
+      ) : (
+        part
+      ),
     );
   };
 
@@ -20,7 +22,7 @@ export function HighlightedText(props: { text: string; query?: string }) {
   const content = createMemo(() => {
     const parts = props.text.split(URL_REGEX);
     return parts.map((part, i) => {
-      if (i % 2 === 1) { // Captured URL
+      if (i % 2 === 1) {
         const href = part.toLowerCase().startsWith("http") ? part : `https://${part}`;
         return (
           <a

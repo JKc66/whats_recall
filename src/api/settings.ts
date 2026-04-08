@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { getDb } from '../db/database.ts';
 import { type EvlogVariables } from 'evlog/hono';
+import { createError } from 'evlog';
+import { mutationBodyLimit, readJsonBody } from './mutation-helpers.ts';
 
 const settings = new Hono<EvlogVariables>();
 
@@ -10,27 +12,28 @@ settings.get('/', async (c) => {
   return c.json(db.getSettings());
 });
 
-settings.post('/update', bodyLimit({
-  maxSize: 8192,
-  onError: (c) => c.json({ error: 'Payload too large' }, 413)
-}), async (c) => {
+settings.post('/update', bodyLimit(mutationBodyLimit), async (c) => {
   const db = getDb();
 
-  let body;
-  try {
-    body = await c.req.json();
-  } catch (_err) {
-    return c.json({ error: 'Invalid JSON payload' }, 400);
-  }
-
+  const body = (await readJsonBody(c)) as { key?: unknown; value?: unknown };
   const { key, value } = body;
 
   if (typeof key !== 'string' || typeof value !== 'string') {
-    return c.json({ error: 'Key and value must be strings' }, 400);
+    throw createError({
+      message: 'Invalid request body',
+      status: 400,
+      why: 'Key and value must be strings',
+      fix: 'Provide key and value as strings',
+    });
   }
 
   if (key.length > 1024 || value.length > 1024) {
-    return c.json({ error: 'Key or value exceeds maximum length' }, 400);
+    throw createError({
+      message: 'Payload too large',
+      status: 400,
+      why: 'Key or value exceeds maximum length',
+      fix: 'Use shorter key or value',
+    });
   }
 
   db.updateSetting(key, value);

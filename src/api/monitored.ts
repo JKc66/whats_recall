@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { mutationBodyLimit, readJsonBody } from './mutation-helpers.ts';
 import { getDb } from '../db/database.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
@@ -14,24 +15,10 @@ const monitoredRouter = (client: WhatsAppConnection) => {
     return c.json({ monitored: db.getMonitoredChats() });
   });
 
-  monitored.post('/', bodyLimit({
-    maxSize: 8192,
-    onError: (c) => c.json({ error: 'Payload too large' }, 413)
-  }), async (c) => {
+  monitored.post('/', bodyLimit(mutationBodyLimit), async (c) => {
     const db = getDb();
 
-    let body;
-    try {
-      body = await c.req.json();
-    } catch (_err) {
-    throw createError({
-      message: 'Invalid JSON payload',
-      status: 400,
-      why: 'Request body could not be parsed as JSON',
-      fix: 'Ensure request body is valid JSON'
-    });
-    }
-
+    const body = (await readJsonBody(c)) as { chatId?: unknown; name?: unknown; isGroup?: unknown };
     const { chatId, name, isGroup } = body;
 
     if (typeof chatId !== 'string' || typeof name !== 'string') {

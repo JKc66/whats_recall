@@ -1,4 +1,5 @@
 import { isJidGroup, extractMessageContent, getContentType } from '@whiskeysockets/baileys';
+import { extractJidId } from '../shared/jid.ts';
 import type { proto } from '@whiskeysockets/baileys';
 import { log } from '../logger.ts';
 import { syncService } from './sync.ts';
@@ -81,13 +82,7 @@ export async function enrichMentions(text: string, mentionedJid: string[] | unde
   return enriched;
 }
 
-/**
- * Extracts the numerical or ID portion of a WhatsApp JID.
- */
-export function extractJidId(jid: string | null | undefined): string {
-  if (!jid) return '';
-  return jid.split('@')[0];
-}
+export { extractJidId };
 
 /**
  * Resolves a human-readable name for a JID using locally cached contact and chat data.

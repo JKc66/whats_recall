@@ -29,7 +29,7 @@ import {
   setIsFetchingMessages,
 } from "./store";
 import {
-  avatarColor,
+  avatarBgColor,
   getInitials,
   formatRelativeDate,
   truncate,
@@ -265,7 +265,7 @@ function ChatRow(props: {
   onMouseEnter: () => void;
 }) {
   const displayName = () => getDisplayName(props.chat);
-  const color = () => avatarColor(displayName());
+  const color = () => avatarBgColor(displayName());
   const initials = () => getInitials(displayName());
   const time = () =>
     props.chat.last_message_at

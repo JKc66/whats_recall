@@ -1,6 +1,6 @@
 import { Show, For, createMemo, createSignal } from "solid-js";
 import type { Message } from "../../types";
-import { avatarColor, formatTime, extractJidId, mediaUrl } from "../../utils";
+import { avatarLabelColor, formatTime, extractJidId, mediaUrl } from "../../utils";
 import {
   DownloadIcon,
   TrashIcon,
@@ -31,8 +31,8 @@ export function MessageBubble(props: MessageBubbleProps) {
   const isDeleted = () => !!m().is_deleted;
   const isViewOnce = () => !!m().is_view_once;
   const phone = createMemo(() => (m().sender_id ? extractJidId(m().sender_id!) : ""));
-  const avatarCol = createMemo(() => avatarColor(m().sender_name || phone()));
-  const phoneAvatarCol = createMemo(() => avatarColor(phone()));
+  const avatarCol = createMemo(() => avatarLabelColor(m().sender_name || phone()));
+  const phoneAvatarCol = createMemo(() => avatarLabelColor(phone()));
   const groupedReactions = createMemo(() => groupReactions(m().reactions || []));
   const [showHistory, setShowHistory] = createSignal(false);
 
@@ -118,7 +118,7 @@ export function MessageBubble(props: MessageBubbleProps) {
         >
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" classList={{ "bg-accent/50": isMe() }} />
           <Show when={formattedReply()?.sender}>
-            <div class="text-metadata mb-0.5 opacity-90 group-hover/reply:opacity-100" style={{ color: avatarColor(formattedReply()!.sender) }}>{formattedReply()!.sender}</div>
+            <div class="text-metadata mb-0.5 opacity-90 group-hover/reply:opacity-100" style={{ color: avatarLabelColor(formattedReply()!.sender) }}>{formattedReply()!.sender}</div>
           </Show>
           <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis opacity-80 group-hover/reply:opacity-100 transition-opacity">
             <Show when={formattedReply()!.hasPhoto}><ImageIcon size={12} class="shrink-0 text-accent/70" /></Show>
@@ -216,7 +216,7 @@ export function ImageGroup(props: {
   const isMe = () => !!first().is_from_me;
   const time = createMemo(() => formatTime(new Date(props.messages[props.messages.length - 1].timestamp * 1000)));
   const phone = createMemo(() => first().sender_id ? extractJidId(first().sender_id!) : "");
-  const avatarCol = createMemo(() => avatarColor(first().sender_name || phone()));
+  const avatarCol = createMemo(() => avatarLabelColor(first().sender_name || phone()));
   const groupedReactions = createMemo(() => groupReactions(props.messages.flatMap((m) => m.reactions || [])));
   const imageMessages = createMemo(() => props.messages.filter((m) => m.has_media && m.media_path));
   const imageCount = () => imageMessages().length;

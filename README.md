@@ -27,7 +27,7 @@
 | 🎭 **Reaction Tracking** | Full support for real-time message reactions and emoji changes. |
 | 🧵 **Threaded Context** | Preserves and displays quoted messages (replies) to maintain conversation flow. |
 | 🔒 **Security-First** | Device fingerprinting via **ThumbmarkJS** + `HttpOnly` / `SameSite=Strict` session cookies. |
-| 💎 **Softened Nothing UI** | A premium, monochromatic dashboard focused on typography, balanced dark themes, and functional clarity. |
+| 💎 **Softened Nothing UI** | Monochromatic dashboard (typography-first, dark themes). Per-peer avatar tiles use **dark** fills; **group** sender names use **distinct hues** per participant. See [`AGENTS.md`](AGENTS.md). |
 
 ---
 
@@ -42,7 +42,7 @@
 | **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
 | **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
 | **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
-| **Design** | [Nothing Design](.agents/skills/nothing-design) | Full **Softened Nothing** compliance. OLED Monochrome palette (`#000000`), `Doto` hero typography, pill-shaped UI, and functional mechanical indicators. |
+| **Design** | [Nothing Design](.agents/skills/nothing-design) | **Softened Nothing** compliance: OLED monochrome base (`#000000`), `Doto` hero type, pill UI. Avatar chips add only achromatic peer-identification tints (documented in [`AGENTS.md`](AGENTS.md)). |
 
 ---
 

@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
 import type { Chat } from "../../types";
 import {
-  avatarColor,
+  avatarBgColor,
   getInitials,
   extractJidId,
   profilePicUrl,
@@ -39,7 +39,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           fallback={
             <div
               class="w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-lg flex items-center justify-center text-[11px] md:text-[12px] font-mono text-white uppercase"
-              style={{ background: avatarColor(displayName()), opacity: 0.8 }}
+              style={{ background: avatarBgColor(displayName()), opacity: 0.8 }}
             >
               {getInitials(displayName())}
             </div>
@@ -47,7 +47,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
         >
           <div
             class="relative w-9 h-9 md:w-10 md:h-10 min-w-9 md:min-w-10 rounded-lg flex items-center justify-center text-[11px] md:text-[12px] font-mono text-white uppercase overflow-hidden"
-            style={{ background: avatarColor(displayName()), opacity: 0.8 }}
+            style={{ background: avatarBgColor(displayName()), opacity: 0.8 }}
           >
             <span class="relative z-1">{getInitials(displayName())}</span>
             <img

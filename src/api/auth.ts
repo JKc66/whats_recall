@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { bodyLimit } from 'hono/body-limit';
+import { mutationBodyLimit, readJsonBody } from './mutation-helpers.ts';
 import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit, apiRateLimits, verifySession } from './utils.ts';
 import { log } from '../logger.ts';
@@ -21,10 +22,7 @@ auth.get('/uptime', (c) => {
   return c.json({ uptime: Math.floor((Date.now() - startTime) / 1000) });
 });
 
-auth.post('/login', bodyLimit({
-  maxSize: 8192,
-  onError: (c) => c.json({ error: 'Payload too large' }, 413)
-}), async (c) => {
+auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
   const db = getDb();
   const ip = getClientIp(c);
   
@@ -40,19 +38,9 @@ auth.post('/login', bodyLimit({
     });
   }
 
-  let body;
-  try {
-    body = await c.req.json();
-  } catch (_err) {
-    throw createError({
-      message: 'Invalid JSON payload',
-      status: 400,
-      why: 'Request body could not be parsed as JSON',
-      fix: 'Ensure request body is valid JSON'
-    });
-  }
-
-  const { password, fingerprint } = body;
+  const body = (await readJsonBody(c)) as { password?: unknown; fingerprint?: unknown };
+  const { password } = body;
+  const fingerprint = typeof body.fingerprint === 'string' ? body.fingerprint : '';
   const serverPassword = process.env.AUTH_PASSWORD || '';
   const maxPasswordLength = Math.max(1024, serverPassword.length * 2);
 
@@ -138,7 +126,7 @@ auth.get('/verify', async (c) => {
   });
 });
 
-auth.post('/logout', async (c) => {
+auth.post('/logout', bodyLimit(mutationBodyLimit), async (c) => {
   const db = getDb();
   const token = getCookie(c, 'auth_token') || c.req.header('X-Auth-Token');
   if (token) db.deleteSession(token);

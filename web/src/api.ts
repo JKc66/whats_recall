@@ -9,6 +9,7 @@ import type {
 } from "./types";
 
 import { BASE_URL } from "./utils";
+import { devLog } from "./devLog";
 
 const fp = () => localStorage.getItem("fingerprint") || "";
 
@@ -193,13 +194,13 @@ export function createWs(onEvent: (_event: string, _data: any) => void): {
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log("[WS] Connected");
+      devLog("[WS] Connected");
       reconnectDelay = 1000;
       lastPong = Date.now();
 
       pingCheckTimer = setInterval(() => {
         if (Date.now() - lastPong > PING_TIMEOUT) {
-          console.log("[WS] No ping from server, reconnecting...");
+          devLog("[WS] No ping from server, reconnecting...");
           ws?.close();
         }
       }, PING_TIMEOUT);
@@ -220,7 +221,7 @@ export function createWs(onEvent: (_event: string, _data: any) => void): {
     };
 
     ws.onclose = (e) => {
-      console.log(`[WS] Closed (code: ${e.code})`);
+      devLog(`[WS] Closed (code: ${e.code})`);
       if (pingCheckTimer) {
         clearInterval(pingCheckTimer);
         pingCheckTimer = null;
@@ -232,7 +233,7 @@ export function createWs(onEvent: (_event: string, _data: any) => void): {
     };
 
     ws.onerror = () => {
-      console.log("[WS] Error");
+      devLog("[WS] Error");
     };
   }
 

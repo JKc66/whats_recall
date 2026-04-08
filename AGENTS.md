@@ -17,6 +17,7 @@ This document is specifically designed for AI agents (Claude, Gemini, etc.) to u
 The UI follows a **Softened Nothing Design System**, adhering exactly to the **Nothing Design** specifications with a slightly reduced "hacker-terminal" roleplay.
 - **Three-Layer Rule**: Primary (Display size, Doto font), Secondary (Body context, Space Grotesk), Tertiary (Metadata & Labels, Space Mono).
 - **Palette**: Strictly achromatic (Monochrome). **Dark Mode**: Background: `#000000` (OLED), Primary Text: `#E8E8E8`, Display Text: `#FFFFFF`, Secondary Text: `#999999`, Metadata: `#666666`. **Light Mode**: Background: `#F5F5F5`. **Nothing Red** (#D71921) is the only allowed accent.
+- **Avatar / peer tints**: Chat avatars use a **dark grayscale fill** so white initials stay legible. **Group sender names** use **distinct saturated hues** per peer (same index as the avatar hash) so participants are easy to tell apart. Functional identification only—not arbitrary UI chrome colors.
 - **Implementation**: Avoid writing raw Tailwind classes for basic components. Use the standardized design system classes in `index.css`:
   - **Typography**: `.text-display-lg`, `.text-subheading`, `.text-body-sm`, `.text-label`, `.text-metadata`.
   - **Buttons**: `.btn` with variants `.btn-primary`, `.btn-secondary`, `.btn-destructive`.

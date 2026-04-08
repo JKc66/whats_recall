@@ -1,7 +1,7 @@
 import { For, Show, createSignal } from "solid-js";
 import type { WhatsAppChat } from "../../types";
 import {
-  avatarColor,
+  avatarBgColor,
   getInitials,
   extractJidId,
   profilePicUrl,
@@ -195,7 +195,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                     fallback={
                       <div
                         class="w-8 h-8 md:w-10 md:h-10 border border-border flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white uppercase"
-                        style={{ background: avatarColor(chat.name) }}
+                        style={{ background: avatarBgColor(chat.name) }}
                       >
                         {getInitials(chat.name)}
                       </div>
@@ -203,7 +203,7 @@ export default function ChatSelector(props: ChatSelectorProps) {
                   >
                     <div
                       class="relative w-8 h-8 md:w-10 md:h-10 border border-border flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white uppercase overflow-hidden "
-                      style={{ background: avatarColor(chat.name) }}
+                      style={{ background: avatarBgColor(chat.name) }}
                     >
                       <span class="relative z-1">{getInitials(chat.name)}</span>
                       <img

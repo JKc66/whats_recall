@@ -1,5 +1,6 @@
 import { createSignal, Show, For } from "solid-js";
 import { PlayIcon, PauseIcon, DownloadIcon } from "../Icons";
+import { formatDurationSeconds } from "../../utils";
 
 interface AudioPlayerProps {
   src: string;
@@ -23,7 +24,9 @@ export default function AudioPlayer(props: AudioPlayerProps) {
     if (isPlaying()) {
       audioRef.pause();
     } else {
-      audioRef.play().catch(console.error);
+      audioRef.play().catch(() => {
+        /* playback may be blocked until user gesture */
+      });
     }
   };
 
@@ -38,13 +41,6 @@ export default function AudioPlayer(props: AudioPlayerProps) {
   const handleEnded = () => {
     setIsPlaying(false);
     setCurrentTime(0);
-  };
-
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const seek = (e: MouseEvent) => {
@@ -109,8 +105,8 @@ export default function AudioPlayer(props: AudioPlayerProps) {
            </For>
         </div>
         <div class="flex justify-between items-center text-[9px] font-mono text-text-secondary tracking-wider uppercase gap-2">
-          <span class="shrink-0">{formatTime(currentTime())}</span>
-          <span class="shrink-0">{formatTime(duration() || 0)}</span>
+          <span class="shrink-0">{formatDurationSeconds(currentTime())}</span>
+          <span class="shrink-0">{formatDurationSeconds(duration() || 0)}</span>
         </div>
       </div>
 

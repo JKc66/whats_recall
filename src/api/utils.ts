@@ -1,4 +1,7 @@
 import { resolve } from 'path';
+import type { Context } from 'hono';
+
+export type AuthSession = { fingerprint?: string };
 
 export function safePath(baseDir: string, userPath: string): string | null {
   if (!userPath || userPath === '.' || userPath === '..') return null;
@@ -23,10 +26,13 @@ export function safePath(baseDir: string, userPath: string): string | null {
   }
 }
 
-export function getClientIp(c: any): string {
+export function getClientIp(c: Context): string {
   let remoteAddress: string;
   try {
-    const rawIp = c.env?.remoteAddress || c.req.raw?.socket?.remoteAddress || '127.0.0.1';
+    const rawSocket = c.req.raw as { socket?: { remoteAddress?: string } } | undefined;
+    const rawIp = (c.env as { remoteAddress?: string } | undefined)?.remoteAddress
+      || rawSocket?.socket?.remoteAddress
+      || '127.0.0.1';
     remoteAddress = rawIp.replace(/^::ffff:/, '');
   } catch (_e) {
     return '127.0.0.1';
@@ -83,10 +89,14 @@ export const pruneApiRateLimits = () => {
   }
 };
 
-export function verifySession(db: any, token: string | undefined, fingerprint: string | undefined): { authenticated: boolean, error?: string, session?: any } {
+export function verifySession(
+  db: { getSession: (token: string) => AuthSession | null | undefined },
+  token: string | undefined,
+  fingerprint: string | undefined,
+): { authenticated: boolean; error?: string; session?: AuthSession } {
   if (!token) return { authenticated: false, error: 'Unauthorized' };
 
-  const session = db.getSession(token) as any;
+  const session = db.getSession(token);
   if (!session) {
     return { authenticated: false, error: 'Session expired or invalid' };
   }

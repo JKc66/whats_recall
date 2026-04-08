@@ -1,10 +1,19 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit } from './utils.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
 import { type EvlogVariables } from 'evlog/hono';
 import { createError } from 'evlog';
+import { mutationBodyLimit } from './mutation-helpers.ts';
+
+function clampQueryLimit(raw: string | undefined, fallback: number, max: number): number {
+  let n = parseInt(raw || String(fallback), 10);
+  if (Number.isNaN(n) || n <= 0) n = fallback;
+  if (n > max) n = max;
+  return n;
+}
 
 const chatsRouter = (client: WhatsAppConnection) => {
   const chats = new Hono<EvlogVariables>();
@@ -45,9 +54,7 @@ const chatsRouter = (client: WhatsAppConnection) => {
 
   chats.get('/deleted', async (c) => {
     const db = getDb();
-    let limit = parseInt(c.req.query('limit') || '50', 10);
-    if (Number.isNaN(limit) || limit <= 0) limit = 50;
-    if (limit > 1000) limit = 1000;
+    const limit = clampQueryLimit(c.req.query('limit'), 50, 1000);
 
     const messages = db.getDeletedMessages(limit);
     return c.json({ messages });
@@ -57,9 +64,7 @@ const chatsRouter = (client: WhatsAppConnection) => {
     const db = getDb();
     const chatId = c.req.param('chatId') as string;
 
-    let limit = parseInt(c.req.query('limit') || '200', 10);
-    if (Number.isNaN(limit) || limit <= 0) limit = 200;
-    if (limit > 1000) limit = 1000;
+    const limit = clampQueryLimit(c.req.query('limit'), 200, 1000);
 
     let before: number | null = c.req.query('before') ? parseInt(c.req.query('before') as string, 10) : null;
     if (before !== null && (Number.isNaN(before) || before < 0)) before = null;
@@ -67,7 +72,7 @@ const chatsRouter = (client: WhatsAppConnection) => {
     return c.json({ messages: db.getMessages(chatId, limit, before) });
   });
 
-  chats.post('/:chatId/read', async (c) => {
+  chats.post('/:chatId/read', bodyLimit(mutationBodyLimit), async (c) => {
     const db = getDb();
     const chatId = c.req.param('chatId');
     db.markChatDeletedAsSeen(chatId);

@@ -1,4 +1,4 @@
-import { JSX, splitProps } from "solid-js";
+import { JSX, splitProps, createMemo } from "solid-js";
 
 export interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
   size?: number | string;
@@ -7,8 +7,9 @@ export interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
   fill?: string;
 }
 
+/** `variant="stroke"` = outline/Solar-style icons (distinct from SVG `stroke` attribute on IconProps). */
 const IconBase = (
-  props: IconProps & { children: JSX.Element; viewBox?: string },
+  props: IconProps & { children: JSX.Element; viewBox?: string; variant?: "fill" | "stroke" },
 ) => {
   const [local, others] = splitProps(props, [
     "size",
@@ -17,41 +18,18 @@ const IconBase = (
     "color",
     "viewBox",
     "fill",
+    "variant",
   ]);
+  const isStroke = createMemo(() => local.variant === "stroke");
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={local.size || 24}
       height={local.size || 24}
-      viewBox={local.viewBox || "0 0 256 256"}
-      fill={local.fill || local.color || "currentColor"}
-      class={local.class}
-      aria-hidden="true"
-      {...others}
-    >
-      {local.children}
-    </svg>
-  );
-};
-
-const SolarIconBase = (props: IconProps & { children: JSX.Element; viewBox?: string }) => {
-  const [local, others] = splitProps(props, [
-    "size",
-    "children",
-    "class",
-    "color",
-    "viewBox",
-    "fill",
-  ]);
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={local.size || 24}
-      height={local.size || 24}
-      viewBox={local.viewBox || "0 0 24 24"}
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.5"
+      viewBox={local.viewBox || (isStroke() ? "0 0 24 24" : "0 0 256 256")}
+      fill={isStroke() ? "none" : (local.fill || local.color || "currentColor")}
+      stroke={isStroke() ? "currentColor" : undefined}
+      stroke-width={isStroke() ? "1.5" : undefined}
       class={local.class}
       aria-hidden="true"
       {...others}
@@ -86,23 +64,23 @@ export const VideoIcon = (props: IconProps) => (
 );
 
 export const GalleryBrokenIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <circle cx="16" cy="8" r="2" />
     <path stroke-linecap="round" d="m2 12.5l1.752-1.533a2.3 2.3 0 0 1 3.14.105l4.29 4.29a2 2 0 0 0 2.564.222l.299-.21a3 3 0 0 1 3.731.225L21 18.5" />
     <path stroke-linecap="round" d="M22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464c.974.974 1.3 2.343 1.41 4.536" />
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const PlayIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <path fill="none" stroke="currentColor" stroke-width="1.5" d="M20.409 9.353a2.998 2.998 0 0 1 0 5.294L7.597 21.614C5.534 22.737 3 21.277 3 18.968V5.033c0-2.31 2.534-3.769 4.597-2.648z"/>
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const PauseIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <path fill="none" stroke="currentColor" stroke-width="1.5" d="M2 6c0-1.886 0-2.828.586-3.414S4.114 2 6 2s2.828 0 3.414.586S10 4.114 10 6v12c0 1.886 0 2.828-.586 3.414S7.886 22 6 22s-2.828 0-3.414-.586S2 19.886 2 18zm12 0c0-1.886 0-2.828.586-3.414S16.114 2 18 2s2.828 0 3.414.586S22 4.114 22 6v12c0 1.886 0 2.828-.586 3.414S19.886 22 18 22s-2.828 0-3.414-.586S14 19.886 14 18z"/>
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const MusicIcon = (props: IconProps) => (
@@ -154,9 +132,9 @@ export const DownloadIcon = (props: IconProps) => (
 );
 
 export const TrashIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <path d="M7 21q-.825 0-1.412-.587T5 19V6q-.425 0-.712-.288T4 5t.288-.712T5 4h4q0-.425.288-.712T10 3h4q.425 0 .713.288T15 4h4q.425 0 .713.288T20 5t-.288.713T19 6v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zm-6.287 10.713Q11 16.425 11 16V9q0-.425-.288-.712T10 8t-.712.288T9 9v7q0 .425.288.713T10 17t.713-.288m4 0Q15 16.426 15 16V9q0-.425-.288-.712T14 8t-.712.288T13 9v7q0 .425.288.713T14 17t.713-.288M7 6v13z" />
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const EditIcon = (props: IconProps) => (
@@ -220,17 +198,17 @@ export const ArrowUpIcon = (props: IconProps) => (
 );
 
 export const SunIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <circle cx="12" cy="12" r="5" fill="currentColor" />
     <path stroke-linecap="round" d="M12 2v2m0 16v2M4 12H2m20 0h-2" />
     <path stroke-linecap="round" d="m19.778 4.223l-2.222 2.031M4.222 4.223l2.222 2.031m0 11.302l-2.222 2.222m15.556-.001l-2.222-2.222" opacity=".5" />
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const MoonIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <path fill="currentColor" stroke="none" d="M21.25 12A9.25 9.25 0 0 1 12 21.25v1.5c5.937 0 10.75-4.813 10.75-10.75zM12 21.25A9.25 9.25 0 0 1 2.75 12h-1.5c0 5.937 4.813 10.75 10.75 10.75zM2.75 12A9.25 9.25 0 0 1 12 2.75v-1.5C6.063 1.25 1.25 6.063 1.25 12zm12.75 2.25A5.75 5.75 0 0 1 9.75 8.5h-1.5a7.25 7.25 0 0 0 7.25 7.25zm4.925-2.781A5.75 5.75 0 0 1 15.5 14.25v1.5a7.25 7.25 0 0 0 6.21-3.505zM9.75 8.5a5.75 5.75 0 0 1 2.781-4.925l-.776-1.284A7.25 7.25 0 0 0 8.25 8.5zM12 2.75a.38.38 0 0 1-.268-.118a.3.3 0 0 1-.082-.155c-.004-.031-.002-.121.105-.186l.776 1.284c.503-.304.665-.861.606-1.299c-.062-.455-.42-1.026-1.137-1.026zm9.71 9.495c-.066.107-.156.109-.187.105a.3.3 0 0 1-.155-.082a.38.38 0 0 1-.118-.268h1.5c0-.717-.571-1.075-1.026-1.137c-.438-.059-.995.103-1.299.606z" />
-  </SolarIconBase>
+  </IconBase>
 );
 
 export const SunColoredIcon = (props: IconProps) => (
@@ -262,9 +240,9 @@ export const MoonColoredIcon = (props: IconProps) => (
 );
 
 export const ShieldIcon = (props: IconProps) => (
-  <SolarIconBase {...props}>
+  <IconBase variant="stroke" {...props}>
     <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-  </SolarIconBase>
+  </IconBase>
 );
 
 // solar:settings-linear
