@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { getDb } from '../db/database.ts';
 import { getClientIp, checkApiRateLimit } from './utils.ts';
-import { log } from '../logger.ts';
 import { WhatsAppConnection } from '../whatsapp/connection.ts';
 
 import { type EvlogVariables } from 'evlog/hono';
