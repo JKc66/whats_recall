@@ -20,3 +20,7 @@
 ## 2024-05-23 - Optimize formatting calls in long lists
 **Learning:** To optimize frontend performance when rendering long lists of time-series data, avoid calling `Intl.DateTimeFormat.format()` for every item inside the loop.
 **Action:** Compute and cache day boundaries (e.g., start/end timestamps) to reduce formatting calls from O(N) to O(Unique Days).
+
+## 2026-05-15 - [O(N) to O(1) Quoted Message Lookups in Render]
+**Learning:** In `web/src/ChatView.tsx`, looking up a message by stanza ID (e.g., when rendering quoted messages) using `.find()` inside the render cycle results in an O(N) operation per quoted message, scaling to O(N²) overall.
+**Action:** Always cache list data into a `Map` structure wrapped in `createMemo` when repeated random-access lookups are needed during rendering.
