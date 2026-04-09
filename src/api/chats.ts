@@ -24,9 +24,13 @@ const chatsRouter = (client: WhatsAppConnection) => {
     const chatList = db.getChats(query);
     const myId = client.myId;
 
+    // ⚡ Bolt Optimization: Hoist the expensive string split operation out of the loop
+    // to reduce calculation from O(N) string splits to O(1).
+    const myIdPrefix = myId ? myId.split('@')[0] : null;
+
     const enriched = chatList.map((chat: any) => ({
       ...chat,
-      isMe: myId && (chat.chat_id === myId || (chat.chat_id.includes('@lid') && chat.chat_id.includes(myId.split('@')[0])))
+      isMe: myId && (chat.chat_id === myId || (chat.chat_id.includes('@lid') && chat.chat_id.includes(myIdPrefix!)))
     }));
 
     return c.json({ chats: enriched });
