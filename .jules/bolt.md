@@ -24,3 +24,7 @@
 ## 2026-05-15 - [O(N) to O(1) Quoted Message Lookups in Render]
 **Learning:** In `web/src/ChatView.tsx`, looking up a message by stanza ID (e.g., when rendering quoted messages) using `.find()` inside the render cycle results in an O(N) operation per quoted message, scaling to O(N²) overall.
 **Action:** Always cache list data into a `Map` structure wrapped in `createMemo` when repeated random-access lookups are needed during rendering.
+
+## 2026-05-18 - [Loop Hoisting in Data Encoders]
+**Learning:** Found an unnecessary string operation (`split('@')`) inside a `.map` loop mapping database chat models to API responses. While a string split is relatively cheap, doing it O(N) times inside a hot mapping function is wasteful, particularly for users with hundreds or thousands of chats.
+**Action:** When mapping lists of objects, proactively scan the mapping callback for string manipulations, array methods, or other operations that use constants or closure variables. Hoist these calculations outside the loop to reduce time complexity to O(1).
