@@ -1,8 +1,17 @@
 process.env.NODE_ENV = "test";
 import { expect, test, describe } from "bun:test";
 import { actionsQueue } from "../src/whatsapp/queue.ts";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 describe("ActionsQueue", () => {
+  test("should not use Math.random()", async () => {
+    const filePath = join(process.cwd(), "src/whatsapp/queue.ts");
+    const content = await readFile(filePath, "utf-8");
+
+    expect(content).not.toContain("Math.random()");
+  });
+
   test("should process actions in sequence", async () => {
     const sequence: number[] = [];
     const pushToSequence = (n: number) => async () => {
