@@ -181,10 +181,20 @@ export default function ChatView() {
     }
   }
 
+  // ⚡ Bolt Optimization: Cache message IDs into a Map to prevent O(N) array scans
+  // for every quoted message during rendering. This reduces the time complexity
+  // of finding quoted stanzas from O(N^2) to O(N).
+  const messageMap = createMemo(() => {
+    const map = new Map<string, typeof messages extends () => (infer T)[] ? T : never>();
+    for (const m of messages()) {
+      map.set(m.message_id, m);
+      if (m.original_id) map.set(m.original_id, m);
+    }
+    return map;
+  });
+
   function findMessageByStanzaId(stanzaId: string) {
-    return messages().find(
-      (m) => m.message_id === stanzaId || m.original_id === stanzaId,
-    );
+    return messageMap().get(stanzaId);
   }
 
   return (
