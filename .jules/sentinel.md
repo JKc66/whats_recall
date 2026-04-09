@@ -27,3 +27,7 @@
 **Vulnerability:** Adding strict `typeof x === 'string'` checks on parsed JSON request bodies to prevent object or array injection.
 **Learning:** If a JSON field was previously optional or clients legitimately sent empty payloads `{}` (making the property `undefined`), strict string checks will break the API and return 400 Bad Request.
 **Prevention:** When securing API endpoints with strict type or length checks, explicitly handle optional properties by coercing `undefined` to a safe fallback (e.g., `if (body.password === undefined) body.password = '';`) before applying validation.
+## 2025-04-09 - Weak Random Number Generation
+**Vulnerability:** The server used `Math.random()` to generate random delays for outgoing WhatsApp messages to prevent account bans. While not used for a critical cryptographic function, `Math.random()` is not cryptographically secure and is frequently flagged by static analysis tools as "Weak random number generation," which represents a violation of best practices.
+**Learning:** Even for non-cryptographic purposes like simulating human delay, using `Math.random()` introduces unnecessary noise in security scans and establishes a poor pattern. The standard library provides secure alternatives that should be the default choice.
+**Prevention:** Always use the Node.js `crypto` module (e.g., `crypto.randomUUID()` for identifiers, or `crypto.randomInt()` for random numbers and numeric delays) to ensure cryptographic security and clean security scans.

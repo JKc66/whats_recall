@@ -1,4 +1,5 @@
 import { log } from "../logger.js";
+import { randomInt } from "crypto";
 
 /**
  * Singleton ActionsQueue to handle rate-limiting for outgoing WhatsApp messages.
@@ -82,7 +83,7 @@ class ActionsQueue {
     private randomDelay(): number {
         if (process.env.NODE_ENV === "test") return 10;
         // Random delay between 3-5 seconds (Ultra-safe range)
-        return Math.floor(Math.random() * 2000) + 3000;
+        return randomInt(3000, 5000);
     }
 
     public getStatus() {
