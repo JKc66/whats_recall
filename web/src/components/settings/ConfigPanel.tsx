@@ -227,6 +227,7 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 <label class="relative inline-flex flex-col items-center cursor-pointer group/toggle gap-1.5 antialiased">
                 <input
                     type="checkbox"
+                    aria-label="Toggle Message Relay"
                     checked={props.config?.whatsapp_notify === "true" || props.stats.notifyEnabled}
                     onChange={() => props.onToggleNotify()}
                     class="sr-only peer"
