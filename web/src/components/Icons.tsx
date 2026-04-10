@@ -1,6 +1,6 @@
 import { JSX, splitProps, createMemo } from "solid-js";
 
-export interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
+interface IconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
   size?: number | string;
   class?: string;
   color?: string;
@@ -149,11 +149,6 @@ export const EyeIcon = (props: IconProps) => (
   </IconBase>
 );
 
-export const WifiIcon = (props: IconProps) => (
-  <IconBase {...props}>
-    <path d="M140 204a12 12 0 1 1-12-12a12 12 0 0 1 12 12m97.08-117a172 172 0 0 0-218.16 0a8 8 0 0 0 10.16 12.37a156 156 0 0 1 197.84 0A8 8 0 0 0 237.08 87M205 122.77a124 124 0 0 0-153.94 0A8 8 0 0 0 61 135.31a108 108 0 0 1 134.06 0a8 8 0 0 0 11.24-1.3a8 8 0 0 0-1.3-11.24m-32.26 35.76a76.05 76.05 0 0 0-89.42 0a8 8 0 0 0 9.42 12.94a60 60 0 0 1 70.58 0a8 8 0 1 0 9.42-12.94" />
-  </IconBase>
-);
 
 export const AlertTriangleIcon = (props: IconProps) => (
   <IconBase {...props} viewBox="0 0 24 24">
@@ -167,11 +162,6 @@ export const RefreshIcon = (props: IconProps) => (
   </IconBase>
 );
 
-export const UserIcon = (props: IconProps) => (
-  <IconBase {...props}>
-    <path d="M230.92 212c-15.23-26.33-38.7-45.21-66.09-54.16a72 72 0 1 0-73.66 0c-27.39 8.94-50.86 27.82-66.09 54.16a8 8 0 1 0 13.85 8c18.84-32.56 52.14-52 89.07-52s70.23 19.44 89.07 52a8 8 0 1 0 13.85-8M72 96a56 56 0 1 1 56 56a56.06 56.06 0 0 1-56-56" />
-  </IconBase>
-);
 
 export const CheckIcon = (props: IconProps) => (
   <IconBase {...props}>
@@ -197,19 +187,7 @@ export const ArrowUpIcon = (props: IconProps) => (
   </IconBase>
 );
 
-export const SunIcon = (props: IconProps) => (
-  <IconBase variant="stroke" {...props}>
-    <circle cx="12" cy="12" r="5" fill="currentColor" />
-    <path stroke-linecap="round" d="M12 2v2m0 16v2M4 12H2m20 0h-2" />
-    <path stroke-linecap="round" d="m19.778 4.223l-2.222 2.031M4.222 4.223l2.222 2.031m0 11.302l-2.222 2.222m15.556-.001l-2.222-2.222" opacity=".5" />
-  </IconBase>
-);
 
-export const MoonIcon = (props: IconProps) => (
-  <IconBase variant="stroke" {...props}>
-    <path fill="currentColor" stroke="none" d="M21.25 12A9.25 9.25 0 0 1 12 21.25v1.5c5.937 0 10.75-4.813 10.75-10.75zM12 21.25A9.25 9.25 0 0 1 2.75 12h-1.5c0 5.937 4.813 10.75 10.75 10.75zM2.75 12A9.25 9.25 0 0 1 12 2.75v-1.5C6.063 1.25 1.25 6.063 1.25 12zm12.75 2.25A5.75 5.75 0 0 1 9.75 8.5h-1.5a7.25 7.25 0 0 0 7.25 7.25zm4.925-2.781A5.75 5.75 0 0 1 15.5 14.25v1.5a7.25 7.25 0 0 0 6.21-3.505zM9.75 8.5a5.75 5.75 0 0 1 2.781-4.925l-.776-1.284A7.25 7.25 0 0 0 8.25 8.5zM12 2.75a.38.38 0 0 1-.268-.118a.3.3 0 0 1-.082-.155c-.004-.031-.002-.121.105-.186l.776 1.284c.503-.304.665-.861.606-1.299c-.062-.455-.42-1.026-1.137-1.026zm9.71 9.495c-.066.107-.156.109-.187.105a.3.3 0 0 1-.155-.082a.38.38 0 0 1-.118-.268h1.5c0-.717-.571-1.075-1.026-1.137c-.438-.059-.995.103-1.299.606z" />
-  </IconBase>
-);
 
 export const SunColoredIcon = (props: IconProps) => (
   <svg
@@ -246,16 +224,7 @@ export const ShieldIcon = (props: IconProps) => (
 );
 
 // solar:settings-linear
-export const SettingsSolarIcon = (props: JSX.IntrinsicElements["svg"]) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle fill="currentColor" cx="12" cy="12" r="3"/><path fill="currentColor" d="M13.765 2.152C13.398 2 12.932 2 12 2s-1.398 0-1.765.152a2 2 0 0 0-1.083 1.083c-.092.223-.129.484-.143.863a1.62 1.62 0 0 1-.79 1.353a1.62 1.62 0 0 1-1.567.008c-.336-.178-.579-.276-.82-.308a2 2 0 0 0-1.478.396C4.04 5.79 3.806 6.193 3.34 7s-.7 1.21-.751 1.605a2 2 0 0 0 .396 1.479c.148.192.355.353.676.555c.473.297.777.803.777 1.361s-.304 1.064-.777 1.36c-.321.203-.529.364-.676.556a2 2 0 0 0-.396 1.479c.052.394.285.798.75 1.605c.467.807.7 1.21 1.015 1.453a2 2 0 0 0 1.479.396c.24-.032.483-.13.819-.308a1.62 1.62 0 0 1 1.567.008c.483.28.77.795.79 1.353c.014.38.05.64.143.863a2 2 0 0 0 1.083 1.083C10.602 22 11.068 22 12 22s1.398 0 1.765-.152a2 2 0 0 0 1.083-1.083c.092-.223.129-.483.143-.863c.02-.558.307-1.074.79-1.353a1.62 1.62 0 0 1 1.567-.008c.336.178.579.276.819.308a2 2 0 0 0 1.479-.396c.315-.242.548-.646 1.014-1.453s.7-1.21.751-1.605a2 2 0 0 0-.396-1.479c-.148-.192-.355-.353-.676-.555A1.62 1.62 0 0 1 19.562 12c0-.558.304-1.064.777-1.36c.321-.203.529-.364.676-.556a2 2 0 0 0 .396-1.479c-.052-.394-.285-.798-.75-1.605c-.467-.807-.7-1.21-1.015-1.453a2 2 0 0 0-1.479-.396c-.24.032-.483.13-.82.308a1.62 1.62 0 0 1-1.566-.008a1.62 1.62 0 0 1-.79-1.353c-.014-.38-.05-.64-.143-.863a2 2 0 0 0-1.083-1.083Z"/></g></svg>
-);
 
 // solar:user-linear
-export const UserSolarIcon = (props: JSX.IntrinsicElements["svg"]) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle fill="currentColor" cx="12" cy="6" r="4"/><path fill="currentColor" d="M20 17.5c0 2.485 0 4.5-8 4.5s-8-2.015-8-4.5S7.582 13 12 13s8 2.015 8 4.5Z"/></g></svg>
-);
 
 // solar:magnifer-linear
-export const SearchSolarIcon = (props: JSX.IntrinsicElements["svg"]) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle fill="currentColor" cx="11.5" cy="11.5" r="9.5"/><path fill="currentColor" stroke-linecap="round" d="M18.5 18.5L22 22"/></g></svg>
-);

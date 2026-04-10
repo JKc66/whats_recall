@@ -26,7 +26,7 @@ export type AppView = "chats" | "settings";
 export const [view, setView] = createSignal<AppView>("chats");
 
 const initialShowDeleted = localStorage.getItem("showOnlyDeleted") === "true";
-export const [showOnlyDeleted, _setShowOnlyDeleted] =
+const [showOnlyDeleted, _setShowOnlyDeleted] =
   createSignal<boolean>(initialShowDeleted);
 
 export const setShowOnlyDeleted = (val: boolean) => {
@@ -42,7 +42,7 @@ export const [searchQuery, setSearchQuery] = createSignal("");
 export const [searchResults, setSearchResults] = createSignal<Chat[] | null>(null);
 
 const initialTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
-export const [theme, _setTheme] = createSignal<"dark" | "light">(initialTheme);
+const [theme, _setTheme] = createSignal<"dark" | "light">(initialTheme);
 
 export const setTheme = (val: "dark" | "light") => {
   localStorage.setItem("theme", val);
@@ -58,3 +58,4 @@ export const setTheme = (val: "dark" | "light") => {
 if (initialTheme === "light") {
   document.documentElement.classList.add("light");
 }
+export { showOnlyDeleted, theme };

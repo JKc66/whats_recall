@@ -1,7 +1,7 @@
 import type { JSX } from "solid-js";
 import toast from "solid-toast";
 
-export interface NotificationSystem {
+interface NotificationSystem {
   deleted: (sender: string, preview: string) => string;
   info: (title: string, body?: string) => string;
   success: (title: string, body?: string) => string;

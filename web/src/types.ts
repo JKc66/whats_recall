@@ -104,10 +104,6 @@ export interface Stats {
   totalChats: number;
 }
 
-export interface WsEvent<T = any> {
-  event: string;
-  data: T;
-}
 
 export interface AppSettings {
   [key: string]: string;

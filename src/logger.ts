@@ -91,13 +91,6 @@ function deepSanitize(obj: any): any {
 }
 
 /** Masks email: john.doe@example.com → j***.d**@e***.com */
-export function maskEmail(email: string): string {
-    const [local, domain] = email.split("@");
-    if (!domain) return "***";
-    const [domainName, tld] = domain.split(".");
-    if (!local || !domainName || !tld) return "***";
-    return `${local[0]}***@${domainName[0]}***.${tld}`;
-}
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
     return (
