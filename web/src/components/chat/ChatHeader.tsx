@@ -91,6 +91,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
             }}
             onClick={() => props.onViewModeChange("messages")}
             title="Messages"
+            aria-label="Messages"
           >
             <MessageSquareIcon size={14} class="md:hidden" />
             <span class="max-md:hidden">
@@ -107,6 +108,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
             }}
             onClick={() => props.onViewModeChange("media")}
             title="Media"
+            aria-label="Media"
           >
             <ImageIcon size={14} class="md:hidden" />
             <span class="max-md:hidden">
@@ -123,6 +125,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           }}
           onClick={() => props.onShowOnlyDeletedChange(!props.showOnlyDeleted)}
           title={props.showOnlyDeleted ? "Show all messages" : "Show only deleted messages"}
+          aria-label={props.showOnlyDeleted ? "Show all messages" : "Show only deleted messages"}
         >
           <TrashIcon size={14} classList={{ "animate-in zoom-in-75 duration-200": props.showOnlyDeleted }} />
           <span class="max-md:hidden uppercase tracking-widest">

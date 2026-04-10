@@ -4,3 +4,6 @@
 ## 2025-01-16 - Proper Keyboard Focus Indicators for Video Players
 **Learning:** Native `focus-visible` pseudo-classes on custom interactive media elements (e.g. video note containers, internal mute buttons) only trigger on explicit keyboard navigation (tabbing), not programmatic focus (`.focus()`).
 **Action:** When adding ARIA and keyboard handlers to non-standard interactive components, ensure `focus-visible:ring-x` is applied and verify it visually via sequential `Tab` keypresses in playwright.
+## 2024-05-18 - Missing ARIA labels on responsive icon-only buttons
+**Learning:** Tailwind utility classes like `max-md:hidden` often create unlabelled, icon-only buttons on mobile devices because their semantic text labels disappear from the accessibility tree, leaving only an SVG icon.
+**Action:** When auditing or implementing buttons, always verify if text labels are conditionally hidden across breakpoints. If so, provide an explicit `aria-label` to preserve context for screen readers on those devices.
