@@ -1,6 +1,11 @@
 import { createMemo } from "solid-js";
 import { Reaction } from "../../types";
 
+// ⚡ Bolt Optimization: Hoisted URL_REGEX outside the component to prevent
+// recompiling the regular expression on every HighlightedText render,
+// reducing CPU overhead and memory allocations for long lists of messages.
+const URL_REGEX = /((?:https?:\/\/|www\.)[^\s"']*[^\s"',.:;)]|(?<!@)\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s"']*[^\s"',.:;)])?)/gi;
+
 export function HighlightedText(props: { text: string; query?: string }) {
   const query = createMemo(() => props.query?.trim() || "");
 
@@ -16,8 +21,6 @@ export function HighlightedText(props: { text: string; query?: string }) {
       ),
     );
   };
-
-  const URL_REGEX = /((?:https?:\/\/|www\.)[^\s"']*[^\s"',.:;)]|(?<!@)\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s"']*[^\s"',.:;)])?)/gi;
 
   const content = createMemo(() => {
     const parts = props.text.split(URL_REGEX);
