@@ -228,8 +228,14 @@ export function createHonoServer(client: WhatsAppConnection) {
 
   const broadcast = (event: BroadcastEvent, data: any) => {
     const payload = JSON.stringify({ event, data });
+    const db = getDb();
     for (const ws of wsClients) {
       try {
+        const { authenticated } = verifySession(db, (ws as any).data?.token, (ws as any).data?.fingerprint);
+        if (!authenticated) {
+          (ws as any).close();
+          continue;
+        }
         (ws as any).send(payload);
       } catch { /* handled by close */ }
     }
@@ -251,7 +257,7 @@ export function createHonoServer(client: WhatsAppConnection) {
           const { authenticated, error } = verifySession(db, token, fingerprint);
           if (!authenticated) return new Response(error, { status: 401 });
 
-          const upgraded = server.upgrade(req);
+          const upgraded = server.upgrade(req, { data: { token, fingerprint } });
           if (upgraded) return undefined;
         }
         return app.fetch(req);
@@ -271,8 +277,16 @@ export function createHonoServer(client: WhatsAppConnection) {
     const WS_PING_INTERVAL = 25_000;
     setInterval(() => {
       const ping = JSON.stringify({ event: 'ping', data: Date.now() });
+      const db = getDb();
       for (const ws of wsClients) {
-        try { (ws as any).send(ping); } catch { /* handled by close */ }
+        try {
+          const { authenticated } = verifySession(db, (ws as any).data?.token, (ws as any).data?.fingerprint);
+          if (!authenticated) {
+            (ws as any).close();
+            continue;
+          }
+          (ws as any).send(ping);
+        } catch { /* handled by close */ }
       }
     }, WS_PING_INTERVAL);
 

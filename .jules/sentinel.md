@@ -31,3 +31,8 @@
 **Vulnerability:** The server used `Math.random()` to generate random delays for outgoing WhatsApp messages to prevent account bans. While not used for a critical cryptographic function, `Math.random()` is not cryptographically secure and is frequently flagged by static analysis tools as "Weak random number generation," which represents a violation of best practices.
 **Learning:** Even for non-cryptographic purposes like simulating human delay, using `Math.random()` introduces unnecessary noise in security scans and establishes a poor pattern. The standard library provides secure alternatives that should be the default choice.
 **Prevention:** Always use the Node.js `crypto` module (e.g., `crypto.randomUUID()` for identifiers, or `crypto.randomInt()` for random numbers and numeric delays) to ensure cryptographic security and clean security scans.
+
+## 2025-04-11 - WebSocket Session Expiration
+**Vulnerability:** The WebSocket implementation only verified the session (`token` and `fingerprint`) during the initial HTTP upgrade request. Once the connection was established, it remained open indefinitely and continued to receive broadcast events, even if the session was later deleted (e.g., via logout).
+**Learning:** In Hono/Bun WebSocket implementations, connections do not automatically close when a user session expires.
+**Prevention:** When upgrading connections via `server.upgrade`, explicitly pass session data (e.g., `{ data: { token, fingerprint } }`) so the session validity can be re-verified periodically on active sockets (e.g., during pings or broadcasts).
