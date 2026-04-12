@@ -227,9 +227,17 @@ export function createHonoServer(client: WhatsAppConnection) {
   });
 
   const broadcast = (event: BroadcastEvent, data: any) => {
+    const db = getDb();
     const payload = JSON.stringify({ event, data });
     for (const ws of wsClients) {
       try {
+        const { token, fingerprint } = ws.data || {};
+        const { authenticated } = verifySession(db, token, fingerprint);
+        if (!authenticated) {
+          ws.close(1008, 'Unauthorized');
+          wsClients.delete(ws);
+          continue;
+        }
         (ws as any).send(payload);
       } catch { /* handled by close */ }
     }
@@ -251,7 +259,9 @@ export function createHonoServer(client: WhatsAppConnection) {
           const { authenticated, error } = verifySession(db, token, fingerprint);
           if (!authenticated) return new Response(error, { status: 401 });
 
-          const upgraded = server.upgrade(req);
+          const upgraded = server.upgrade(req, {
+            data: { token, fingerprint }
+          });
           if (upgraded) return undefined;
         }
         return app.fetch(req);
@@ -270,9 +280,19 @@ export function createHonoServer(client: WhatsAppConnection) {
     // WS Ping Interval
     const WS_PING_INTERVAL = 25_000;
     setInterval(() => {
+      const db = getDb();
       const ping = JSON.stringify({ event: 'ping', data: Date.now() });
       for (const ws of wsClients) {
-        try { (ws as any).send(ping); } catch { /* handled by close */ }
+        try {
+          const { token, fingerprint } = ws.data || {};
+          const { authenticated } = verifySession(db, token, fingerprint);
+          if (!authenticated) {
+            ws.close(1008, 'Unauthorized');
+            wsClients.delete(ws);
+            continue;
+          }
+          (ws as any).send(ping);
+        } catch { /* handled by close */ }
       }
     }, WS_PING_INTERVAL);
 
