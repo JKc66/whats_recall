@@ -28,3 +28,7 @@
 ## 2026-05-18 - [Loop Hoisting in Data Encoders]
 **Learning:** Found an unnecessary string operation (`split('@')`) inside a `.map` loop mapping database chat models to API responses. While a string split is relatively cheap, doing it O(N) times inside a hot mapping function is wasteful, particularly for users with hundreds or thousands of chats.
 **Action:** When mapping lists of objects, proactively scan the mapping callback for string manipulations, array methods, or other operations that use constants or closure variables. Hoist these calculations outside the loop to reduce time complexity to O(1).
+
+## 2024-05-23 - Dynamic RegExp compilation in React/Solid render loops
+**Learning:** To prevent O(N) compilation overhead during renders, do not dynamically instantiate objects like `RegExp` inside a `.map` loop (e.g., when mapping over text fragments for search highlighting in `ChatUtils.tsx`). The `new RegExp(query)` was running inside the `parts.map` loop, recreating the same regex N times per highlighted text block.
+**Action:** Pre-calculate and cache dynamic instances using `createMemo` outside the iteration, and hoist static regular expressions entirely outside the component to the module scope to avoid unnecessary allocation and recompilation overhead on every render.
