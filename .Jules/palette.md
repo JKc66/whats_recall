@@ -4,3 +4,6 @@
 ## 2025-01-16 - Proper Keyboard Focus Indicators for Video Players
 **Learning:** Native `focus-visible` pseudo-classes on custom interactive media elements (e.g. video note containers, internal mute buttons) only trigger on explicit keyboard navigation (tabbing), not programmatic focus (`.focus()`).
 **Action:** When adding ARIA and keyboard handlers to non-standard interactive components, ensure `focus-visible:ring-x` is applied and verify it visually via sequential `Tab` keypresses in playwright.
+## 2025-04-12 - ARIA Tab Accessibility
+**Learning:** Custom tab navigation structures must use proper ARIA roles (`role="tablist"` on the container with an `aria-label`, and `role="tab"` on the buttons with dynamic `aria-selected` states) to ensure screen readers can accurately interpret the layout.
+**Action:** When creating or modifying tabbed interfaces, always implement full ARIA attributes and pair them with clear keyboard focus indicators (e.g., using Tailwind's `focus-visible` utilities).

@@ -261,9 +261,15 @@ export default function Settings() {
         showSearch={tab() !== "config"}
       />
 
-      <div class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 min-h-14">
+      <div
+        class="flex items-stretch overflow-x-auto scrollbar-hide border-b border-border bg-surface relative z-10 min-h-14"
+        role="tablist"
+        aria-label="Settings categories"
+      >
         <button
-          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          role="tab"
+          aria-selected={tab() === "config"}
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           classList={{
             "bg-text-display text-black": tab() === "config",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "config",
@@ -273,7 +279,9 @@ export default function Settings() {
           {tab() === "config" ? "[ CONFIG ]" : "CONFIG"}
         </button>
         <button
-          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          role="tab"
+          aria-selected={tab() === "monitored"}
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           classList={{
             "bg-text-display text-black": tab() === "monitored",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "monitored",
@@ -283,7 +291,9 @@ export default function Settings() {
           {tab() === "monitored" ? `[ MON: ${filteredMonitored().length} ]` : `MON: ${filteredMonitored().length}`}
         </button>
         <button
-          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em]"
+          role="tab"
+          aria-selected={tab() === "available"}
+          class="px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[11px] font-mono font-bold transition-all shrink-0 border-r border-border uppercase tracking-[0.15em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           classList={{
             "bg-text-display text-black": tab() === "available",
             "text-text-disabled hover:text-text-primary hover:bg-surface-raised/50": tab() !== "available",
