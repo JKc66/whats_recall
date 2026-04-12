@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import type { Context } from 'hono';
 
-export type AuthSession = { fingerprint?: string };
+type AuthSession = { fingerprint?: string };
 
 export function safePath(baseDir: string, userPath: string): string | null {
   if (!userPath || userPath === '.' || userPath === '..') return null;

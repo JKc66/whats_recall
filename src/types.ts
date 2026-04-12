@@ -62,13 +62,6 @@ export interface WhatsAppEdit {
   edited_at: string;
 }
 
-export interface WhatsAppReaction {
-  message_id: string;
-  sender_id: string;
-  sender_name?: string;
-  emoji: string;
-  timestamp?: string;
-}
 
 export interface AppSettings {
   whatsapp_phone?: string;
