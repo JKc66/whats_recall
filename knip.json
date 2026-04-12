@@ -1,0 +1,12 @@
+{
+  "workspaces": {
+    ".": {
+      "entry": "src/index.ts",
+      "project": "src/**/*.ts"
+    },
+    "web": {
+      "entry": "src/index.tsx",
+      "project": "src/**/*.{ts,tsx}"
+    }
+  }
+}

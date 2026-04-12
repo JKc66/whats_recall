@@ -1,13 +1,22 @@
 import { createMemo } from "solid-js";
 import { Reaction } from "../../types";
 
+const URL_REGEX = /((?:https?:\/\/|www\.)[^\s"']*[^\s"',.:;)]|(?<!@)\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s"']*[^\s"',.:;)])?)/gi;
+
 export function HighlightedText(props: { text: string; query?: string }) {
   const query = createMemo(() => props.query?.trim() || "");
 
+  const searchRegex = createMemo(() => {
+    const q = query();
+    if (!q) return null;
+    return new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")})`, "gi");
+  });
+
   const renderTextWithHighlights = (text: string) => {
     const q = query();
-    if (!q) return text;
-    const parts = text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")})`, "gi"));
+    const regex = searchRegex();
+    if (!q || !regex) return text;
+    const parts = text.split(regex);
     return parts.map((part) =>
       part.toLowerCase() === q.toLowerCase() ? (
         <mark class="bg-accent/40 text-inherit rounded-sm px-0.5 border-b-2 border-accent/60">{part}</mark>
@@ -16,8 +25,6 @@ export function HighlightedText(props: { text: string; query?: string }) {
       ),
     );
   };
-
-  const URL_REGEX = /((?:https?:\/\/|www\.)[^\s"']*[^\s"',.:;)]|(?<!@)\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s"']*[^\s"',.:;)])?)/gi;
 
   const content = createMemo(() => {
     const parts = props.text.split(URL_REGEX);
