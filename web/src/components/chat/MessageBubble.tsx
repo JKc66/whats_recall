@@ -272,7 +272,7 @@ export function ImageGroup(props: {
                 }
               }} />
               <Show when={!msg.type.includes("sticker") && (msg.media_type || "").toLowerCase() !== "image/webp"}>
-                <a href={mediaUrl(msg.media_path!)} download={msg.media_filename || "download"} class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-accent border border-border z-10"><DownloadIcon size={12} stroke-width={2.5} /></a>
+                <a href={mediaUrl(msg.media_path!)} download={msg.media_filename || "download"} aria-label="Download image" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:bg-accent focus-visible:bg-accent border border-border z-10 outline-none focus-visible:ring-2 ring-accent ring-offset-1 ring-offset-black"><DownloadIcon size={12} stroke-width={2.5} /></a>
               </Show>
               <Show when={!!msg.is_deleted}><div class="absolute inset-0 flex items-center justify-center bg-black/60"><span class="tag tag-accent"><TrashIcon size={10} class="mr-1.5" /> DELETED</span></div></Show>
             </div>

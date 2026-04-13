@@ -7,3 +7,7 @@
 ## 2024-05-24 - Toggle Checkboxes ARIA Missing
 **Learning:** Found that custom toggle switches built with `<input type="checkbox" class="sr-only">` and adjacent visual `<div>`s were lacking `aria-label`s. This means screen reader users would encounter an unlabeled toggle switch that just announces "checkbox" or its state, but not its function.
 **Action:** Always ensure visually-hidden input elements that power custom toggles have an explicit `aria-label` or `aria-labelledby` so their function is properly announced to assistive technologies.
+
+## 2024-05-18 - Hover-Only Icon Actions Keyboard Accessibility
+**Learning:** Using `opacity-0 group-hover:opacity-100` on interactive elements (like icon-only download buttons) completely hides them from keyboard-only users who navigate via `Tab`. The element will receive focus but remain `opacity-0`, making the interface confusing and inaccessible.
+**Action:** When hiding an interactive element via `opacity-0` until hovered, always ensure you add `focus-visible:opacity-100` to make it visible on keyboard focus, alongside a clear focus ring (e.g., `outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:bg-accent`).
