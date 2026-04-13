@@ -9,6 +9,8 @@ test("WebSocket session invalidation", async () => {
 
     // We need AUTH_PASSWORD set for server to start
     process.env.AUTH_PASSWORD = "secure_password_123";
+    // Use dynamic port to avoid EADDRINUSE
+    process.env.WEB_PORT = "0";
 
     const { bunServer } = start();
 
@@ -20,19 +22,19 @@ test("WebSocket session invalidation", async () => {
     wsUrl.protocol = "ws:";
     wsUrl.pathname = "/ws";
 
-    const ws = new WebSocket(wsUrl.toString(), {
+    const ws = new (WebSocket as any)(wsUrl.toString(), {
         headers: { "X-Auth-Token": "test_token", "X-Fingerprint": "fp1" }
     });
 
     await new Promise(resolve => ws.onopen = resolve);
 
-    let receivedData = null;
-    ws.onmessage = (event) => {
+    let receivedData: any = null;
+    ws.onmessage = (event: any) => {
         const msg = JSON.parse(event.data as string);
-        if (msg.event === "test_event") receivedData = msg.data;
+        if (msg.event === "new_message") receivedData = msg.data;
     };
 
-    broadcast("test_event", "hello");
+    broadcast("new_message", "hello");
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(receivedData).toBe("hello"); // Should receive data
 
@@ -41,7 +43,7 @@ test("WebSocket session invalidation", async () => {
 
     // Broadcast again
     receivedData = null;
-    broadcast("test_event", "hello_again");
+    broadcast("new_message", "hello_again");
     await new Promise(resolve => setTimeout(resolve, 100));
 
     expect(receivedData).toBeNull(); // Should not receive data, should be disconnected
