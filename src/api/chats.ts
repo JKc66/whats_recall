@@ -21,6 +21,14 @@ const chatsRouter = (client: WhatsAppConnection) => {
   chats.get('/', async (c) => {
     const db = getDb();
     const query = c.req.query('q');
+    if (query && query.length > 100) {
+      throw createError({
+        message: 'Query too long',
+        status: 400,
+        why: 'The search query exceeds the maximum allowed length of 100 characters',
+        fix: 'Use a shorter search query'
+      });
+    }
     const chatList = db.getChats(query);
     const myId = client.myId;
 
@@ -51,6 +59,14 @@ const chatsRouter = (client: WhatsAppConnection) => {
       });
     }
     const query = c.req.query('q') || '';
+    if (query.length > 100) {
+      throw createError({
+        message: 'Query too long',
+        status: 400,
+        why: 'The search query exceeds the maximum allowed length of 100 characters',
+        fix: 'Use a shorter search query'
+      });
+    }
     if (query.length < 2) return c.json({ messages: [] });
     const messages = db.searchMessages(query);
     return c.json({ messages });
