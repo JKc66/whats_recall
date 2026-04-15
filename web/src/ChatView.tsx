@@ -57,11 +57,16 @@ export default function ChatView() {
           setSearchMatchIds(matches);
           setSearchMatchIndex(0);
           setJumpToQuery(null);
-          setTimeout(() => {
-            if (matches.length > 0) {
-              scrollToMessage(matches[0]);
-            }
-          }, 80);
+          // ⚡ Bolt Optimization: Replaced arbitrary 80ms setTimeout with double requestAnimationFrame.
+          // This guarantees the browser has fully painted the new DOM content (messages)
+          // before we calculate the exact scroll position, preventing race conditions and unnecessary delays.
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (matches.length > 0) {
+                scrollToMessage(matches[0]);
+              }
+            });
+          });
         } else {
           setSearchMatchIds([]);
         }
