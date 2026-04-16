@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'msg-monitor',
+    name: 'whats-recall',
     script: 'src/index.ts',
     interpreter: 'bun',
     env: {

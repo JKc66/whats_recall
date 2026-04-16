@@ -103,7 +103,7 @@ export default function Login() {
               <span class="w-1.25 h-1.25 bg-accent rounded-[1px] animate-pulse-slow" />
               <span>ONLINE</span>
             </div>
-            <span class="opacity-50">ARCHIVE</span>
+            <span class="opacity-50">RECALL</span>
           </div>
           <button
             class="flex items-center justify-center w-8 h-8 rounded-full text-text-secondary hover:bg-border-visible hover:text-text-primary transition-all active:tick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"

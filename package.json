@@ -1,5 +1,5 @@
 {
-  "name": "whatsapp-deleted-messages-monitor",
+  "name": "whats_recall",
   "version": "1.0",
   "type": "module",
   "main": "src/index.ts",

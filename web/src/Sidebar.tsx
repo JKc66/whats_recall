@@ -168,7 +168,7 @@ export default function Sidebar() {
             <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300 delay-150" classList={{ "bg-text-primary": stats().connected, "bg-border-visible": !stats().connected }} />
             <span class="w-1.25 h-1.25 rounded-[1px] transition-colors duration-300 delay-200" classList={{ "bg-accent animate-pulse-slow": stats().connected, "bg-border-visible": !stats().connected }} />
           </div>
-          MESSAGES
+          RECALL
         </div>
         <nav class="flex gap-1" aria-label="Sidebar actions">
           <button
