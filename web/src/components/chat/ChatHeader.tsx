@@ -80,11 +80,12 @@ export default function ChatHeader(props: ChatHeaderProps) {
         <div
           class="flex bg-surface-raised border border-border rounded-full p-0.5"
           role="tablist"
+          aria-label="Chat view modes"
         >
           <button
             role="tab"
             aria-selected={props.viewMode === "messages"}
-            class="px-3 md:px-5 py-1.5 text-[11px] font-mono font-bold transition-all flex items-center gap-2 rounded-full"
+            class="px-3 md:px-5 py-1.5 text-[11px] font-mono font-bold transition-all flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
             classList={{
               "bg-text-display text-black": props.viewMode === "messages",
               "text-text-secondary hover:text-text-primary": props.viewMode !== "messages",
@@ -101,7 +102,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
           <button
             role="tab"
             aria-selected={props.viewMode === "media"}
-            class="px-3 md:px-5 py-1.5 text-[11px] font-mono font-bold transition-all flex items-center gap-2 rounded-full"
+            class="px-3 md:px-5 py-1.5 text-[11px] font-mono font-bold transition-all flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
             classList={{
               "bg-text-display text-black": props.viewMode === "media",
               "text-text-secondary hover:text-text-primary": props.viewMode !== "media",
@@ -118,7 +119,7 @@ export default function ChatHeader(props: ChatHeaderProps) {
         </div>
 
         <button
-          class="flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all active:tick text-[11px] font-mono font-bold"
+          class="flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all active:tick text-[11px] font-mono font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           classList={{
             "bg-text-display border-text-display text-black": props.showOnlyDeleted,
             "bg-transparent border-border-visible text-text-secondary hover:text-text-primary": !props.showOnlyDeleted,
