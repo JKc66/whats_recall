@@ -10,3 +10,6 @@
 ## 2025-04-12 - ARIA Tab Accessibility
 **Learning:** Custom tab navigation structures must use proper ARIA roles (`role="tablist"` on the container with an `aria-label`, and `role="tab"` on the buttons with dynamic `aria-selected` states) to ensure screen readers can accurately interpret the layout.
 **Action:** When creating or modifying tabbed interfaces, always implement full ARIA attributes and pair them with clear keyboard focus indicators (e.g., using Tailwind's `focus-visible` utilities).
+## 2025-05-19 - Keyboard focus states on custom ARIA tabs
+**Learning:** Custom tab navigation patterns missing native keyboard focus styling make the interface confusing to navigate via keyboard. While some components like sidebar items correctly implement focus outlines, custom implementations using plain buttons wrapped in `role="tablist"` can lose this.
+**Action:** When implementing or updating custom tab interfaces (`role="tab"`), always apply standard focus indicators. Specifically, use `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent` to ensure the currently focused tab is clearly visible.
