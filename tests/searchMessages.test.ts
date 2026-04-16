@@ -146,3 +146,42 @@ describe("database getChats", () => {
         expect(results[0].name).toBe("Regular Chat");
     });
 });
+describe("database searchMessages backslash", () => {
+    let db: any;
+    const chatId = "12345@c.us";
+
+    beforeAll(async () => {
+        const { getDb } = await import("../src/db/database.ts");
+        const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-search-test2-"));
+        process.env.DATA_DIR = tempDir;
+        const dbPath = join(tempDir, "messages2.db");
+        process.env.DB_PATH = dbPath;
+
+        db = getDb(dbPath, tempDir);
+        await db.clearAllData();
+
+        db.upsertChat(chatId, "Individual Chat", false);
+
+        db.saveMessage({
+            message_id: "m8",
+            chat_id: chatId,
+            sender_id: "sender@c.us",
+            sender_name: "Sender",
+            body: "Path: C:\\Windows\\System32",
+            type: "chat",
+            has_media: false,
+            timestamp: 8000,
+            is_from_me: false,
+            is_view_once: false
+        });
+    });
+
+    test("should handle backslash in search queries correctly (escaped behavior)", () => {
+        const results = db.searchMessages("\\");
+        expect(results.length).toBe(1);
+        expect(results[0].body).toBe("Path: C:\\Windows\\System32");
+
+        const results2 = db.searchMessages("C:\\Windows");
+        expect(results2.length).toBe(1);
+    });
+});

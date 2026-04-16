@@ -40,3 +40,7 @@
 **Vulnerability:** The API lacked constraints on the length of the `q` search query passed from the frontend to the backend's SQLite database search endpoints (`chats.ts`), making the system susceptible to regular expression (or SQLite `LIKE`) resource exhaustion or memory attacks via massive query payloads.
 **Learning:** String bounds checks are often overlooked on basic query parameters. A massive string passed into `escapeLike` (`replace(/[%_]/g, '\\$&')`) and later SQLite can block the event loop and monopolize database resources, acting as a potential Denial of Service (DoS).
 **Prevention:** Always implement max-length validation for user-provided query strings in backend API routes before passing them to the database or string replacement functions.
+## 2024-04-16 - SQLite LIKE Clause Wildcard Injection Bypass
+**Vulnerability:** The `escapeLike` function in `src/db/database.ts` did not escape the `\` character when constructing parameters for `LIKE ... ESCAPE '\'` queries.
+**Learning:** In SQLite, when an `ESCAPE` clause defines a character like `\`, that character must *also* be escaped if present in the user's input. Otherwise, a user supplying a backslash can escape subsequent wildcards, leading to unhandled errors if at the end of the string, or leaking matching behaviour.
+**Prevention:** Always escape the escape character itself using `query.replace(/[\\%_]/g, '\\$&')`.

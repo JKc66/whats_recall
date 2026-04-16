@@ -21,7 +21,7 @@ export const getMediaDir = () => getDynamicMediaDir();
 export const dbInstances: Map<string, any> = new Map();
 
 function escapeLike(query: string): string {
-  return query.replace(/[%_]/g, '\\$&');
+  return query.replace(/[\\%_]/g, '\\$&');
 }
 
 export function getDb(testDbPath?: string, testMediaDir?: string) {
