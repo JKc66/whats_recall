@@ -1,6 +1,6 @@
 # 🤖 Agent Intelligence & Protocol (AGENTS.md)
 
-This document is specifically designed for AI agents (Claude, Gemini, etc.) to understand the core architecture, design philosophy, and operational constraints of the **WhatsApp Deleted Messages Monitor** project before performing any modifications.
+This document is specifically designed for AI agents (Claude, Gemini, etc.) to understand the core architecture, design philosophy, and operational constraints of the **WhatsRecall** (WhatsApp Deleted Messages Monitor) project before performing any modifications.
 
 ---
 

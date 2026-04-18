@@ -1,8 +1,8 @@
 <div align="center">
 
-# WhatsApp Deleted Messages Monitor
+# WhatsRecall
 
-[![Version](https://img.shields.io/badge/version-1.0-10B981)](https://github.com/your-repo)
+[![Version](https://img.shields.io/badge/version-1.0-10B981)](https://github.com/JKc66/whats_recall)
 [![Runtime](https://img.shields.io/badge/Runtime-Bun-000?logo=bun&logoColor=white)](https://bun.sh)
 [![Frontend](https://img.shields.io/badge/Frontend-SolidJS-2c4f7c?logo=solid&logoColor=fff)](https://www.solidjs.com/)
 [![Backend](https://img.shields.io/badge/Backend-Hono-E36002?logo=hono&logoColor=white)](https://hono.dev/)
@@ -53,8 +53,8 @@ Ensure you have [Bun](https://bun.sh) installed on your system.
 ### 1. Installation
 ```bash
 # Clone and enter the project
-git clone <your-repo-url>
-cd whatsapp_logger
+git clone https://github.com/JKc66/whats_recall.git
+cd whats_recall
 
 # Install and build the frontend
 bun install

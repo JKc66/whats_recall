@@ -4,7 +4,7 @@ import { createHonoServer } from './api/server.ts';
 import { log } from './logger.ts';
 import { BroadcastEvent } from './types.ts';
 
-log('BOOT', 'Starting WhatsApp Deleted Messages Monitor (Modular TypeScript Edition)');
+log('BOOT', 'Starting WhatsRecall (Modular TypeScript Edition)');
 log('BOOT', `Node env: ${process.env.NODE_ENV || 'development'}`);
 
 // 1. Initialize Database

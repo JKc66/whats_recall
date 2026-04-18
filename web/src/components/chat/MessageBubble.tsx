@@ -114,6 +114,7 @@ export function MessageBubble(props: MessageBubbleProps) {
           onClick={handleQuoteClick}
           role="button"
           tabindex="0"
+          aria-label="View quoted message"
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), handleQuoteClick())}
         >
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-accent rounded-l-lg" classList={{ "bg-accent/50": isMe() }} />
