@@ -17,8 +17,7 @@
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "evlog": "^2.11.0",
     "hono": "^4.7.0",
-    "pino": "^10.3.1",
-    "qrcode-terminal": "^0.12.0"
+    "pino": "^10.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
