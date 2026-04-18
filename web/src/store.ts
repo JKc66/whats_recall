@@ -22,7 +22,7 @@ export const [stats, setStats] = createSignal<Stats>({
   totalChats: 0,
 });
 
-export type AppView = "chats" | "settings";
+type AppView = "chats" | "settings";
 export const [view, setView] = createSignal<AppView>("chats");
 
 const initialShowDeleted = localStorage.getItem("showOnlyDeleted") === "true";
