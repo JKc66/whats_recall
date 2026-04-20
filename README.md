@@ -1,95 +1,93 @@
 <div align="center">
 
-# WhatsRecall
+# WHATSRECALL
+### SECURE_MESSAGE_ARCHIVAL_SYSTEM
 
-[![Version](https://img.shields.io/badge/version-1.0-10B981)](https://github.com/JKc66/whats_recall)
-[![Runtime](https://img.shields.io/badge/Runtime-Bun-000?logo=bun&logoColor=white)](https://bun.sh)
-[![Frontend](https://img.shields.io/badge/Frontend-SolidJS-2c4f7c?logo=solid&logoColor=fff)](https://www.solidjs.com/)
-[![Backend](https://img.shields.io/badge/Backend-Hono-E36002?logo=hono&logoColor=white)](https://hono.dev/)
-[![License](https://img.shields.io/badge/License-MIT-10B981)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0-white?style=flat-square)](#)
+[![Runtime](https://img.shields.io/badge/Runtime-Bun-000?logo=bun&logoColor=white&style=flat-square)](https://bun.sh)
+[![Frontend](https://img.shields.io/badge/Frontend-SolidJS-2c4f7c?logo=solid&logoColor=fff&style=flat-square)](https://www.solidjs.com/)
+[![Backend](https://img.shields.io/badge/Backend-Hono-E36002?logo=hono&logoColor=white&style=flat-square)](https://hono.dev/)
+[![Design](https://img.shields.io/badge/Design-Nothing-D71921?style=flat-square)](#design-system)
 
-**Never miss a message.** A secure, privacy-first archival system that captures deleted messages, saves view-once media, and provides a premium technical dashboard for real-time review.
+**NEVER_MISS_A_MESSAGE.**
+A privacy-first archival system that captures deleted messages, saves view-once media, and provides a premium technical dashboard for real-time review.
 
-[Explore Features](#-key-features) • [Quick Start](#-quick-start) • [Technical Architecture](#-technical-architecture) • [Security](#-security--privacy)
+[FEATURES](#-key-features) • [QUICK_START](#-quick-start) • [ARCHITECTURE](#-technical-architecture) • [SECURITY](#-security--privacy)
+
+---
 
 </div>
 
----
-
-## ✨ Key Features
+## 01_KEY_FEATURES
 
 | | |
 | :--- | :--- |
-| 🕵️ **Selective Monitoring** | Precision control: only track the specific chats you choose. |
-| 📸 **View-Once Preservation** | Bypasses "View Once" restrictions by capturing and archiving media before it disappears. |
-| ♻️ **Smart Deduplication** | Global SHA-256 media hashing prevents redundant storage and saves disk space. |
-| ⚡ **Real-time Analytics** | Instant dashboard updates via high-performance WebSockets. |
-| 🎭 **Reaction Tracking** | Full support for real-time message reactions and emoji changes. |
-| 🧵 **Threaded Context** | Preserves and displays quoted messages (replies) to maintain conversation flow. |
-| 🔒 **Security-First** | Device fingerprinting via **ThumbmarkJS** + `HttpOnly` / `SameSite=Strict` session cookies. |
-| 💎 **Softened Nothing UI** | Monochromatic dashboard (typography-first, dark themes). Per-peer avatar tiles use **dark** fills; **group** sender names use **distinct hues** per participant. See [`AGENTS.md`](AGENTS.md). |
+| 🕵️ **SELECTIVE_MONITORING** | Precision control: only track the specific chats you choose. |
+| 📸 **VIEW_ONCE_PRESERVATION** | Bypasses "View Once" restrictions by capturing and archiving media. |
+| ♻️ **SMART_DEDUPLICATION** | Global SHA-256 media hashing prevents redundant storage and saves disk space. |
+| ⚡ **REAL_TIME_SYNC** | Instant dashboard updates via high-performance WebSockets. |
+| 🎭 **REACTION_TRACKING** | Full support for real-time message reactions and emoji changes. |
+| 🧵 **THREADED_CONTEXT** | Preserves and displays quoted messages to maintain conversation flow. |
+| 🔒 **SECURITY_FIRST** | Hardware fingerprinting + `HttpOnly` / `SameSite=Strict` session management. |
+| 💎 **NOTHING_AESTHETIC** | Monochromatic dashboard, `Doto` hero type, and functional identification tints. |
 
 ---
 
-## 🛠️ Technical Architecture
+## 02_TECHNICAL_ARCHITECTURE
 
 > Built for performance, reliability, and extreme privacy.
 
-| Layer | Technology | Rationale |
+| LAYER | TECHNOLOGY | RATIONALE |
 | :--- | :--- | :--- |
-| **Runtime** | [Bun](https://bun.sh) | High-performance JS runtime with native TS support. |
-| **Backend** | [Hono](https://hono.dev/) | Ultra-fast web framework with standard-compliant fetch API. |
-| **Frontend** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
-| **Database** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
-| **WhatsApp** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
-| **Design** | [Nothing Design](.agents/skills/nothing-design) | **Softened Nothing** compliance: OLED monochrome base (`#000000`), `Doto` hero type, pill UI. Avatar chips add only achromatic peer-identification tints (documented in [`AGENTS.md`](AGENTS.md)). |
+| **RUNTIME** | [Bun](https://bun.sh) | High-performance JS runtime with native TS support. |
+| **BACKEND** | [Hono](https://hono.dev/) | Ultra-fast web framework with standard-compliant fetch API. |
+| **FRONTEND** | [SolidJS](https://www.solidjs.com/) | Fine-grained reactivity and minimal UI overhead. |
+| **DATABASE** | SQLite (WAL) | Local, file-based persistence with Write-Ahead Logging for concurrency. |
+| **WHATSAPP** | [Baileys](https://github.com/WhiskeySockets/Baileys) | Reliable Multi-Device WhatsApp API implementation. |
 
 ---
 
-## 🚀 Quick Start
+## 03_DESIGN_SYSTEM
 
-Ensure you have [Bun](https://bun.sh) installed on your system.
+This project adheres to the **SOFTENED_NOTHING** design system. It prioritizes information density and typography over decorative elements.
 
-### 1. Installation
+- **TYPOGRAPHY**: `Doto` (Primary), `Space Grotesk` (Secondary), `Space Mono` (Tertiary).
+- **PALETTE**: Strictly achromatic. `#000000` (OLED), `#E8E8E8` (Primary Text), `#D71921` (Nothing Red Accent).
+- **IDENTIFICATION**: Avatars use grayscale fills; group participants use distinct hues for functional clarity only.
+- **PHILOSOPHY**: No gradients, no shadows, no glassmorphism. Just data.
+
+---
+
+## 04_QUICK_START
+
+### 1_INSTALLATION
 ```bash
-# Clone and enter the project
+# Clone the repository
 git clone https://github.com/JKc66/whats_recall.git
 cd whats_recall
 
-# Install and build the frontend
+# Install dependencies and build frontend
 bun install
 bun run build
 ```
 
-### 2. Configuration
+### 2_CONFIGURATION
 ```bash
 cp .env.example .env
-# Open .env and set your AUTH_PASSWORD to something strong
+# Edit .env and set a secure AUTH_PASSWORD
 ```
 
-### 3. Launch
+### 3_EXECUTION
 ```bash
 # Start the production server
 bun start
 ```
 
-On first run, follow the terminal instructions to pair your account via **QR Code** or **Pairing Code**. Once paired, access the dashboard at `http://localhost:3001/whats/`.
+*On first run, follow the terminal instructions to pair your account via QR Code or Pairing Code. Dashboard available at `http://localhost:3001/whats/`.*
 
 ---
 
-## ⚙️ Configuration Variables
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `WEB_PORT` | `3001` | The port the Hono server will listen on. |
-| `AUTH_PASSWORD` | `—` | **Required.** Password for dashboard access. |
-| `NODE_ENV` | `development` | Set to `production` for secure/https-only cookies. |
-| `TRUST_PROXY` | `false` | Enable if running behind Caddy, Nginx, or Proxy. |
-
-
----
-
-## 🏗️ Project Structure
+## 05_PROJECT_STRUCTURE
 
 ```text
 ├── 📂 data/               # Persistent storage (SQLite DB + Media files)
@@ -97,73 +95,37 @@ On first run, follow the terminal instructions to pair your account via **QR Cod
 ├── 📂 src/                # Backend Architecture (TypeScript)
 │   ├── 📂 api/          # Hono routes, middleware & WebSocket server
 │   ├── 📂 db/           # Modular SQLite database layer
-│   ├── 📂 whatsapp/     # Baileys socket, handlers, & state management
-│   ├── 📂 workers/      # Multi-threaded background tasks
-│   ├── index.ts         # Application bootstrapper
-│   ├── logger.ts        # Standardized logging utility
-│   └── types.ts         # Shared TypeScript definitions
+│   ├── 📂 whatsapp/     # Baileys socket & handlers
+│   └── 📂 workers/      # Background media processing
 ├── 📂 web/                # Frontend (SolidJS + Vite + Tailwind v4)
-│   ├── 📂 src/          # Application logic & UI components
-│   │   ├── index.css    # Technical Design System (Optimized T4)
-│   │   └── ...
-│   └── index.html       # Web entry point
-├── ecosystem.config.cjs    # PM2 Process Configuration
-├── .env.example           # Configuration template
-└── package.json           # Global scripts & dependencies
+│   └── 📂 src/          # UI Logic & Components
+├── ecosystem.config.cjs    # PM2 Configuration
+└── package.json           # Global scripts
 ```
 
 ---
 
-## 💎 Development & Maintenance
+## 06_SECURITY_&_PRIVACY
 
-To maintain the project's design consistency, we use a **standardized CSS design system** defined in `index.css`. This ensures all components follow the **Nothing Design** specifications for typography, buttons, and controls without redundant or arbitrary styling.
-
-### 🧩 Automated Formatting
-Keep the project's design consistent by automatically rewriting arbitrary Tailwind classes project-wide from the root.
-
-```bash
-# Fix all classes project-wide
-bun fix
-```
-
-### 🔍 Code Quality & Linting
-Check for styling or logic issues across the entire dashboard interface:
-
-```bash
-# Project-wide lint
-bun lint
-```
-
-### 🛠️ Advanced Tools
-- `bun dev`: Start development server with hot-reloading.
-- `bun t`: Run test suite in **quiet diagnostic mode** (shows only failures).
-- `bun test`: Run full test suite with verbose output.
-- `bun run typecheck`: Validate TypeScript types across the backend.
+- **LOCAL_FIRST**: All messages and media are stored exclusively on your hardware.
+- **SESSION_BINDING**: Access tokens are cryptographically bound to hardware fingerprints via **ThumbmarkJS**.
+- **PAYLOAD_BOUNDARIES**: Automatic rejection of oversized payloads to prevent DoS attacks.
+- **ZERO_EXTINCTION**: SQLite WAL mode ensures data durability even during unexpected crashes.
 
 ---
 
-## 🛡️ Security & Privacy
+## 07_DEVELOPMENT
 
-Privacy is a core design principle:
-- **Local Storage**: All messages and media are stored exclusively on *your* hardware.
-- **Session Fingerprinting**: Access tokens are cryptographically bound to the device's unique hardware fingerprint via **ThumbmarkJS**.
-- **Secure Auth**: Dashboards are protected by standard-compliant session management with `HttpOnly` and `SameSite=Strict` cookie flags.
-- **Zero Extinction**: Deleted messages are preserved in WAL mode, ensuring durability even during sudden restarts.
-- **Payload Boundaries**: Rejects oversized JSON payloads automatically to prevent memory-based Denial of Service (DoS) attacks.
+| COMMAND | DESCRIPTION |
+| :--- | :--- |
+| `bun dev` | Start development server with hot-reloading. |
+| `bun fix` | Automatically rewrite arbitrary CSS to match design system. |
+| `bun lint` | Project-wide logic and style check. |
+| `bun t` | Run tests in quiet diagnostic mode. |
+| `bun test` | Full verbose test suite execution. |
 
 ---
 
-## 📡 Deployment
-
-### Using PM2 (Recommended)
-```bash
-bun run build
-pm2 start ecosystem.config.cjs
-pm2 save
-```
-
-### Reverse Proxy (Caddy)
-Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`, adjust your domain, and reload:
-```bash
-sudo systemctl reload caddy
-```
+<div align="center">
+[LICENSE](LICENSE) • [CONTRIBUTE](#) • [REPORT_ISSUE](https://github.com/JKc66/whats_recall/issues)
+</div>
