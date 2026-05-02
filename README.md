@@ -33,6 +33,33 @@ A privacy-first archival system that captures deleted messages, saves view-once 
 
 ---
 
+## 01.5_INTERFACE_PREVIEW
+
+> A premium, high-density dashboard following the Softened Nothing Design System.
+
+### 🖥️ DESKTOP_ARCHIVE
+<div align="center">
+  <img src="docs/screenshots/private_chat_dark.png" width="100%" alt="Private Chat Dark Mode">
+  <br>
+  <em>Secure message archival with real-time reaction tracking and edited message history.</em>
+</div>
+
+<br>
+
+<div align="center">
+  <img src="docs/screenshots/group_chat_dark.png" width="49%" alt="Group Chat">
+  <img src="docs/screenshots/private_chat_light.png" width="49%" alt="Light Mode Preview">
+</div>
+
+### 📱 MOBILE_EXPERIENCE
+<div align="center">
+  <img src="docs/screenshots/mobile_dark.png" width="40%" alt="Mobile Dark Mode">
+  <img src="docs/screenshots/mobile_light.png" width="40%" alt="Mobile Light Mode">
+</div>
+
+
+---
+
 ## 02_TECHNICAL_ARCHITECTURE
 
 > Built for performance, reliability, and extreme privacy.
