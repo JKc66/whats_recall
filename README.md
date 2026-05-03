@@ -12,7 +12,7 @@
 **NEVER_MISS_A_MESSAGE.**
 A privacy-first archival system that captures deleted messages, saves view-once media, and provides a premium technical dashboard for real-time review.
 
-[FEATURES](#-key-features) • [QUICK_START](#-quick-start) • [ARCHITECTURE](#-technical-architecture) • [SECURITY](#-security--privacy)
+[FEATURES](#01_key_features) • [ARCHITECTURE](#02_technical_architecture) • [QUICK_START](#04_quick_start) • [SECURITY](#06_security__privacy) • [CONTRIBUTE](CONTRIBUTING.md)
 
 ---
 
@@ -20,7 +20,7 @@ A privacy-first archival system that captures deleted messages, saves view-once 
 
 ## 01_KEY_FEATURES
 
-| | |
+| MODULE | DESCRIPTION |
 | :--- | :--- |
 | 🕵️ **SELECTIVE_MONITORING** | Precision control: only track the specific chats you choose. |
 | 📸 **VIEW_ONCE_PRESERVATION** | Bypasses "View Once" restrictions by capturing and archiving media. |
@@ -78,10 +78,10 @@ A privacy-first archival system that captures deleted messages, saves view-once 
 
 This project adheres to the **SOFTENED_NOTHING** design system. It prioritizes information density and typography over decorative elements.
 
-- **TYPOGRAPHY**: `Doto` (Primary), `Space Grotesk` (Secondary), `Space Mono` (Tertiary).
-- **PALETTE**: Strictly achromatic. `#000000` (OLED), `#E8E8E8` (Primary Text), `#D71921` (Nothing Red Accent).
-- **IDENTIFICATION**: Avatars use grayscale fills; group participants use distinct hues for functional clarity only.
-- **PHILOSOPHY**: No gradients, no shadows, no glassmorphism. Just data.
+- **TYPOGRAPHY**: `Doto` (Display), `Space Grotesk` (Body), `Space Mono` (Data/Labels).
+- **PALETTE**: Strictly achromatic. `#000000` (OLED Background), `#E8E8E8` (Primary Text), `#D71921` (Nothing Red Accent).
+- **IDENTIFICATION**: Avatars use grayscale fills; group participants use distinct hues for functional clarity.
+- **PHILOSOPHY**: No gradients, no glassmorphism, no unnecessary shadows. High-density information display.
 
 ---
 
@@ -154,5 +154,11 @@ bun start
 ---
 
 <div align="center">
-[LICENSE](LICENSE) • [CONTRIBUTE](#) • [REPORT_ISSUE](https://github.com/JKc66/whats_recall/issues)
+
+---
+
+**[LICENSE_MIT](LICENSE)** • **[CONTRIBUTING](CONTRIBUTING.md)** • **[REPORT_ISSUE](https://github.com/JKc66/whats_recall/issues)**
+
+---
 </div>
+
