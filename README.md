@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/logo.svg" width="150" height="150" alt="WhatsRecall Logo">
+
 # WHATSRECALL
 ### SECURE_MESSAGE_ARCHIVAL_SYSTEM
 
