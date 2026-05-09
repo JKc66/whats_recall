@@ -154,6 +154,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
   seed('whatsapp_phone', '');
   seed('whatsapp_notify', 'false');
   seed('whatsapp_pairing_method', 'code');
+  seed('max_media_size', '100'); // 100MB default
 
   const dbMethods = {
     // Chat Operations

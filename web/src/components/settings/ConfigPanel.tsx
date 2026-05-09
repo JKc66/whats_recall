@@ -1,6 +1,7 @@
-import { Show, createSignal } from "solid-js";
+import { Show, createSignal, createMemo } from "solid-js";
 import { AlertTriangleIcon, SettingsIcon, EyeIcon } from "../Icons";
 import RelayPreview from "./RelayPreview";
+import { renderSVG } from "uqr";
 
 interface ConfigPanelProps {
   pairing: any;
@@ -17,8 +18,31 @@ interface ConfigPanelProps {
 
 export default function ConfigPanel(props: ConfigPanelProps) {
   const [showRelayPreview, setShowRelayPreview] = createSignal(false);
+  const [drafts, setDrafts] = createSignal<Record<string, string>>({});
+
   const hasSession = () => props.stats?.authenticated || props.pairing?.authenticated;
   const isOnline = () => props.stats?.connected;
+
+  const updateDraft = (key: string, value: string) => {
+    const current = props.config?.[key] || "";
+    if (current === value) {
+      const newDrafts = { ...drafts() };
+      delete newDrafts[key];
+      setDrafts(newDrafts);
+    } else {
+      setDrafts({ ...drafts(), [key]: value });
+    }
+  };
+
+  const saveDrafts = () => {
+    Object.entries(drafts()).forEach(([key, value]) => {
+      props.onConfigUpdate(key, value);
+    });
+    setDrafts({});
+  };
+
+  const hasChanges = () => Object.keys(drafts()).length > 0;
+
 
   return (
     <div class="flex flex-col animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -47,12 +71,8 @@ export default function ConfigPanel(props: ConfigPanelProps) {
               <div class="p-4 md:p-6 flex flex-col items-center gap-4 md:gap-6">
                 <Show when={props.pairing?.type === "qr"}>
                   <div class="flex flex-col items-center gap-4 text-center">
-                    <div class="p-2 bg-white ring-8 ring-white/5 ">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(props.pairing?.data || "")}&size=200x200`}
-                        alt="Scan to pair"
-                        class="w-32 h-32 md:w-44 md:h-44 mix-blend-multiply transition-opacity duration-500"
-                      />
+                    <div class="p-2 bg-white ring-8 ring-white/5 " 
+                         innerHTML={createMemo(() => props.pairing?.data ? renderSVG(props.pairing.data) : "")()}>
                     </div>
                     <div class="flex flex-col gap-1">
                       <p class="text-[9px] md:text-[10px] text-text-primary font-mono tracking-[0.2em] uppercase font-bold">
@@ -150,20 +170,20 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 <button
                   class="segmented-item"
                   classList={{ 
-                    "active": (props.config?.whatsapp_pairing_method || "code") === "qr"
+                    "active": (drafts()["whatsapp_pairing_method"] || props.config?.whatsapp_pairing_method || "code") === "qr"
                   }}
-                  onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "qr")}
+                  onClick={() => updateDraft("whatsapp_pairing_method", "qr")}
                 >
-                  {(props.config?.whatsapp_pairing_method || "code") === "qr" ? "[ QR ]" : "QR"}
+                  {(drafts()["whatsapp_pairing_method"] || props.config?.whatsapp_pairing_method || "code") === "qr" ? "[ QR ]" : "QR"}
                 </button>
                 <button
                   class="segmented-item"
                   classList={{ 
-                    "active": (props.config?.whatsapp_pairing_method || "code") === "code"
+                    "active": (drafts()["whatsapp_pairing_method"] || props.config?.whatsapp_pairing_method || "code") === "code"
                   }}
-                  onClick={() => props.onConfigUpdate("whatsapp_pairing_method", "code")}
+                  onClick={() => updateDraft("whatsapp_pairing_method", "code")}
                 >
-                  {(props.config?.whatsapp_pairing_method || "code") === "code" ? "[ CODE ]" : "CODE"}
+                  {(drafts()["whatsapp_pairing_method"] || props.config?.whatsapp_pairing_method || "code") === "code" ? "[ CODE ]" : "CODE"}
                 </button>
               </div>
             </div>
@@ -182,13 +202,40 @@ export default function ConfigPanel(props: ConfigPanelProps) {
                 id="whatsapp_phone"
                 type="text"
                 placeholder="PHONE_NUM_ENTRY"
-                value={props.config?.whatsapp_phone || ""}
-                onBlur={(e) => props.onConfigUpdate("whatsapp_phone", e.currentTarget.value)}
-                onKeyDown={(e) => e.key === "Enter" && props.onConfigUpdate("whatsapp_phone", e.currentTarget.value)}
+                value={drafts()["whatsapp_phone"] ?? props.config?.whatsapp_phone ?? ""}
+                onInput={(e) => updateDraft("whatsapp_phone", e.currentTarget.value)}
+                onKeyDown={(e) => e.key === "Enter" && hasChanges() && saveDrafts()}
                 disabled={!!props.savingConfig}
                 class="w-full bg-transparent p-4 md:p-6 outline-none text-sm tracking-[0.2em] placeholder:text-text-disabled/30 font-mono text-text-primary"
+                classList={{ "text-accent": drafts()["whatsapp_phone"] !== undefined }}
               />
               <Show when={props.savingConfig === "whatsapp_phone"}>
+                <div class="absolute right-4 md:right-6 w-2 h-2 bg-accent animate-pulse" />
+              </Show>
+            </div>
+          </div>
+
+          {/* Media Size Limit */}
+          <div class="grid grid-cols-[90px_1fr] md:grid-cols-[140px_1fr] border-b border-border">
+            <label
+              for="max_media_size"
+              class="border-r border-border p-3 md:p-6 flex items-center text-label bg-surface-raised/20 cursor-pointer"
+            >
+              MAX_MEDIA_MB
+            </label>
+            <div class="relative flex items-center bg-surface">
+              <input
+                id="max_media_size"
+                type="number"
+                placeholder="100"
+                value={drafts()["max_media_size"] ?? props.config?.max_media_size ?? "100"}
+                onInput={(e) => updateDraft("max_media_size", e.currentTarget.value)}
+                onKeyDown={(e) => e.key === "Enter" && hasChanges() && saveDrafts()}
+                disabled={!!props.savingConfig}
+                class="w-full bg-transparent p-4 md:p-6 outline-none text-sm tracking-[0.2em] placeholder:text-text-disabled/30 font-mono text-text-primary"
+                classList={{ "text-accent": drafts()["max_media_size"] !== undefined }}
+              />
+              <Show when={props.savingConfig === "max_media_size"}>
                 <div class="absolute right-4 md:right-6 w-2 h-2 bg-accent animate-pulse" />
               </Show>
             </div>
@@ -261,6 +308,29 @@ export default function ConfigPanel(props: ConfigPanelProps) {
           </Show>
         </div>
       </div>
+
+      <Show when={hasChanges()}>
+        <div class="sticky bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-sm border-t border-accent/30 flex items-center justify-between animate-in slide-in-from-bottom-4 duration-300 z-10">
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-accent uppercase tracking-widest">UNSAVED_CHANGES</span>
+            <span class="text-[8px] text-text-secondary uppercase font-mono">You have modified settings</span>
+          </div>
+          <div class="flex gap-2">
+            <button 
+                class="btn btn-secondary h-8 px-4 text-[10px]" 
+                onClick={() => setDrafts({})}
+            >
+                DISCARD
+            </button>
+            <button 
+                class="btn btn-primary h-8 px-6 text-[10px] bg-accent text-black" 
+                onClick={() => saveDrafts()}
+            >
+                SAVE_CHANGES
+            </button>
+          </div>
+        </div>
+      </Show>
     </div>
   );
 }

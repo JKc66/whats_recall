@@ -43,7 +43,12 @@ async function computeHash(buffer: Buffer): Promise<string> {
   const worker = getHashWorker();
   return new Promise((resolve) => {
     hashPending.set(id, resolve);
-    worker.postMessage({ id, buffer: buffer.buffer });
+    worker.postMessage({ 
+      id, 
+      buffer: buffer.buffer, 
+      byteOffset: buffer.byteOffset, 
+      byteLength: buffer.byteLength 
+    });
   });
 }
 
@@ -56,6 +61,9 @@ function ensureDir(path: string) {
 
 export async function downloadMedia(message: WAMessage, type: string, sock?: any): Promise<{ path: string, sha256hex: string | null } | null> {
   const db = getDb();
+  const settings = db.getSettings();
+  const maxMb = parseInt(settings.max_media_size || '100');
+  const MAX_MEDIA_SIZE = maxMb * 1024 * 1024;
   try {
     const mType = type.endsWith('Message') ? type : type + 'Message';
     const msg = message.message as any;
@@ -67,6 +75,13 @@ export async function downloadMedia(message: WAMessage, type: string, sock?: any
                     msg?.documentWithCaptionMessage?.message?.[mType];
     
     if (!mediaObj) return null;
+
+    // Check media size before download if fileLength is present
+    const fileLength = parseInt(mediaObj.fileLength || '0');
+    if (fileLength > MAX_MEDIA_SIZE) {
+      log('MEDIA', `Skipping large media (${(fileLength / 1024 / 1024).toFixed(2)} MB exceeds ${MAX_MEDIA_SIZE / 1024 / 1024} MB limit)`);
+      return null;
+    }
 
     // Check for deduplication by SHA256 if provided by WhatsApp
     let sha256hex: string | null = null;

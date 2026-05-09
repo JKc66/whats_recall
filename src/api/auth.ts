@@ -41,6 +41,19 @@ auth.post('/login', bodyLimit(mutationBodyLimit), async (c) => {
   const body = (await readJsonBody(c)) as { password?: unknown; fingerprint?: unknown };
   const { password } = body;
   const fingerprint = typeof body.fingerprint === 'string' ? body.fingerprint : '';
+
+  if (!fingerprint) {
+    const logger = c.get('log');
+    logger.set({ outcome: { error: 'missing_fingerprint' } });
+    logger.warn(`Login failed from ${ip}: missing fingerprint`);
+    throw createError({
+      message: 'Client fingerprint is mandatory',
+      status: 400,
+      why: 'Browser fingerprinting is required for secure session binding',
+      fix: 'Ensure ThumbmarkJS is active and sending a fingerprint'
+    });
+  }
+
   const serverPassword = process.env.AUTH_PASSWORD || '';
   const maxPasswordLength = Math.max(1024, serverPassword.length * 2);
 

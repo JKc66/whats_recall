@@ -61,7 +61,7 @@ describe("API /auth", () => {
         const res = await auth.request("/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password: "wrong-password" })
+            body: JSON.stringify({ password: "wrong-password", fingerprint: "fp-123" })
         });
         expect(res.status).toBe(401);
         const json = await res.json();
@@ -91,14 +91,14 @@ describe("API /auth", () => {
             await auth.request("/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-Forwarded-For": testIp },
-                body: JSON.stringify({ password: "wrong-password" })
+                body: JSON.stringify({ password: "wrong-password", fingerprint: "fp-123" })
             });
         }
         
         const res = await auth.request("/login", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Forwarded-For": testIp },
-            body: JSON.stringify({ password: "test-password-123" })
+            body: JSON.stringify({ password: "test-password-123", fingerprint: "fp-123" })
         });
         expect(res.status).toBe(429);
     });

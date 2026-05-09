@@ -102,19 +102,71 @@ bun run build
 ```bash
 cp .env.example .env
 # Edit .env and set a secure AUTH_PASSWORD
+# (Optional) Set TRUSTED_PROXIES if running behind a reverse proxy
 ```
 
-### 3_EXECUTION
+### 3_ENVIRONMENT_VARIABLES
+
+| VARIABLE | DESCRIPTION | DEFAULT |
+| :--- | :--- | :--- |
+| `AUTH_PASSWORD` | Primary dashboard access password. | `required` |
+| `TRUSTED_PROXIES` | Comma-separated IPs of trusted reverse proxies. | `none` |
+| `TRUST_PROXY` | Set to `true` to enable proxy header trust. | `false` |
+| `DATA_DIR` | Path to persistent storage. | `./data` |
+| `MEDIA_DIR` | Path to media archival storage. | `./data/media` |
+| `MAX_MEDIA_SIZE` | Override default media download limit (bytes). | `100MB (DB)` |
+
+
+### 4_EXECUTION
 ```bash
 # Start the production server
 bun start
 ```
 
 *On first run, follow the terminal instructions to pair your account via QR Code or Pairing Code. Dashboard available at `http://localhost:3001/whats/`.*
+ 
+---
+ 
+## 05_PROCESS_MANAGEMENT
+ 
+> For 24/7 reliability, it is recommended to run WhatsRecall using **PM2**.
+ 
+### 1_INSTALL_PM2
+```bash
+# PM2 requires Node.js/NPM to be installed globally
+npm install -g pm2
+```
+ 
+### 2_START_DEPLOYMENT
+```bash
+# Start the project using the pre-configured ecosystem file
+pm2 start ecosystem.config.cjs
+ 
+# (Optional) Save the process list to restart on server reboot
+pm2 save
+```
+ 
+### 3_MONITORING_&_CONTROL
+```bash
+# View real-time logs
+pm2 logs whats-recall
 
+# Clear all log files
+pm2 flush whats-recall
+ 
+# Check process status and resource usage
+pm2 ls
+ 
+# Restart the service after configuration changes
+pm2 restart whats-recall
+ 
+# Stop the service
+pm2 stop whats-recall
+```
+ 
 ---
 
-## 05_PROJECT_STRUCTURE
+## 06_PROJECT_STRUCTURE
 
 ```text
 ├── 📂 data/               # Persistent storage (SQLite DB + Media files)
@@ -132,20 +184,23 @@ bun start
 
 ---
 
-## 06_SECURITY_&_PRIVACY
+## 07_SECURITY_&_PRIVACY
 
 - **LOCAL_FIRST**: All messages and media are stored exclusively on your hardware.
-- **SESSION_BINDING**: Access tokens are cryptographically bound to hardware fingerprints via **ThumbmarkJS**.
-- **PAYLOAD_BOUNDARIES**: Automatic rejection of oversized payloads to prevent DoS attacks.
+- **PRIVATE_PAIRING**: WhatsApp QR codes are generated locally. No sensitive pairing data ever leaves your server.
+- **SESSION_BINDING**: Access tokens are cryptographically bound to hardware fingerprints via **ThumbmarkJS**. Fingerprinting is mandatory for all sessions.
+- **PROXY_HARDENING**: Only trusts `X-Forwarded-For` headers from explicitly configured `TRUSTED_PROXIES`.
+- **PAYLOAD_BOUNDARIES**: Automatic rejection of oversized media and JSON payloads to prevent DoS attacks.
 - **ZERO_EXTINCTION**: SQLite WAL mode ensures data durability even during unexpected crashes.
 
 ---
 
-## 07_DEVELOPMENT
+## 08_DEVELOPMENT
 
 | COMMAND | DESCRIPTION |
 | :--- | :--- |
 | `bun dev` | Start development server with hot-reloading. |
+| `pm2 restart whats-recall` | Restart the production process. |
 | `bun fix` | Automatically rewrite arbitrary CSS to match design system. |
 | `bun lint` | Project-wide logic and style check. |
 | `bun t` | Run tests in quiet diagnostic mode. |

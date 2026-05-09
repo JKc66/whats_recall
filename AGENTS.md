@@ -48,13 +48,16 @@ The UI follows a **Softened Nothing Design System**, adhering exactly to the **N
 
 ## 🛡️ Security & Environment
 - **Authentication**: `AUTH_PASSWORD` (env) is used for both dashboard login and destructive operation authorization.
-- **Fingerprinting**: Client-side hardware fingerprinting via **ThumbmarkJS** is mandatory for session binding.
-- **Privacy**: All media deduplication is done strictly via local SHA-256 hashing.
-- **Payload Boundaries (DoS)**: All mutation endpoints (`POST`, `DELETE`) must implement Hono `bodyLimit` wrapper (e.g., `8192` bytes) and wrap `c.req.json()` in try/catch to gracefully handle malformed JSON memory attacks.
+- **Fingerprinting**: Client-side hardware fingerprinting via **ThumbmarkJS** is **MANDATORY**. Sessions without a valid fingerprint must be rejected by both the API and WebSocket handlers.
+- **Proxy Hardening**: When `TRUST_PROXY=true`, the `getClientIp` utility **MUST** validate the source against `TRUSTED_PROXIES` (env). Never trust `X-Forwarded-For` from arbitrary sources.
+- **Privacy**: WhatsApp QR generation must remain local (e.g., using `uqr`). **NEVER** use external 3rd-party QR APIs.
+- **Payload Boundaries (DoS)**: All mutation endpoints (`POST`, `DELETE`) must implement Hono `bodyLimit` wrapper (e.g., `8192` bytes). Media downloads must respect `max_media_size` from DB settings.
+- **UI Interaction**: Settings modifications follow a **Draft & Save** pattern. Changes are held in local state (highlighted in accent color) until the user explicitly clicks the sticky `SAVE_CHANGES` bar.
+- **Testing**: When modifying security logic, you **MUST** update `tests/security.test.ts` and `tests/api_auth.test.ts` to reflect the new constraints. Never bypass security checks in tests unless specifically documented.
 
 ---
 
 ## 🤖 Contextual Reminders
 - **No Path Placeholders**: Always use absolute paths for file operations if possible, or `resolve()` from the data directory.
 - **Worker Offloading**: Use `src/workers/` for heavy operations like media hashing or processing.
-- **Environment Context**: The app is designed to run in **PM2** (`ecosystem.config.cjs`). Restart the process after backend changes.
+- **Environment Context**: The app is designed to run in **PM2** (`ecosystem.config.cjs`). Restart the process after backend changes using: `pm2 restart whats-recall`.

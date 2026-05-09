@@ -39,8 +39,9 @@ describe("getClientIp", () => {
         expect(getClientIp(c)).toBe("192.168.1.1");
     });
 
-    test("should return the LAST x-forwarded-for when TRUST_PROXY is true (safe against spoofing)", () => {
+    test("should return the LAST x-forwarded-for when TRUST_PROXY is true and remote is trusted", () => {
         process.env.TRUST_PROXY = "true";
+        process.env.TRUSTED_PROXIES = "192.168.1.1";
         const c = mockContext({
             "x-forwarded-for": "1.2.3.4, 5.6.7.8",
             "x-real-ip": "9.10.11.12"
@@ -49,8 +50,9 @@ describe("getClientIp", () => {
         expect(getClientIp(c)).toBe("5.6.7.8");
     });
 
-    test("should return x-forwarded-for when it has only one IP", () => {
+    test("should return x-forwarded-for when it has only one IP and remote is trusted", () => {
         process.env.TRUST_PROXY = "true";
+        process.env.TRUSTED_PROXIES = "192.168.1.1";
         const c = mockContext({
             "x-forwarded-for": "1.2.3.4",
         }, "192.168.1.1");
@@ -58,8 +60,9 @@ describe("getClientIp", () => {
         expect(getClientIp(c)).toBe("1.2.3.4");
     });
 
-    test("should return x-real-ip when TRUST_PROXY is true and x-forwarded-for is missing", () => {
+    test("should return x-real-ip when TRUST_PROXY is true, remote is trusted, and x-forwarded-for is missing", () => {
         process.env.TRUST_PROXY = "true";
+        process.env.TRUSTED_PROXIES = "192.168.1.1";
         const c = mockContext({
             "x-real-ip": "9.10.11.12"
         }, "192.168.1.1");

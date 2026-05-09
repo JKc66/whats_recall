@@ -43,23 +43,23 @@ export function getClientIp(c: Context): string {
   const trustedProxiesStr = process.env.TRUSTED_PROXIES || '';
   const trustedProxies = trustedProxiesStr.split(',').map((ip: string) => ip.trim()).filter(Boolean);
 
-  // Secure validation: Only trust headers if the direct caller is a known proxy
-  if (trustedProxies.length > 0 && !trustedProxies.includes(remoteAddress)) {
-    return remoteAddress;
-  }
-
-  const forwarded = c.req.header('x-forwarded-for');
-  if (forwarded) {
-    const ips = forwarded.split(',').map((ip: string) => ip.trim().replace(/^::ffff:/, ''));
-
-    // Traverse from right to left, skipping trusted proxies
-    for (let i = ips.length - 1; i >= 0; i--) {
-      if (!trustedProxies.includes(ips[i])) {
-        return ips[i];
-      }
+    // Secure validation: Only trust headers if the direct caller is a known proxy
+    if (trustedProxies.length === 0 || !trustedProxies.includes(remoteAddress)) {
+      return remoteAddress;
     }
-    return ips[0] || remoteAddress;
-  }
+
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) {
+      const ips = forwarded.split(',').map((ip: string) => ip.trim().replace(/^::ffff:/, ''));
+
+      // Traverse from right to left, skipping trusted proxies
+      for (let i = ips.length - 1; i >= 0; i--) {
+        if (!trustedProxies.includes(ips[i])) {
+          return ips[i];
+        }
+      }
+      return ips[0] || remoteAddress;
+    }
 
   const realIp = c.req.header('x-real-ip');
   if (realIp) return realIp.trim().replace(/^::ffff:/, '');
@@ -101,8 +101,8 @@ export function verifySession(
     return { authenticated: false, error: 'Session expired or invalid' };
   }
 
-  // Stricter fingerprint check: if session has a fingerprint, it MUST match
-  if (session.fingerprint && fingerprint !== session.fingerprint) {
+  // Stricter fingerprint check: fingerprint is MANDATORY and MUST match
+  if (!session.fingerprint || fingerprint !== session.fingerprint) {
     return { authenticated: false, error: 'Fingerprint mismatch or missing' };
   }
 

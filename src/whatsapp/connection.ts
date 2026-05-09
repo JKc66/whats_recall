@@ -133,7 +133,7 @@ export class WhatsAppConnection {
                                 connected: false,
                                 authenticated: false,
                             };
-                            log("CONN", `Pairing code: ${readableCode}`);
+                            log("CONN", `Pairing code generated and sent to UI`);
                             this.broadcast("status", this.pairingData);
                         } catch (err: any) {
                             log(
