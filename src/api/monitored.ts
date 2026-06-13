@@ -46,7 +46,13 @@ const monitoredRouter = (client: WhatsAppConnection) => {
     return c.json({ success: true });
   });
 
-  monitored.delete('/:chatId', async (c) => {
+  monitored.delete('/:chatId', bodyLimit(mutationBodyLimit), async (c) => {
+    // Consume body to trigger bodyLimit validation
+    try {
+      await c.req.text();
+    } catch (e: any) {
+      if (e.status === 413) throw e;
+    }
     const chatId = c.req.param('chatId');
 
     // Use the robust connection-level deletion that handles both PN and LID variants

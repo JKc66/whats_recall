@@ -10,7 +10,10 @@ export const mutationBodyLimit = {
 export async function readJsonBody(c: Context): Promise<unknown> {
   try {
     return await c.req.json();
-  } catch {
+  } catch (e: any) {
+    if (e && (e.name === 'BodyLimitError' || e.message?.includes('Limit') || e.message?.includes('Large') || e.status === 413)) {
+      throw e;
+    }
     throw createError({
       message: 'Invalid JSON payload',
       status: 400,
@@ -22,9 +25,9 @@ export async function readJsonBody(c: Context): Promise<unknown> {
 
 /** Like readJsonBody but treats an empty body as `{}` (for POSTs that may omit a body). */
 export async function readJsonBodyAllowEmpty(c: Context): Promise<Record<string, unknown>> {
-  const text = await c.req.text();
-  if (!text.trim()) return {};
   try {
+    const text = await c.req.text();
+    if (!text.trim()) return {};
     const parsed = JSON.parse(text) as unknown;
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       throw createError({
@@ -35,7 +38,10 @@ export async function readJsonBodyAllowEmpty(c: Context): Promise<Record<string,
       });
     }
     return parsed as Record<string, unknown>;
-  } catch (e) {
+  } catch (e: any) {
+    if (e && (e.name === 'BodyLimitError' || e.message?.includes('Limit') || e.message?.includes('Large') || e.status === 413)) {
+      throw e;
+    }
     if (e instanceof SyntaxError) {
       throw createError({
         message: 'Invalid JSON payload',

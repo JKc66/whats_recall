@@ -14,7 +14,7 @@
     "t": "bun test --only-failures"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "@whiskeysockets/baileys": "^7.0.0-rc12",
     "evlog": "^2.11.0",
     "hono": "^4.7.0",
     "pino": "^10.3.1"

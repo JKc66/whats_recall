@@ -84,4 +84,19 @@ describe("API /monitored", () => {
         
         expect(db.isMonitored("chat3")).toBe(false);
     });
+
+    test("POST / should reject request if body exceeds payload limits", async () => {
+        const hugeBody = JSON.stringify({
+            chatId: "a".repeat(9000),
+            name: "User 2",
+            isGroup: false
+        });
+        const res = await monitored.request("/", {
+            method: "POST",
+            body: hugeBody,
+            headers: { "Content-Type": "application/json" }
+        });
+        
+        expect(res.status).toBe(413);
+    });
 });
