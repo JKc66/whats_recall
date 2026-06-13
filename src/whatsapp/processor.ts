@@ -3,7 +3,9 @@ import {
     jidNormalizedUser,
     WAMessage,
     isJidGroup,
+    proto,
 } from "@whiskeysockets/baileys";
+import { aesDecryptGCM, hmacSign } from "@whiskeysockets/baileys/lib/Utils/crypto.js";
 import { log } from "../logger.js";
 import { getDb, getMediaDir } from "../db/database.js";
 import { syncService } from "./sync.ts";
@@ -17,6 +19,52 @@ import {
     enrichMentions,
 } from "./utils.ts";
 import { actionsQueue } from "./queue.ts";
+
+function extractProtocolMessage(message: any): any {
+    if (!message) return null;
+    if (message.protocolMessage) return message.protocolMessage;
+    if (message.ephemeralMessage?.message) return extractProtocolMessage(message.ephemeralMessage.message);
+    if (message.documentWithCaptionMessage?.message) return extractProtocolMessage(message.documentWithCaptionMessage.message);
+    return null;
+}
+
+function extractEditedMessage(message: any): any {
+    if (!message) return null;
+    if (message.editedMessage) return message.editedMessage;
+    if (message.ephemeralMessage?.message) return extractEditedMessage(message.ephemeralMessage.message);
+    if (message.documentWithCaptionMessage?.message) return extractEditedMessage(message.documentWithCaptionMessage.message);
+    return null;
+}
+
+function decryptEditedMessage(
+    encPayload: Uint8Array,
+    encIv: Uint8Array,
+    secret: Uint8Array,
+    originalMsgId: string,
+    senderJid: string
+): any | null {
+    try {
+        const toBinary = (txt: string) => Buffer.from(txt);
+        const senderBuf = toBinary(senderJid);
+        
+        const sign = Buffer.concat([
+            toBinary(originalMsgId),
+            senderBuf,
+            senderBuf,
+            toBinary('Message Edit'),
+            new Uint8Array([1])
+        ]);
+        
+        const key = hmacSign(secret, new Uint8Array(32));
+        const decKey = hmacSign(sign, key);
+        
+        const decrypted = aesDecryptGCM(encPayload, decKey, encIv, new Uint8Array(0));
+        return proto.Message.decode(decrypted);
+    } catch (err: any) {
+        log("PROCESSOR", `Decryption of edit failed: ${err.message}`);
+        return null;
+    }
+}
 
 export class MessageProcessor {
     constructor(
@@ -111,16 +159,26 @@ export class MessageProcessor {
      * and 'MESSAGE_EDIT' protocol messages.
      */
     public async handleMessageUpdate(event: any) {
-        const protocolMsg = event.update?.message?.protocolMessage;
-        if (!protocolMsg) return;
+        const protocolMsg = extractProtocolMessage(event.update?.message);
+        const editedMsg = extractEditedMessage(event.update?.message);
 
-        // Normalize JID in the main event key
-        const key = { ...event.key };
-        if (key.remoteJid) key.remoteJid = jidNormalizedUser(key.remoteJid);
-        if (key.participant)
-            key.participant = jidNormalizedUser(key.participant);
+        if (protocolMsg) {
+            // Normalize JID in the main event key
+            const key = { ...event.key };
+            if (key.remoteJid) key.remoteJid = jidNormalizedUser(key.remoteJid);
+            if (key.participant)
+                key.participant = jidNormalizedUser(key.participant);
 
-        await this.handleProtocolMessage(key, protocolMsg);
+            await this.handleProtocolMessage(key, protocolMsg);
+        } else if (editedMsg) {
+            // Normalize JID in the main event key
+            const key = { ...event.key };
+            if (key.remoteJid) key.remoteJid = jidNormalizedUser(key.remoteJid);
+            if (key.participant)
+                key.participant = jidNormalizedUser(key.participant);
+
+            await this.handleEdit(key, editedMsg.message);
+        }
     }
 
     /**
@@ -192,7 +250,7 @@ export class MessageProcessor {
             return;
         }
 
-        let body = getMessageBody(editedMessage, mType);
+        let body = getMessageBody(editContent, mType);
         if (body && editContext?.mentionedJid?.length) {
             body = await enrichMentions(
                 body,
@@ -359,6 +417,39 @@ export class MessageProcessor {
 
         if (messageType === "protocolMessage") {
             await this.handleProtocolMessage(msg.key, content);
+            return;
+        }
+
+        if (messageType === "secretEncryptedMessage") {
+            const secretMsg = content;
+            if (secretMsg && (secretMsg.secretEncType === 1 || secretMsg.secretEncType === "MESSAGE_EDIT")) {
+                const targetKey = secretMsg.targetMessageKey;
+                if (targetKey && targetKey.id) {
+                    const oldMsg = getDb().getMessage(targetKey.id);
+                    if (oldMsg && oldMsg.message_secret) {
+                        const secret = Buffer.from(oldMsg.message_secret, "base64");
+                        const senderJid = await this.resolveSender(msg, chatId, isGrp);
+                        const decrypted = decryptEditedMessage(
+                            secretMsg.encPayload,
+                            secretMsg.encIv,
+                            secret,
+                            targetKey.id,
+                            senderJid
+                        );
+                        if (decrypted) {
+                            log("PROCESSOR", `Decrypted edit for ${targetKey.id}`);
+                            const editKey = { ...targetKey };
+                            editKey.remoteJid = await syncService.resolvePN(targetKey.remoteJid || chatId, this.sock);
+                            if (editKey.participant) {
+                                editKey.participant = await syncService.resolvePN(editKey.participant, this.sock);
+                            }
+                            await this.handleEdit(editKey, decrypted);
+                        }
+                    } else {
+                        log("PROCESSOR", `Edit decryption skipped: original message secret not found in DB (${targetKey.id})`);
+                    }
+                }
+            }
             return;
         }
 
@@ -587,6 +678,8 @@ export class MessageProcessor {
 
         const messageId = msg.key.id!;
         const existingMsg = getDb().getMessage(messageId);
+        const rawSecret = normalized.content?.messageContextInfo?.messageSecret;
+        const messageSecret = rawSecret ? Buffer.from(rawSecret).toString("base64") : undefined;
 
         const msgData: WhatsAppMessage = {
             message_id: messageId,
@@ -612,6 +705,7 @@ export class MessageProcessor {
             quoted_stanza_id: quotedStanzaId || undefined,
             quoted_sender: quotedSender || undefined,
             quoted_preview: quotedPreview || undefined,
+            message_secret: messageSecret,
         };
 
         if (existingMsg) {
@@ -634,7 +728,7 @@ export class MessageProcessor {
           sender_id = ?, sender_name = ?, type = ?, has_media = ?,
           media_type = ?, media_filename = ?, media_path = ?, media_sha256 = ?,
           timestamp = ?, is_view_once = ?, quoted_stanza_id = ?,
-          quoted_sender = ?, quoted_preview = ?, updated_at = datetime('now')
+          quoted_sender = ?, quoted_preview = ?, message_secret = ?, updated_at = datetime('now')
         WHERE message_id = ?
       `,
                 )
@@ -652,6 +746,7 @@ export class MessageProcessor {
                     msgData.quoted_stanza_id || null,
                     msgData.quoted_sender || null,
                     msgData.quoted_preview || null,
+                    msgData.message_secret || null,
                     messageId,
                 );
         } else {

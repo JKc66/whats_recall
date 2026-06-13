@@ -49,6 +49,7 @@ export interface WhatsAppMessage {
   quoted_stanza_id?: string | null;
   quoted_sender?: string | null;
   quoted_preview?: string | null;
+  message_secret?: string | null;
   reactions?: Reaction[];
   reaction_edits?: ReactionEdit[];
   edits?: WhatsAppEdit[];

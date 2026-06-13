@@ -81,6 +81,7 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
       quoted_stanza_id TEXT,
       quoted_sender TEXT,
       quoted_preview TEXT,
+      message_secret TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -146,6 +147,14 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
     CREATE INDEX IF NOT EXISTS idx_reactions_message_id ON reactions(message_id);
     CREATE INDEX IF NOT EXISTS idx_chats_last_message_at ON chats(last_message_at DESC);
   `);
+
+  try {
+    db.run("ALTER TABLE messages ADD COLUMN message_secret TEXT");
+  } catch (e: any) {
+    if (e && e.message && !e.message.includes('duplicate column name')) {
+      log('DB', `Warning: Failed to add message_secret column: ${e.message}`);
+    }
+  }
 
   // Initial Seed
   const seed = (key: string, val: string) => {
@@ -242,8 +251,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         INSERT OR IGNORE INTO messages
         (message_id, chat_id, sender_id, sender_name, body, type, has_media,
          media_type, media_filename, media_path, media_sha256, timestamp, is_from_me, is_view_once, original_id,
-         quoted_stanza_id, quoted_sender, quoted_preview)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         quoted_stanza_id, quoted_sender, quoted_preview, message_secret)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         msg.message_id || '',
         msg.chat_id || '',
@@ -262,7 +271,8 @@ export function getDb(testDbPath?: string, testMediaDir?: string) {
         msg.original_id ?? null,
         msg.quoted_stanza_id ?? null,
         msg.quoted_sender ?? null,
-        msg.quoted_preview ?? null
+        msg.quoted_preview ?? null,
+        msg.message_secret ?? null
       );
     },
 

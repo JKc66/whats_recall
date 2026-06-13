@@ -287,7 +287,9 @@ export class WhatsAppConnection {
         );
 
         this.sock.ev.on("messages.update", async (events: any[]) => {
+            log("CONN", `messages.update received: ${events.length} events`);
             for (const event of events) {
+                log("CONN", `messages.update event: ${JSON.stringify(event)}`);
                 if (this.processor)
                     await this.processor.handleMessageUpdate(event);
             }

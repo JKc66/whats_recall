@@ -8,6 +8,21 @@ const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-processor-test-"));
 process.env.DATA_DIR = tempDir;
 process.env.DB_PATH = join(tempDir, "messages.db");
 
+import { proto } from "@whiskeysockets/baileys";
+mock.module("@whiskeysockets/baileys/lib/Utils/crypto.js", () => {
+  return {
+    aesDecryptGCM: (encPayload: Uint8Array) => {
+      if (encPayload && encPayload.length > 0) {
+        return proto.Message.encode({
+          conversation: "Decrypted from secretEncryptedMessage mock"
+        }).finish();
+      }
+      return new Uint8Array(0);
+    },
+    hmacSign: () => Buffer.alloc(32)
+  };
+});
+
 const { getDb, dbInstances } = await import("../src/db/database.ts");
 
 describe("MessageProcessor", () => {
@@ -128,6 +143,145 @@ describe("MessageProcessor", () => {
         expect(history[0].new_body).toBe("Edited text");
     });
 
+    test("should handle message edits wrapped in ephemeralMessage", async () => {
+        // 1. Save a message first
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+        
+        db.raw.query("INSERT INTO messages (message_id, chat_id, body, timestamp) VALUES (?, ?, ?, ?)")
+              .run("msg-to-edit-ephemeral", "12345@s.whatsapp.net", "Original text", Date.now());
+
+        // 2. Process an ephemeral edit protocol message
+        const editEvent = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "edit-id-e" },
+            update: {
+                message: {
+                    ephemeralMessage: {
+                        message: {
+                            protocolMessage: {
+                                type: 14, // MESSAGE_EDIT
+                                key: { remoteJid: "12345@s.whatsapp.net", id: "msg-to-edit-ephemeral", fromMe: false },
+                                editedMessage: {
+                                    ephemeralMessage: {
+                                        message: {
+                                            conversation: "Edited text ephemeral"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        await processor.handleMessageUpdate(editEvent);
+
+        const edited = db.getMessage("msg-to-edit-ephemeral");
+        expect(edited.body).toBe("Edited text ephemeral");
+        
+        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("msg-to-edit-ephemeral");
+        expect(history).toHaveLength(1);
+        expect(history[0].old_body).toBe("Original text");
+        expect(history[0].new_body).toBe("Edited text ephemeral");
+    });
+
+    test("should handle message edits received via decrypted editedMessage update", async () => {
+        // 1. Save a message first
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+        
+        db.raw.query("INSERT INTO messages (message_id, chat_id, body, timestamp) VALUES (?, ?, ?, ?)")
+              .run("msg-to-edit-decrypted", "12345@s.whatsapp.net", "Original text", Date.now());
+
+        // 2. Process a decrypted editedMessage update
+        const editEvent = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "msg-to-edit-decrypted", fromMe: false },
+            update: {
+                message: {
+                    editedMessage: {
+                        message: {
+                            conversation: "Decrypted edited text"
+                        }
+                    }
+                }
+            }
+        };
+
+        await processor.handleMessageUpdate(editEvent);
+
+        const edited = db.getMessage("msg-to-edit-decrypted");
+        expect(edited.body).toBe("Decrypted edited text");
+        
+        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("msg-to-edit-decrypted");
+        expect(history).toHaveLength(1);
+        expect(history[0].old_body).toBe("Original text");
+        expect(history[0].new_body).toBe("Decrypted edited text");
+    });
+
+    test("should handle message edits received via decrypted editedMessage update wrapped in ephemeralMessage", async () => {
+        // 1. Save a message first
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+        
+        db.raw.query("INSERT INTO messages (message_id, chat_id, body, timestamp) VALUES (?, ?, ?, ?)")
+              .run("msg-to-edit-decrypted-ephemeral", "12345@s.whatsapp.net", "Original text", Date.now());
+
+        // 2. Process a decrypted editedMessage update wrapped in ephemeralMessage
+        const editEvent = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "msg-to-edit-decrypted-ephemeral", fromMe: false },
+            update: {
+                message: {
+                    ephemeralMessage: {
+                        message: {
+                            editedMessage: {
+                                message: {
+                                    conversation: "Decrypted edited text ephemeral"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        await processor.handleMessageUpdate(editEvent);
+
+        const edited = db.getMessage("msg-to-edit-decrypted-ephemeral");
+        expect(edited.body).toBe("Decrypted edited text ephemeral");
+        
+        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("msg-to-edit-decrypted-ephemeral");
+        expect(history).toHaveLength(1);
+        expect(history[0].old_body).toBe("Original text");
+        expect(history[0].new_body).toBe("Decrypted edited text ephemeral");
+    });
+
+    test("should ignore secretEncryptedMessage in handleMessage", async () => {
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+
+        const msg = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "secret-msg-id", fromMe: false },
+            message: {
+                secretEncryptedMessage: {
+                    targetMessageKey: { remoteJid: "12345@s.whatsapp.net", id: "target-id", fromMe: false },
+                    encPayload: Buffer.from(""),
+                    encIv: Buffer.from(""),
+                    secretEncType: 1
+                }
+            },
+            messageTimestamp: Math.floor(Date.now() / 1000),
+            pushName: "User 1"
+        };
+
+        await processor.handleMessage(msg as any);
+
+        const saved = db.getMessage("secret-msg-id");
+        expect(saved).toBeNull();
+    });
+
+
+
     test("should handle message edits for non-existent messages (out-of-order)", async () => {
         // 1. Mark as monitored
         db.upsertChat("12345@s.whatsapp.net", "User 1", false);
@@ -177,5 +331,43 @@ describe("MessageProcessor", () => {
         expect(history).toHaveLength(1);
         expect(history[0].old_body).toBe("First Edit");
         expect(history[0].new_body).toBe("Second Edit");
+    });
+
+    test("should decrypt secretEncryptedMessage when original message has a secret", async () => {
+        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
+        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+
+        // 1. Save original message with a secret
+        db.raw.query(`
+            INSERT INTO messages (message_id, chat_id, body, timestamp, message_secret)
+            VALUES (?, ?, ?, ?, ?)
+        `).run("target-msg-id", "12345@s.whatsapp.net", "Original text", Math.floor(Date.now() / 1000), Buffer.from("dummy-secret").toString("base64"));
+
+        // 2. Send secretEncryptedMessage
+        const msg = {
+            key: { remoteJid: "12345@s.whatsapp.net", id: "edit-secret-msg-id", fromMe: false },
+            message: {
+                secretEncryptedMessage: {
+                    targetMessageKey: { remoteJid: "12345@s.whatsapp.net", id: "target-msg-id", fromMe: false },
+                    encPayload: Buffer.from("encrypted-payload-bytes"),
+                    encIv: Buffer.from("iv-bytes"),
+                    secretEncType: 1
+                }
+            },
+            messageTimestamp: Math.floor(Date.now() / 1000),
+            pushName: "User 1"
+        };
+
+        await processor.handleMessage(msg as any);
+
+        // 3. Verify the original message body is updated to the decrypted content
+        const edited = db.getMessage("target-msg-id");
+        expect(edited.body).toBe("Decrypted from secretEncryptedMessage mock");
+
+        // 4. Verify that edit history was recorded
+        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("target-msg-id");
+        expect(history).toHaveLength(1);
+        expect(history[0].old_body).toBe("Original text");
+        expect(history[0].new_body).toBe("Decrypted from secretEncryptedMessage mock");
     });
 });
