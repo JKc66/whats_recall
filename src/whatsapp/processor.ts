@@ -5,7 +5,7 @@ import {
     isJidGroup,
     proto,
 } from "@whiskeysockets/baileys";
-import { aesDecryptGCM, hmacSign } from "@whiskeysockets/baileys/lib/Utils/crypto.js";
+import { aesDecryptGCM, hkdf, hmacSign } from "@whiskeysockets/baileys/lib/Utils/crypto.js";
 import { log } from "../logger.js";
 import { getDb, getMediaDir } from "../db/database.js";
 import { syncService } from "./sync.ts";
@@ -36,28 +36,58 @@ function extractEditedMessage(message: any): any {
     return null;
 }
 
+const MESSAGE_EDIT_SECRET_SCOPE = "Message Edit";
+
+function isSecretMessageEdit(secretEncType: any): boolean {
+    return (
+        secretEncType === proto.Message.SecretEncryptedMessage.SecretEncType.MESSAGE_EDIT ||
+        secretEncType === "MESSAGE_EDIT"
+    );
+}
+
+function toBytes(value: any): Uint8Array | null {
+    if (!value) return null;
+    if (value instanceof Uint8Array) return value;
+    if (typeof value === "string") return Buffer.from(value, "base64");
+    if (Array.isArray(value)) return Buffer.from(value);
+    if (value.type === "Buffer" && Array.isArray(value.data)) {
+        return Buffer.from(value.data);
+    }
+    return null;
+}
+
+function generateMessageSecretKey(
+    originalMsgId: string,
+    originalSender: string,
+    modificationSender: string,
+    originalMsgSecret: Uint8Array,
+): Uint8Array {
+    const sign = Buffer.concat([
+        Buffer.from(originalMsgId, "utf8"),
+        Buffer.from(originalSender, "utf8"),
+        Buffer.from(modificationSender, "utf8"),
+        Buffer.from(MESSAGE_EDIT_SECRET_SCOPE, "utf8"),
+        new Uint8Array([1]),
+    ]);
+    const key0 = hmacSign(originalMsgSecret, new Uint8Array(32), "sha256");
+    return hmacSign(sign, key0, "sha256");
+}
+
 function decryptEditedMessage(
     encPayload: Uint8Array,
     encIv: Uint8Array,
     secret: Uint8Array,
     originalMsgId: string,
-    senderJid: string
+    originalSender: string,
+    modificationSender: string,
 ): any | null {
     try {
-        const toBinary = (txt: string) => Buffer.from(txt);
-        const senderBuf = toBinary(senderJid);
-        
-        const sign = Buffer.concat([
-            toBinary(originalMsgId),
-            senderBuf,
-            senderBuf,
-            toBinary('Message Edit'),
-            new Uint8Array([1])
-        ]);
-        
-        const key = hmacSign(secret, new Uint8Array(32));
-        const decKey = hmacSign(sign, key);
-        
+        const decKey = generateMessageSecretKey(
+            originalMsgId,
+            originalSender,
+            modificationSender,
+            secret,
+        );
         const decrypted = aesDecryptGCM(encPayload, decKey, encIv, new Uint8Array(0));
         return proto.Message.decode(decrypted);
     } catch (err: any) {
@@ -422,28 +452,57 @@ export class MessageProcessor {
 
         if (messageType === "secretEncryptedMessage") {
             const secretMsg = content;
-            if (secretMsg && (secretMsg.secretEncType === 1 || secretMsg.secretEncType === "MESSAGE_EDIT")) {
+            if (secretMsg && isSecretMessageEdit(secretMsg.secretEncType)) {
                 const targetKey = secretMsg.targetMessageKey;
                 if (targetKey && targetKey.id) {
                     const oldMsg = getDb().getMessage(targetKey.id);
                     if (oldMsg && oldMsg.message_secret) {
+                        const encPayload = toBytes(secretMsg.encPayload);
+                        const encIv = toBytes(secretMsg.encIv);
+                        if (!encPayload?.length || !encIv?.length) {
+                            log("PROCESSOR", `Edit decryption skipped: encrypted payload missing (${targetKey.id})`);
+                            return;
+                        }
+
                         const secret = Buffer.from(oldMsg.message_secret, "base64");
-                        const senderJid = await this.resolveSender(msg, chatId, isGrp);
+                        const ownSender = jidNormalizedUser(
+                            msg.key?.addressingMode === "lid" && this.sock.user?.lid
+                                ? this.sock.user.lid
+                                : this.sock.user.id,
+                        );
+                        const envelopeAuthorRaw = msg.key.fromMe
+                            ? ownSender
+                            : jidNormalizedUser(
+                                  msg.key.participant ||
+                                      msg.key.remoteJid ||
+                                      rawChatId,
+                              );
+                        const originalSender = jidNormalizedUser(
+                            targetKey.participant ||
+                                (targetKey.fromMe
+                                    ? envelopeAuthorRaw
+                                    : targetKey.remoteJid || rawChatId),
+                        );
+                        const modificationSender = envelopeAuthorRaw;
+
                         const decrypted = decryptEditedMessage(
-                            secretMsg.encPayload,
-                            secretMsg.encIv,
+                            encPayload,
+                            encIv,
                             secret,
                             targetKey.id,
-                            senderJid
+                            originalSender,
+                            modificationSender,
                         );
                         if (decrypted) {
                             log("PROCESSOR", `Decrypted edit for ${targetKey.id}`);
-                            const editKey = { ...targetKey };
-                            editKey.remoteJid = await syncService.resolvePN(targetKey.remoteJid || chatId, this.sock);
+                            const editKey: any = { ...targetKey };
+                            editKey.remoteJid = chatId;
                             if (editKey.participant) {
                                 editKey.participant = await syncService.resolvePN(editKey.participant, this.sock);
                             }
+                            log("PROCESSOR", `about to handleEdit: remoteJid=${editKey.remoteJid} participant=${editKey.participant} fromMe=${editKey.fromMe}`);
                             await this.handleEdit(editKey, decrypted);
+                            log("PROCESSOR", `handleEdit completed for ${targetKey.id}`);
                         }
                     } else {
                         log("PROCESSOR", `Edit decryption skipped: original message secret not found in DB (${targetKey.id})`);
@@ -680,6 +739,7 @@ export class MessageProcessor {
         const existingMsg = getDb().getMessage(messageId);
         const rawSecret = normalized.content?.messageContextInfo?.messageSecret;
         const messageSecret = rawSecret ? Buffer.from(rawSecret).toString("base64") : undefined;
+
 
         const msgData: WhatsAppMessage = {
             message_id: messageId,

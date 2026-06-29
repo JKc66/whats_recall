@@ -19,7 +19,7 @@ mock.module("@whiskeysockets/baileys/lib/Utils/crypto.js", () => {
       }
       return new Uint8Array(0);
     },
-    hmacSign: () => Buffer.alloc(32)
+    hkdf: () => Buffer.alloc(32)
   };
 });
 
@@ -267,7 +267,7 @@ describe("MessageProcessor", () => {
                     targetMessageKey: { remoteJid: "12345@s.whatsapp.net", id: "target-id", fromMe: false },
                     encPayload: Buffer.from(""),
                     encIv: Buffer.from(""),
-                    secretEncType: 1
+                    secretEncType: 2
                 }
             },
             messageTimestamp: Math.floor(Date.now() / 1000),
@@ -349,9 +349,9 @@ describe("MessageProcessor", () => {
             message: {
                 secretEncryptedMessage: {
                     targetMessageKey: { remoteJid: "12345@s.whatsapp.net", id: "target-msg-id", fromMe: false },
-                    encPayload: Buffer.from("encrypted-payload-bytes"),
-                    encIv: Buffer.from("iv-bytes"),
-                    secretEncType: 1
+                    encPayload: Buffer.from("encrypted-payload-bytes").toString("base64"),
+                    encIv: Buffer.from("iv-bytes").toString("base64"),
+                    secretEncType: "MESSAGE_EDIT"
                 }
             },
             messageTimestamp: Math.floor(Date.now() / 1000),
