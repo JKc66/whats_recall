@@ -1,7 +1,7 @@
 import { Show, createSignal, createMemo } from "solid-js";
 import { AlertTriangleIcon, SettingsIcon, EyeIcon } from "../Icons";
 import RelayPreview from "./RelayPreview";
-import { renderSVG } from "uqr";
+import { encode } from "uqr";
 
 interface ConfigPanelProps {
   pairing: any;
@@ -22,6 +22,17 @@ export default function ConfigPanel(props: ConfigPanelProps) {
 
   const hasSession = () => props.stats?.authenticated || props.pairing?.authenticated;
   const isOnline = () => props.stats?.connected;
+  const pairingQr = createMemo(() => {
+    const pairing = props.pairing;
+    if (pairing?.type !== "qr" || typeof pairing.data !== "string" || !pairing.data) return null;
+
+    const { size, data } = encode(pairing.data, { border: 4 });
+    const modules: string[] = [];
+    data.forEach((row, y) => row.forEach((dark, x) => {
+      if (dark) modules.push(`M${x},${y}h1v1h-1z`);
+    }));
+    return { size, path: modules.join("") };
+  });
 
   const updateDraft = (key: string, value: string) => {
     const current = props.config?.[key] || "";
@@ -69,18 +80,19 @@ export default function ConfigPanel(props: ConfigPanelProps) {
 
             <Show when={!hasSession()}>
               <div class="p-4 md:p-6 flex flex-col items-center gap-4 md:gap-6">
-                <Show when={props.pairing?.type === "qr"}>
-                  <div class="flex flex-col items-center gap-4 text-center">
-                    <div class="p-2 bg-white ring-8 ring-white/5 " 
-                         innerHTML={createMemo(() => props.pairing?.data ? renderSVG(props.pairing.data) : "")()}>
-                    </div>
+                <Show when={pairingQr()}>
+                  {(qr) => <div class="flex w-full flex-col items-center gap-4 text-center">
+                    <svg class="pairing-qr" role="img" aria-label="WhatsApp pairing QR code" viewBox={`0 0 ${qr().size} ${qr().size}`} shape-rendering="crispEdges">
+                      <rect width={qr().size} height={qr().size} fill="white" />
+                      <path d={qr().path} fill="black" />
+                    </svg>
                     <div class="flex flex-col gap-1">
                       <p class="text-[9px] md:text-[10px] text-text-primary font-mono tracking-[0.2em] uppercase font-bold">
                         SCAN_QR
                       </p>
                       <p class="text-[8px] md:text-[9px] text-text-secondary font-mono uppercase">Use your mobile device</p>
                     </div>
-                  </div>
+                  </div>}
                 </Show>
 
                 <Show when={props.pairing?.type === "code"}>
