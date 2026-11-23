@@ -3,25 +3,13 @@ import { expect, test, describe, beforeEach, mock, spyOn, beforeAll, afterAll } 
 import { mkdtempSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { createCipheriv, hkdfSync } from "node:crypto";
 
 const tempDir = mkdtempSync(join(tmpdir(), "whatsapp-processor-test-"));
 process.env.DATA_DIR = tempDir;
 process.env.DB_PATH = join(tempDir, "messages.db");
 
 import { proto } from "@whiskeysockets/baileys";
-mock.module("@whiskeysockets/baileys/lib/Utils/crypto.js", () => {
-  return {
-    aesDecryptGCM: (encPayload: Uint8Array) => {
-      if (encPayload && encPayload.length > 0) {
-        return proto.Message.encode({
-          conversation: "Decrypted from secretEncryptedMessage mock"
-        }).finish();
-      }
-      return new Uint8Array(0);
-    },
-    hkdf: () => Buffer.alloc(32)
-  };
-});
 
 const { getDb, dbInstances } = await import("../src/db/database.ts");
 
@@ -333,41 +321,56 @@ describe("MessageProcessor", () => {
         expect(history[0].new_body).toBe("Second Edit");
     });
 
-    test("should decrypt secretEncryptedMessage when original message has a secret", async () => {
-        db.upsertChat("12345@s.whatsapp.net", "User 1", false);
-        db.raw.query("INSERT INTO monitored_chats (chat_id) VALUES (?)").run("12345@s.whatsapp.net");
+    test.each([
+        { name: "plain content", wrapped: false, alternate: false, matches: true },
+        { name: "protocol-wrapped content", wrapped: true, alternate: false, matches: true },
+        { name: "alternate sender address", wrapped: true, alternate: true, matches: true },
+        { name: "a different embedded message ID", wrapped: true, alternate: false, matches: false },
+    ])("processes encrypted edits containing $name", async ({ wrapped, alternate, matches }) => {
+        const chatId = "12345@s.whatsapp.net";
+        const alternateId = "67890@lid";
+        const targetId = "target-msg-id";
+        const sender = alternate ? alternateId : chatId;
+        const secret = Buffer.alloc(32, 17);
+        const iv = Buffer.alloc(12, 23);
+        const previous = "Original text";
+        const replacement = "Edited text\nSecond line";
+        const content = { extendedTextMessage: { text: replacement } };
+        const payload = wrapped ? { protocolMessage: {
+            key: { id: matches ? targetId : "different-id" },
+            type: proto.Message.ProtocolMessage.Type.MESSAGE_EDIT,
+            editedMessage: content,
+        } } : content;
+        const info = Buffer.from(targetId + sender + sender + "Message Edit");
+        const key = hkdfSync("sha256", secret, Buffer.alloc(32), info, 32);
+        const cipher = createCipheriv("aes-256-gcm", Buffer.from(key), iv);
+        const ciphertext = Buffer.concat([cipher.update(proto.Message.encode(payload).finish()), cipher.final(), cipher.getAuthTag()]);
 
-        // 1. Save original message with a secret
-        db.raw.query(`
-            INSERT INTO messages (message_id, chat_id, body, timestamp, message_secret)
-            VALUES (?, ?, ?, ?, ?)
-        `).run("target-msg-id", "12345@s.whatsapp.net", "Original text", Math.floor(Date.now() / 1000), Buffer.from("dummy-secret").toString("base64"));
-
-        // 2. Send secretEncryptedMessage
+        db.addMonitoredChat(chatId, "User 1", false);
+        db.saveMessage({ message_id: targetId, chat_id: chatId, sender_id: chatId, body: previous, message_secret: secret.toString("base64") });
         const msg = {
-            key: { remoteJid: "12345@s.whatsapp.net", id: "edit-secret-msg-id", fromMe: false },
+            key: { remoteJid: chatId, remoteJidAlt: alternate ? alternateId : undefined, id: "edit-secret-msg-id", fromMe: false },
             message: {
                 secretEncryptedMessage: {
-                    targetMessageKey: { remoteJid: "12345@s.whatsapp.net", id: "target-msg-id", fromMe: false },
-                    encPayload: Buffer.from("encrypted-payload-bytes").toString("base64"),
-                    encIv: Buffer.from("iv-bytes").toString("base64"),
-                    secretEncType: "MESSAGE_EDIT"
+                    targetMessageKey: { remoteJid: chatId, id: targetId, fromMe: true },
+                    encPayload: ciphertext,
+                    encIv: iv,
+                    secretEncType: proto.Message.SecretEncryptedMessage.SecretEncType.MESSAGE_EDIT,
                 }
             },
-            messageTimestamp: Math.floor(Date.now() / 1000),
+            messageTimestamp: 1,
             pushName: "User 1"
         };
 
-        await processor.handleMessage(msg as any);
+        await processor.handleMessage(msg);
 
-        // 3. Verify the original message body is updated to the decrypted content
-        const edited = db.getMessage("target-msg-id");
-        expect(edited.body).toBe("Decrypted from secretEncryptedMessage mock");
-
-        // 4. Verify that edit history was recorded
-        const history = db.raw.query("SELECT * FROM message_edits WHERE message_id = ?").all("target-msg-id");
-        expect(history).toHaveLength(1);
-        expect(history[0].old_body).toBe("Original text");
-        expect(history[0].new_body).toBe("Decrypted from secretEncryptedMessage mock");
+        expect(db.getMessage(targetId).body).toBe(matches ? replacement : previous);
+        const history = db.raw.query("SELECT old_body, new_body FROM message_edits WHERE message_id = ?").all(targetId);
+        expect(history).toEqual(matches ? [{ old_body: previous, new_body: replacement }] : []);
+        if (matches) {
+            expect(mockBroadcast).toHaveBeenCalledWith("message_edited", expect.objectContaining({ message_id: targetId, chat_id: chatId, body: replacement }));
+        } else {
+            expect(mockBroadcast).not.toHaveBeenCalled();
+        }
     });
 });

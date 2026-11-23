@@ -288,6 +288,12 @@ body,
 }
 
 /* Components */
+.pairing-qr {
+  display: block;
+  inline-size: min(16rem, 100%);
+  block-size: auto;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
